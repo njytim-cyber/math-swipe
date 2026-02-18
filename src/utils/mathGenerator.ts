@@ -86,20 +86,43 @@ function genSqrt(d: number, hard: boolean): Problem {
 // ── New Generators ──────────────────────────────────────
 
 function genFraction(d: number, hard: boolean): Problem {
-    // Simple fraction addition/subtraction with small denominators
-    const denoms = hard ? [2, 3, 4, 5, 6, 8, 10, 12] : (d <= 2 ? [2, 3, 4, 5] : [2, 3, 4, 5, 6, 8]);
-    const d1 = pickRandom(denoms);
-    const d2 = pickRandom(denoms.filter(x => x !== d1));
+    // Difficulty-based denominator pools
+    // Easy (d<=2): same-denom or simple pairs like 2&4, 3&6
+    // Medium (d<=4): small mixed denoms
+    // Hard mode: full range
+    let d1: number, d2: number;
+    if (hard) {
+        const denoms = [2, 3, 4, 5, 6, 8, 10, 12];
+        d1 = pickRandom(denoms);
+        d2 = pickRandom(denoms.filter(x => x !== d1));
+    } else if (d <= 2) {
+        // Easy: same denominator OR simple factor pairs
+        const easyPairs: [number, number][] = [
+            [2, 2], [3, 3], [4, 4], [5, 5],  // same denom
+            [2, 4], [4, 2], [3, 6], [6, 3],  // one divides the other
+        ];
+        [d1, d2] = pickRandom(easyPairs);
+    } else if (d <= 4) {
+        const denoms = [2, 3, 4, 5, 6];
+        d1 = pickRandom(denoms);
+        d2 = pickRandom(denoms.filter(x => x !== d1));
+    } else {
+        const denoms = [2, 3, 4, 5, 6, 8];
+        d1 = pickRandom(denoms);
+        d2 = pickRandom(denoms.filter(x => x !== d1));
+    }
+
     const n1 = randInt(1, d1 - 1);
     const n2 = randInt(1, d2 - 1);
 
-    const isAdd = Math.random() > 0.4;
+    // Bias towards addition at easy levels
+    const isAdd = d <= 2 ? Math.random() > 0.2 : Math.random() > 0.4;
     const resultNum = isAdd ? (n1 * d2 + n2 * d1) : (n1 * d2 - n2 * d1);
     const resultDen = d1 * d2;
 
-    // If subtraction gives negative, flip
+    // If subtraction gives negative or zero, re-roll
     if (resultNum <= 0) {
-        return genFraction(d, hard); // re-roll
+        return genFraction(d, hard);
     }
 
     const g = gcd(Math.abs(resultNum), resultDen);
