@@ -7,6 +7,7 @@ interface Props {
     accuracy: number;
     sessionScore: number;
     sessionStreak: number;
+    onReset: () => void;
 }
 
 const TYPE_LABELS: { id: QuestionType; icon: string }[] = [
@@ -18,7 +19,7 @@ const TYPE_LABELS: { id: QuestionType; icon: string }[] = [
     { id: 'sqrt', icon: '√' },
 ];
 
-export function MePage({ stats, accuracy, sessionScore, sessionStreak }: Props) {
+export function MePage({ stats, accuracy, sessionScore, sessionStreak, onReset }: Props) {
     const level = stats.totalXP < 100 ? 1
         : stats.totalXP < 500 ? 2
             : stats.totalXP < 1500 ? 3
@@ -79,9 +80,9 @@ export function MePage({ stats, accuracy, sessionScore, sessionStreak }: Props) 
                                     {t.icon}
                                 </div>
                                 <div className={`text-xs font-[family-name:var(--font-chalk)] ${ts.solved === 0 ? 'text-white/15' :
-                                        pct >= 80 ? 'text-[var(--color-correct)]' :
-                                            pct >= 50 ? 'text-[var(--color-gold)]' :
-                                                'text-white/40'
+                                    pct >= 80 ? 'text-[var(--color-correct)]' :
+                                        pct >= 50 ? 'text-[var(--color-gold)]' :
+                                            'text-white/40'
                                     }`}>
                                     {ts.solved === 0 ? '—' : `${pct}%`}
                                 </div>
@@ -127,6 +128,13 @@ export function MePage({ stats, accuracy, sessionScore, sessionStreak }: Props) 
                             stats.totalSolved > 0 ? '🌱 budding aura' :
                                 '🎮 play to build your aura'}
             </motion.p>
+
+            <button
+                onClick={onReset}
+                className="text-[10px] font-[family-name:var(--font-ui)] text-white/15 mt-4 hover:text-white/30 transition-colors"
+            >
+                reset stats
+            </button>
         </div>
     );
 }

@@ -89,7 +89,7 @@ export const ProblemView = memo(function ProblemView({ problem, frozen, highligh
 
     return (
         <motion.div
-            className="flex-1 flex flex-col items-center justify-center px-4 pb-24 relative z-10 gpu-layer"
+            className="landscape-answers flex-1 flex flex-col items-center justify-center px-4 pb-24 relative z-10 gpu-layer"
             style={{ x, y }}
             drag={!frozen}
             dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
@@ -98,7 +98,7 @@ export const ProblemView = memo(function ProblemView({ problem, frozen, highligh
         >
             {/* Problem expression */}
             <motion.div className="text-center mb-12" animate={pulseAnim}>
-                <div className="text-6xl font-[family-name:var(--font-chalk)] leading-tight tracking-wider text-white">
+                <div className="landscape-question text-6xl font-[family-name:var(--font-chalk)] leading-tight tracking-wider text-white">
                     {problem.expression}
                 </div>
             </motion.div>

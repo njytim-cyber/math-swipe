@@ -82,9 +82,13 @@ export function useStats() {
         });
     }, []);
 
+    const resetStats = useCallback(() => {
+        setStats(EMPTY_STATS);
+    }, []);
+
     const accuracy = stats.totalSolved > 0
         ? Math.round((stats.totalCorrect / stats.totalSolved) * 100)
         : 0;
 
-    return { stats, accuracy, recordSession };
+    return { stats, accuracy, recordSession, resetStats };
 }
