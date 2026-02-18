@@ -12,6 +12,8 @@ import { useGameLoop } from './hooks/useGameLoop';
 import { useStats } from './hooks/useStats';
 import type { QuestionType } from './utils/mathGenerator';
 import { ACHIEVEMENTS, loadUnlocked, saveUnlocked, checkAchievements } from './utils/achievements';
+import { SessionSummary } from './components/SessionSummary';
+import { CHALK_THEMES, loadTheme, saveTheme, applyTheme, type ChalkTheme } from './utils/chalkThemes';
 
 type Tab = 'game' | 'league' | 'me';
 
@@ -41,14 +43,11 @@ function App() {
   const isFirstQuestion = totalAnswered === 0;
   const toggleHardMode = useCallback(() => setHardMode(h => !h), []);
 
-  // Record session data when switching away from game tab
+  // Track previous tab for session recording (handled in handleTabChange)
   const prevTab = useRef<Tab>('game');
   useEffect(() => {
-    if (prevTab.current === 'game' && activeTab !== 'game' && totalAnswered > 0) {
-      recordSession(score, totalCorrect, totalAnswered, bestStreak, questionType);
-    }
     prevTab.current = activeTab;
-  }, [activeTab, score, totalCorrect, totalAnswered, bestStreak, recordSession]);
+  }, [activeTab]);
 
   // ── Achievements ──
   const [unlocked, setUnlocked] = useState(() => loadUnlocked());
@@ -71,6 +70,47 @@ function App() {
       }
     }
   }, [stats, bestStreak]);
+
+  // ── Personal best detection ──
+  const [showPB, setShowPB] = useState(false);
+  const prevBestRef = useRef(stats.bestStreak);
+  useEffect(() => {
+    if (bestStreak > prevBestRef.current && bestStreak > 0) {
+      setShowPB(true);
+      setTimeout(() => setShowPB(false), 2000);
+      prevBestRef.current = bestStreak;
+    }
+  }, [bestStreak]);
+
+  // ── Session summary ──
+  const [showSummary, setShowSummary] = useState(false);
+  const sessionAccuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
+
+  const handleTabChange = useCallback((tab: Tab) => {
+    if (prevTab.current === 'game' && tab !== 'game' && totalAnswered > 0) {
+      recordSession(score, totalCorrect, totalAnswered, bestStreak, questionType);
+      setShowSummary(true);
+    }
+    setActiveTab(tab);
+  }, [score, totalCorrect, totalAnswered, bestStreak, questionType, recordSession]);
+
+  // ── Costumes ──
+  const [activeCostume, setActiveCostume] = useState(() => localStorage.getItem('math-swipe-costume') || '');
+  const handleCostumeChange = useCallback((id: string) => {
+    setActiveCostume(id);
+    localStorage.setItem('math-swipe-costume', id);
+  }, []);
+
+  // ── Chalk themes ──
+  const [activeThemeId, setActiveThemeId] = useState(() => loadTheme());
+  useEffect(() => {
+    const t = CHALK_THEMES.find(th => th.id === activeThemeId);
+    if (t) applyTheme(t.color);
+  }, [activeThemeId]);
+  const handleThemeChange = useCallback((t: ChalkTheme) => {
+    setActiveThemeId(t.id);
+    saveTheme(t.id);
+  }, []);
 
   return (
     <>
@@ -124,7 +164,7 @@ function App() {
                       ))}
                     </div>
                     <span
-                      className={`text-sm font-[family-name:var(--font-ui)] ml-2 ${streak >= 10
+                      className={`text-sm ui ml-2 ${streak >= 10
                         ? 'text-[var(--color-streak-fire)]'
                         : streak >= 5
                           ? 'text-[var(--color-gold)]'
@@ -176,7 +216,7 @@ function App() {
 
             {/* ── Mr. Chalk PiP ── */}
             <div className="landscape-hide">
-              <MrChalk state={chalkState} />
+              <MrChalk state={chalkState} costume={activeCostume} />
             </div>
 
             {/* ── Feedback flash overlay ── */}
@@ -200,6 +240,20 @@ function App() {
                 ⚡ SPEED BONUS +2
               </div>
             )}
+
+            {/* ── Personal best ── */}
+            <AnimatePresence>
+              {showPB && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.5 }}
+                  className="absolute left-1/2 -translate-x-1/2 top-[18%] z-40 text-lg chalk text-[var(--color-gold)] whitespace-nowrap"
+                >
+                  🏆 NEW PERSONAL BEST!
+                </motion.div>
+              )}
+            </AnimatePresence>
           </>
         )}
 
@@ -213,11 +267,26 @@ function App() {
             sessionStreak={bestStreak}
             onReset={resetStats}
             unlocked={unlocked}
+            activeCostume={activeCostume}
+            onCostumeChange={handleCostumeChange}
+            activeTheme={activeThemeId}
+            onThemeChange={handleThemeChange}
           />
         )}
 
         {/* ── Bottom Navigation ── */}
-        <BottomNav active={activeTab} onChange={setActiveTab} />
+        <BottomNav active={activeTab} onChange={handleTabChange} />
+
+        {/* ── Session Summary ── */}
+        <SessionSummary
+          solved={totalAnswered}
+          correct={totalCorrect}
+          bestStreak={bestStreak}
+          accuracy={sessionAccuracy}
+          xpEarned={score}
+          visible={showSummary}
+          onDismiss={() => setShowSummary(false)}
+        />
 
         {/* ── Achievement unlock toast ── */}
         <AnimatePresence>
