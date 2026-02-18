@@ -11,6 +11,7 @@ import { MePage } from './components/MePage';
 import { useGameLoop } from './hooks/useGameLoop';
 import { useStats } from './hooks/useStats';
 import type { QuestionType } from './utils/mathGenerator';
+import { ACHIEVEMENTS, loadUnlocked, saveUnlocked, checkAchievements } from './utils/achievements';
 
 type Tab = 'game' | 'league' | 'me';
 
@@ -49,19 +50,41 @@ function App() {
     prevTab.current = activeTab;
   }, [activeTab, score, totalCorrect, totalAnswered, bestStreak, recordSession]);
 
+  // ── Achievements ──
+  const [unlocked, setUnlocked] = useState(() => loadUnlocked());
+  const [unlockToast, setUnlockToast] = useState('');
+
+  // Check achievements whenever navigating away from game (i.e. stats recorded)
+  useEffect(() => {
+    const snap = { ...stats, bestStreak: Math.max(stats.bestStreak, bestStreak) };
+    const fresh = checkAchievements(snap, unlocked);
+    if (fresh.length > 0) {
+      const next = new Set(unlocked);
+      fresh.forEach(id => next.add(id));
+      setUnlocked(next);
+      saveUnlocked(next);
+      // Show toast for first new unlock
+      const badge = ACHIEVEMENTS.find(a => a.id === fresh[0]);
+      if (badge) {
+        setUnlockToast(badge.name);
+        setTimeout(() => setUnlockToast(''), 2500);
+      }
+    }
+  }, [stats, bestStreak]);
+
   return (
     <>
       {/* Desktop gate */}
       <div className="desktop-gate hidden">
         <div className="flex flex-col items-center justify-center h-screen bg-[var(--color-board)] text-center px-8">
           <div className="text-6xl mb-4">📱</div>
-          <h1 className="text-3xl font-[family-name:var(--font-chalk)] text-[var(--color-gold)] mb-3">
+          <h1 className="text-3xl chalk text-[var(--color-gold)] mb-3">
             Math Swipe
           </h1>
-          <p className="text-lg font-[family-name:var(--font-chalk)] text-white/50 mb-6">
+          <p className="text-lg chalk text-white/50 mb-6">
             This game is designed for mobile
           </p>
-          <p className="text-sm font-[family-name:var(--font-ui)] text-white/25">
+          <p className="text-sm ui text-white/25">
             Open on your phone or resize your browser to a narrow width
           </p>
         </div>
@@ -189,11 +212,32 @@ function App() {
             sessionScore={score}
             sessionStreak={bestStreak}
             onReset={resetStats}
+            unlocked={unlocked}
           />
         )}
 
         {/* ── Bottom Navigation ── */}
         <BottomNav active={activeTab} onChange={setActiveTab} />
+
+        {/* ── Achievement unlock toast ── */}
+        <AnimatePresence>
+          {unlockToast && (
+            <motion.div
+              key={unlockToast}
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 40 }}
+              transition={{ duration: 0.3 }}
+              className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-black/80 border border-[var(--color-gold)]/30 rounded-2xl px-5 py-3 flex items-center gap-3"
+            >
+              <span className="text-2xl">🏅</span>
+              <div>
+                <div className="text-xs ui text-white/40">Achievement Unlocked!</div>
+                <div className="text-sm chalk text-[var(--color-gold)]">{unlockToast}</div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </BlackboardLayout>
     </>
   );

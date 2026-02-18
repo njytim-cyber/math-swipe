@@ -2,6 +2,8 @@ import { memo } from 'react';
 import { motion } from 'framer-motion';
 import type { useStats } from '../hooks/useStats';
 import { QUESTION_TYPES } from '../utils/questionTypes';
+import { ACHIEVEMENTS } from '../utils/achievements';
+import { AchievementBadge } from './AchievementBadge';
 
 interface Props {
     stats: ReturnType<typeof useStats>['stats'];
@@ -9,13 +11,14 @@ interface Props {
     sessionScore: number;
     sessionStreak: number;
     onReset: () => void;
+    unlocked: Set<string>;
 }
 
 
 
 const LEVEL_NAMES = ['Beginner', 'Learner', 'Thinker', 'Wizard', 'Legend'] as const;
 
-export const MePage = memo(function MePage({ stats, accuracy, sessionScore, sessionStreak, onReset }: Props) {
+export const MePage = memo(function MePage({ stats, accuracy, sessionScore, sessionStreak, onReset, unlocked }: Props) {
     const level = stats.totalXP < 100 ? 1
         : stats.totalXP < 500 ? 2
             : stats.totalXP < 1500 ? 3
@@ -87,6 +90,24 @@ export const MePage = memo(function MePage({ stats, accuracy, sessionScore, sess
                             </div>
                         );
                     })}
+                </div>
+            </div>
+
+            {/* Achievements */}
+            <div className="w-full max-w-sm mt-8">
+                <div className="text-[10px] ui text-white/20 uppercase tracking-widest text-center mb-3">
+                    achievements · {[...unlocked].length}/{ACHIEVEMENTS.length}
+                </div>
+                <div className="grid grid-cols-4 gap-3 justify-items-center">
+                    {ACHIEVEMENTS.map(a => (
+                        <AchievementBadge
+                            key={a.id}
+                            achievementId={a.id}
+                            unlocked={unlocked.has(a.id)}
+                            name={a.name}
+                            desc={a.desc}
+                        />
+                    ))}
                 </div>
             </div>
 
