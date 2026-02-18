@@ -62,7 +62,7 @@ export const BottomNav = memo(function BottomNav({ active, onChange }: Props) {
                         whileTap={{ scale: 0.92 }}
                     >
                         {tab.icon}
-                        <span className="text-[10px] font-[family-name:var(--font-ui)] tracking-wide">
+                        <span className="text-[10px] ui tracking-wide">
                             {tab.label}
                         </span>
                     </motion.button>

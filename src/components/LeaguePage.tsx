@@ -1,6 +1,7 @@
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 
-export function LeaguePage() {
+export const LeaguePage = memo(function LeaguePage() {
     return (
         <div className="flex-1 flex flex-col items-center justify-center px-8 gap-8">
             {/* Trophy */}
@@ -19,16 +20,16 @@ export function LeaguePage() {
             </motion.div>
 
             <div className="text-center">
-                <h2 className="text-3xl font-[family-name:var(--font-chalk)] text-[var(--color-gold)] mb-3">
+                <h2 className="text-3xl chalk text-[var(--color-gold)] mb-3">
                     League
                 </h2>
-                <p className="text-lg font-[family-name:var(--font-chalk)] text-white/50">
+                <p className="text-lg chalk text-white/50">
                     Coming Soon
                 </p>
-                <p className="text-sm font-[family-name:var(--font-ui)] text-white/30 mt-2">
+                <p className="text-sm ui text-white/30 mt-2">
                     Compete with friends & climb the ranks
                 </p>
             </div>
         </div>
     );
-}
+});

@@ -50,7 +50,7 @@ const AnswerOption = memo(function AnswerOption({
         >
             {/* Direction chevron — glows gold if highlighted */}
             <motion.div
-                className={`text-xl tracking-widest font-bold font-[family-name:var(--font-ui)] ${highlighted ? 'text-[var(--color-gold)]' : 'text-white/60'}`}
+                className={`text-xl tracking-widest font-bold ui ${highlighted ? 'text-[var(--color-gold)]' : 'text-white/60'}`}
                 animate={highlighted ? { opacity: [0.5, 1, 0.5] } : {}}
                 transition={highlighted ? { duration: 1, repeat: Infinity } : {}}
             >
@@ -58,7 +58,7 @@ const AnswerOption = memo(function AnswerOption({
             </motion.div>
             {/* Answer bubble — pulsing gold glow if highlighted */}
             <motion.div
-                className={`w-[80px] h-[80px] rounded-full border-2 bg-white/[0.08] flex items-center justify-center text-[28px] font-[family-name:var(--font-chalk)] active:scale-90 transition-transform ${highlighted ? 'border-[var(--color-gold)] text-[var(--color-gold)]' : 'border-white/40 text-white'
+                className={`w-[80px] h-[80px] rounded-full border-2 bg-white/[0.08] flex items-center justify-center text-[28px] chalk active:scale-90 transition-transform ${highlighted ? 'border-[var(--color-gold)] text-[var(--color-gold)]' : 'border-white/40 text-white'
                     }`}
                 animate={highlighted ? glowAnim : {}}
                 transition={highlighted ? glowTransition : {}}
@@ -98,7 +98,7 @@ export const ProblemView = memo(function ProblemView({ problem, frozen, highligh
         >
             {/* Problem expression */}
             <motion.div className="text-center mb-12" animate={pulseAnim}>
-                <div className="landscape-question text-6xl font-[family-name:var(--font-chalk)] leading-tight tracking-wider text-white">
+                <div className="landscape-question text-6xl chalk leading-tight tracking-wider text-white">
                     {problem.expression}
                 </div>
             </motion.div>
@@ -106,7 +106,7 @@ export const ProblemView = memo(function ProblemView({ problem, frozen, highligh
             {/* Tutorial hint — only on first question */}
             {highlightCorrect && (
                 <motion.div
-                    className="text-sm font-[family-name:var(--font-ui)] text-white/50 mb-4"
+                    className="text-sm ui text-white/50 mb-4"
                     animate={{ opacity: [0.3, 0.8, 0.3] }}
                     transition={{ duration: 2, repeat: Infinity }}
                 >
@@ -132,8 +132,8 @@ export const ProblemView = memo(function ProblemView({ problem, frozen, highligh
 
             {/* Skip hint */}
             <div className="mt-8 flex flex-col items-center text-white/40">
-                <div className="text-xl font-bold tracking-wider font-[family-name:var(--font-ui)]">^</div>
-                <span className="text-xs font-[family-name:var(--font-ui)] mt-1 tracking-wider">skip</span>
+                <div className="text-xl font-bold tracking-wider ui">^</div>
+                <span className="text-xs ui mt-1 tracking-wider">skip</span>
             </div>
         </motion.div>
     );

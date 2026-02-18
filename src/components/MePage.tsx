@@ -1,6 +1,7 @@
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 import type { useStats } from '../hooks/useStats';
-import type { QuestionType } from '../utils/mathGenerator';
+import { QUESTION_TYPES } from '../utils/questionTypes';
 
 interface Props {
     stats: ReturnType<typeof useStats>['stats'];
@@ -10,22 +11,16 @@ interface Props {
     onReset: () => void;
 }
 
-const TYPE_LABELS: { id: QuestionType; icon: string }[] = [
-    { id: 'add', icon: '+' },
-    { id: 'subtract', icon: '−' },
-    { id: 'multiply', icon: '×' },
-    { id: 'divide', icon: '÷' },
-    { id: 'square', icon: 'x²' },
-    { id: 'sqrt', icon: '√' },
-];
 
-export function MePage({ stats, accuracy, sessionScore, sessionStreak, onReset }: Props) {
+
+const LEVEL_NAMES = ['Beginner', 'Learner', 'Thinker', 'Wizard', 'Legend'] as const;
+
+export const MePage = memo(function MePage({ stats, accuracy, sessionScore, sessionStreak, onReset }: Props) {
     const level = stats.totalXP < 100 ? 1
         : stats.totalXP < 500 ? 2
             : stats.totalXP < 1500 ? 3
                 : stats.totalXP < 5000 ? 4 : 5;
 
-    const levelNames = ['Beginner', 'Learner', 'Thinker', 'Wizard', 'Legend'];
 
     return (
         <div className="flex-1 flex flex-col items-center justify-center px-6 pb-24">
@@ -35,58 +30,58 @@ export function MePage({ stats, accuracy, sessionScore, sessionStreak, onReset }
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
             >
-                <div className="text-7xl font-[family-name:var(--font-chalk)] text-[var(--color-gold)] leading-tight">
+                <div className="text-7xl chalk text-[var(--color-gold)] leading-tight">
                     {stats.totalXP.toLocaleString()}
                 </div>
-                <div className="text-sm font-[family-name:var(--font-ui)] text-white/30 mt-1">
-                    XP · {levelNames[level - 1]}
+                <div className="text-sm ui text-white/30 mt-1">
+                    XP · {LEVEL_NAMES[level - 1]}
                 </div>
             </motion.div>
 
             {/* Core stats — horizontal, chalk style */}
             <div className="flex gap-8 mb-10">
                 <div className="text-center">
-                    <div className="text-2xl font-[family-name:var(--font-chalk)] text-[var(--color-streak-fire)]">
+                    <div className="text-2xl chalk text-[var(--color-streak-fire)]">
                         {stats.bestStreak}
                     </div>
-                    <div className="text-[10px] font-[family-name:var(--font-ui)] text-white/30">🔥 streak</div>
+                    <div className="text-[10px] ui text-white/30">🔥 streak</div>
                 </div>
                 <div className="text-center">
-                    <div className="text-2xl font-[family-name:var(--font-chalk)] text-[var(--color-correct)]">
+                    <div className="text-2xl chalk text-[var(--color-correct)]">
                         {accuracy}%
                     </div>
-                    <div className="text-[10px] font-[family-name:var(--font-ui)] text-white/30">🎯 accuracy</div>
+                    <div className="text-[10px] ui text-white/30">🎯 accuracy</div>
                 </div>
                 <div className="text-center">
-                    <div className="text-2xl font-[family-name:var(--font-chalk)] text-white/70">
+                    <div className="text-2xl chalk text-white/70">
                         {stats.totalSolved}
                     </div>
-                    <div className="text-[10px] font-[family-name:var(--font-ui)] text-white/30">✅ solved</div>
+                    <div className="text-[10px] ui text-white/30">✅ solved</div>
                 </div>
             </div>
 
             {/* Per question type row */}
             <div className="w-full max-w-sm">
-                <div className="text-[10px] font-[family-name:var(--font-ui)] text-white/20 uppercase tracking-widest text-center mb-3">
+                <div className="text-[10px] ui text-white/20 uppercase tracking-widest text-center mb-3">
                     by type
                 </div>
                 <div className="flex justify-between">
-                    {TYPE_LABELS.map(t => {
+                    {QUESTION_TYPES.map(t => {
                         const ts = stats.byType[t.id];
                         const pct = ts.solved > 0 ? Math.round((ts.correct / ts.solved) * 100) : 0;
                         return (
                             <div key={t.id} className="flex flex-col items-center gap-1">
-                                <div className="text-lg font-[family-name:var(--font-chalk)] text-white/50">
+                                <div className="text-lg chalk text-white/50">
                                     {t.icon}
                                 </div>
-                                <div className={`text-xs font-[family-name:var(--font-chalk)] ${ts.solved === 0 ? 'text-white/15' :
+                                <div className={`text-xs chalk ${ts.solved === 0 ? 'text-white/15' :
                                     pct >= 80 ? 'text-[var(--color-correct)]' :
                                         pct >= 50 ? 'text-[var(--color-gold)]' :
                                             'text-white/40'
                                     }`}>
                                     {ts.solved === 0 ? '—' : `${pct}%`}
                                 </div>
-                                <div className="text-[9px] font-[family-name:var(--font-ui)] text-white/15">
+                                <div className="text-[9px] ui text-white/15">
                                     {ts.solved === 0 ? '' : ts.solved}
                                 </div>
                             </div>
@@ -102,14 +97,14 @@ export function MePage({ stats, accuracy, sessionScore, sessionStreak, onReset }
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                 >
-                    <div className="text-[10px] font-[family-name:var(--font-ui)] text-white/20 uppercase tracking-widest mb-2">
+                    <div className="text-[10px] ui text-white/20 uppercase tracking-widest mb-2">
                         this session
                     </div>
-                    <span className="text-lg font-[family-name:var(--font-chalk)] text-[var(--color-gold)]">
+                    <span className="text-lg chalk text-[var(--color-gold)]">
                         {sessionScore} xp
                     </span>
                     <span className="text-white/20 mx-2">·</span>
-                    <span className="text-lg font-[family-name:var(--font-chalk)] text-[var(--color-streak-fire)]">
+                    <span className="text-lg chalk text-[var(--color-streak-fire)]">
                         {sessionStreak}🔥
                     </span>
                 </motion.div>
@@ -117,7 +112,7 @@ export function MePage({ stats, accuracy, sessionScore, sessionStreak, onReset }
 
             {/* Aura */}
             <motion.p
-                className="text-xs font-[family-name:var(--font-ui)] text-white/15 mt-auto"
+                className="text-xs ui text-white/15 mt-auto"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
@@ -131,10 +126,10 @@ export function MePage({ stats, accuracy, sessionScore, sessionStreak, onReset }
 
             <button
                 onClick={onReset}
-                className="text-[10px] font-[family-name:var(--font-ui)] text-white/15 mt-4 hover:text-white/30 transition-colors"
+                className="text-[10px] ui text-white/15 mt-4 hover:text-white/30 transition-colors"
             >
                 reset stats
             </button>
         </div>
     );
-}
+});
