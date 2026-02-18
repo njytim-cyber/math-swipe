@@ -1,4 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
+import type { QuestionType } from '../utils/mathGenerator';
+
+interface TypeStat {
+    solved: number;
+    correct: number;
+}
 
 interface Stats {
     totalXP: number;
@@ -6,9 +12,12 @@ interface Stats {
     totalCorrect: number;
     bestStreak: number;
     sessionsPlayed: number;
+    byType: Record<QuestionType, TypeStat>;
 }
 
 const STORAGE_KEY = 'math-swipe-stats';
+
+const EMPTY_TYPE: TypeStat = { solved: 0, correct: 0 };
 
 const EMPTY_STATS: Stats = {
     totalXP: 0,
@@ -16,13 +25,26 @@ const EMPTY_STATS: Stats = {
     totalCorrect: 0,
     bestStreak: 0,
     sessionsPlayed: 0,
+    byType: {
+        add: { ...EMPTY_TYPE },
+        subtract: { ...EMPTY_TYPE },
+        multiply: { ...EMPTY_TYPE },
+        divide: { ...EMPTY_TYPE },
+        square: { ...EMPTY_TYPE },
+        sqrt: { ...EMPTY_TYPE },
+    },
 };
 
 function loadStats(): Stats {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return EMPTY_STATS;
-        return { ...EMPTY_STATS, ...JSON.parse(raw) };
+        const parsed = JSON.parse(raw);
+        return {
+            ...EMPTY_STATS,
+            ...parsed,
+            byType: { ...EMPTY_STATS.byType, ...parsed.byType },
+        };
     } catch {
         return EMPTY_STATS;
     }
@@ -35,17 +57,29 @@ function saveStats(s: Stats) {
 export function useStats() {
     const [stats, setStats] = useState<Stats>(loadStats);
 
-    // Persist whenever stats change
     useEffect(() => { saveStats(stats); }, [stats]);
 
-    const recordSession = useCallback((score: number, correct: number, answered: number, bestStreak: number) => {
-        setStats(prev => ({
-            totalXP: prev.totalXP + score,
-            totalSolved: prev.totalSolved + answered,
-            totalCorrect: prev.totalCorrect + correct,
-            bestStreak: Math.max(prev.bestStreak, bestStreak),
-            sessionsPlayed: prev.sessionsPlayed + 1,
-        }));
+    const recordSession = useCallback((
+        score: number, correct: number, answered: number,
+        bestStreak: number, questionType: QuestionType
+    ) => {
+        setStats(prev => {
+            const prevType = prev.byType[questionType] || { ...EMPTY_TYPE };
+            return {
+                totalXP: prev.totalXP + score,
+                totalSolved: prev.totalSolved + answered,
+                totalCorrect: prev.totalCorrect + correct,
+                bestStreak: Math.max(prev.bestStreak, bestStreak),
+                sessionsPlayed: prev.sessionsPlayed + 1,
+                byType: {
+                    ...prev.byType,
+                    [questionType]: {
+                        solved: prevType.solved + answered,
+                        correct: prevType.correct + correct,
+                    },
+                },
+            };
+        });
     }, []);
 
     const accuracy = stats.totalSolved > 0

@@ -40,7 +40,7 @@ function App() {
   const prevTab = useRef<Tab>('game');
   useEffect(() => {
     if (prevTab.current === 'game' && activeTab !== 'game' && totalAnswered > 0) {
-      recordSession(score, totalCorrect, totalAnswered, bestStreak);
+      recordSession(score, totalCorrect, totalAnswered, bestStreak, questionType);
     }
     prevTab.current = activeTab;
   }, [activeTab, score, totalCorrect, totalAnswered, bestStreak, recordSession]);

@@ -26,7 +26,7 @@ export function ActionButtons({ questionType, onTypeChange }: Props) {
     };
 
     return (
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-20">
+        <div className="absolute right-3 top-[35%] -translate-y-1/2 flex flex-col gap-4 z-20">
             {/* Share */}
             <motion.button
                 onClick={handleShare}
