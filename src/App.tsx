@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BlackboardLayout } from './components/BlackboardLayout';
 import { ProblemView } from './components/ProblemView';
@@ -17,6 +17,7 @@ type Tab = 'game' | 'league' | 'me';
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('game');
   const [questionType, setQuestionType] = useState<QuestionType>('multiply');
+  const [hardMode, setHardMode] = useState(false);
 
   const {
     problems,
@@ -29,12 +30,13 @@ function App() {
     flash,
     frozen,
     handleSwipe,
-  } = useGameLoop(questionType);
+  } = useGameLoop(questionType, hardMode);
 
   const { stats, accuracy, recordSession, resetStats } = useStats();
 
   const currentProblem = problems[0];
   const isFirstQuestion = totalAnswered === 0;
+  const toggleHardMode = useCallback(() => setHardMode(h => !h), []);
 
   // Record session data when switching away from game tab
   const prevTab = useRef<Tab>('game');
@@ -133,7 +135,12 @@ function App() {
             </AnimatePresence>
 
             {/* ── TikTok-style action buttons ── */}
-            <ActionButtons questionType={questionType} onTypeChange={setQuestionType} />
+            <ActionButtons
+              questionType={questionType}
+              onTypeChange={setQuestionType}
+              hardMode={hardMode}
+              onHardModeToggle={toggleHardMode}
+            />
 
             {/* ── Mr. Chalk PiP ── */}
             <div className="landscape-hide">

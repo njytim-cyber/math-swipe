@@ -26,7 +26,7 @@ const INITIAL_STATE: GameState = {
     chalkState: 'idle', flash: 'none', frozen: false,
 };
 
-export function useGameLoop(questionType: QuestionType = 'multiply') {
+export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = false) {
     const { level, recordAnswer } = useDifficulty();
     const [problems, setProblems] = useState<Problem[]>([]);
     const [gs, setGs] = useState<GameState>(INITIAL_STATE);
@@ -34,29 +34,31 @@ export function useGameLoop(questionType: QuestionType = 'multiply') {
     const chalkTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const startedRef = useRef(false);
     const prevType = useRef(questionType);
+    const prevHard = useRef(hardMode);
 
     // ── Initialize buffer ──
     useEffect(() => {
         if (startedRef.current) return;
         startedRef.current = true;
-        const initial = Array.from({ length: BUFFER_SIZE }, () => generateProblem(level, questionType));
+        const initial = Array.from({ length: BUFFER_SIZE }, () => generateProblem(level, questionType, hardMode));
         initial[0].startTime = Date.now();
         setProblems(initial);
     }, [level, questionType]);
 
     // ── Regenerate on question type change ──
     useEffect(() => {
-        if (prevType.current === questionType) return;
+        if (prevType.current === questionType && prevHard.current === hardMode) return;
         prevType.current = questionType;
-        const fresh = Array.from({ length: BUFFER_SIZE }, () => generateProblem(level, questionType));
+        prevHard.current = hardMode;
+        const fresh = Array.from({ length: BUFFER_SIZE }, () => generateProblem(level, questionType, hardMode));
         fresh[0].startTime = Date.now();
         setProblems(fresh);
-    }, [questionType, level]);
+    }, [questionType, hardMode, level]);
 
     // ── Keep buffer full ──
     useEffect(() => {
         if (problems.length > 0 && problems.length < BUFFER_SIZE) {
-            setProblems(prev => [...prev, generateProblem(level, questionType)]);
+            setProblems(prev => [...prev, generateProblem(level, questionType, hardMode)]);
         }
     }, [problems.length, level, questionType]);
 

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { QuestionTypePicker } from './QuestionTypePicker';
 import type { QuestionType } from '../utils/mathGenerator';
@@ -5,9 +6,11 @@ import type { QuestionType } from '../utils/mathGenerator';
 interface Props {
     questionType: QuestionType;
     onTypeChange: (type: QuestionType) => void;
+    hardMode: boolean;
+    onHardModeToggle: () => void;
 }
 
-export function ActionButtons({ questionType, onTypeChange }: Props) {
+export const ActionButtons = memo(function ActionButtons({ questionType, onTypeChange, hardMode, onHardModeToggle }: Props) {
     const handleShare = async () => {
         const shareData = {
             title: 'Math Swipe',
@@ -42,6 +45,28 @@ export function ActionButtons({ questionType, onTypeChange }: Props) {
 
             {/* Question type */}
             <QuestionTypePicker current={questionType} onChange={onTypeChange} />
+
+            {/* Hard mode skull */}
+            <motion.button
+                onClick={onHardModeToggle}
+                className={`w-11 h-11 rounded-full border flex items-center justify-center text-xl ${hardMode
+                    ? 'border-[var(--color-streak-fire)]/50 text-[var(--color-streak-fire)]'
+                    : 'border-white/25 text-white/40'
+                    }`}
+                whileTap={{ scale: 0.88 }}
+                animate={hardMode ? {
+                    rotate: [0, -8, 8, -5, 5, 0],
+                    scale: [1, 1.1, 1, 1.05, 1],
+                } : {}}
+                transition={hardMode ? {
+                    duration: 1.5,
+                    repeat: Infinity,
+                    repeatDelay: 2,
+                    ease: 'easeInOut' as const,
+                } : {}}
+            >
+                💀
+            </motion.button>
         </div>
     );
-}
+});

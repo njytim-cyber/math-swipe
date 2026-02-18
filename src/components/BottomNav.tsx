@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, memo } from 'react';
 import { motion } from 'framer-motion';
 
 type Tab = 'game' | 'league' | 'me';
@@ -43,7 +43,7 @@ const tabs: { id: Tab; label: string; icon: ReactNode }[] = [
     },
 ];
 
-export function BottomNav({ active, onChange }: Props) {
+export const BottomNav = memo(function BottomNav({ active, onChange }: Props) {
     return (
         <nav className="landscape-nav flex items-center justify-around px-2 pb-[env(safe-area-inset-bottom,8px)] pt-2 z-40 relative">
             {/* Subtle top border */}
@@ -70,4 +70,4 @@ export function BottomNav({ active, onChange }: Props) {
             })}
         </nav>
     );
-}
+});

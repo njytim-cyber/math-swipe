@@ -10,57 +10,57 @@ export interface Problem {
 }
 
 /**
- * Difficulty levels scale the range of operands.
- * Each question type adapts its own sensible ranges.
+ * Generate a problem based on type and difficulty.
+ * hardMode expands all ranges significantly.
  */
-export function generateProblem(difficulty: number, type: QuestionType = 'multiply'): Problem {
+export function generateProblem(difficulty: number, type: QuestionType = 'multiply', hardMode = false): Problem {
     switch (type) {
-        case 'add': return genAdd(difficulty);
-        case 'subtract': return genSubtract(difficulty);
-        case 'multiply': return genMultiply(difficulty);
-        case 'divide': return genDivide(difficulty);
-        case 'square': return genSquare(difficulty);
-        case 'sqrt': return genSqrt(difficulty);
+        case 'add': return genAdd(difficulty, hardMode);
+        case 'subtract': return genSubtract(difficulty, hardMode);
+        case 'multiply': return genMultiply(difficulty, hardMode);
+        case 'divide': return genDivide(difficulty, hardMode);
+        case 'square': return genSquare(difficulty, hardMode);
+        case 'sqrt': return genSqrt(difficulty, hardMode);
     }
 }
 
 // ── Generators ──────────────────────────────────────────
 
-function genAdd(d: number): Problem {
-    const [lo, hi] = addRange(d);
+function genAdd(d: number, hard: boolean): Problem {
+    const [lo, hi] = hard ? [100, 999] : addRange(d);
     const a = randInt(lo, hi), b = randInt(lo, hi);
     return pack(`${a} + ${b}`, a + b, nearDistractors);
 }
 
-function genSubtract(d: number): Problem {
-    const [lo, hi] = addRange(d);
+function genSubtract(d: number, hard: boolean): Problem {
+    const [lo, hi] = hard ? [100, 999] : addRange(d);
     let a = randInt(lo, hi), b = randInt(lo, hi);
-    if (a < b) [a, b] = [b, a]; // keep positive
+    if (a < b) [a, b] = [b, a];
     return pack(`${a} − ${b}`, a - b, nearDistractors);
 }
 
-function genMultiply(d: number): Problem {
-    const [minA, maxA, minB, maxB] = mulRange(d);
+function genMultiply(d: number, hard: boolean): Problem {
+    const [minA, maxA, minB, maxB] = hard ? [2, 32, 2, 32] : mulRange(d);
     const a = randInt(minA, maxA), b = randInt(minB, maxB);
     const flip = Math.random() > 0.5;
     return pack(flip ? `${b} × ${a}` : `${a} × ${b}`, a * b, (ans) => mulDistractors(a, b, ans));
 }
 
-function genDivide(d: number): Problem {
-    const [minA, maxA, minB, maxB] = mulRange(d);
+function genDivide(d: number, hard: boolean): Problem {
+    const [minA, maxA, minB, maxB] = hard ? [2, 32, 2, 32] : mulRange(d);
     const a = randInt(minA, maxA), b = randInt(minB, maxB);
     const product = a * b;
     return pack(`${product} ÷ ${b}`, a, nearDistractors);
 }
 
-function genSquare(d: number): Problem {
-    const max = d <= 2 ? 9 : d <= 4 ? 12 : 15;
+function genSquare(d: number, hard: boolean): Problem {
+    const max = hard ? 32 : (d <= 2 ? 9 : d <= 4 ? 12 : 15);
     const n = randInt(2, max);
     return pack(`${n}²`, n * n, nearDistractors);
 }
 
-function genSqrt(d: number): Problem {
-    const max = d <= 2 ? 9 : d <= 4 ? 12 : 15;
+function genSqrt(d: number, hard: boolean): Problem {
+    const max = hard ? 32 : (d <= 2 ? 9 : d <= 4 ? 12 : 15);
     const n = randInt(2, max);
     return pack(`√${n * n}`, n, nearDistractors);
 }
@@ -68,11 +68,10 @@ function genSqrt(d: number): Problem {
 // ── Ranges ──────────────────────────────────────────────
 
 function addRange(d: number): [number, number] {
-    if (d <= 1) return [2, 20];
-    if (d <= 2) return [5, 50];
-    if (d <= 3) return [10, 100];
-    if (d <= 4) return [20, 200];
-    return [50, 500];
+    if (d <= 1) return [10, 49];
+    if (d <= 2) return [10, 69];
+    if (d <= 3) return [10, 89];
+    return [10, 99];
 }
 
 function mulRange(d: number): [number, number, number, number] {
