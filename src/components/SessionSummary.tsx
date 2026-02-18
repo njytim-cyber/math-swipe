@@ -32,9 +32,12 @@ function buildShareText(
     }
 
     const typeLabel = questionType.startsWith('mix-') ? 'Mix' : questionType.charAt(0).toUpperCase() + questionType.slice(1);
+    const headline = accuracy === 100
+        ? `🧮 Math Swipe — PERFECT! 💯`
+        : `🧮 Math Swipe — ${typeLabel}`;
 
     return [
-        `🧮 Math Swipe — ${typeLabel}`,
+        headline,
         `⚡ ${xp} XP · 🔥 ${streak} streak · 🎯 ${accuracy}%`,
         '',
         ...emojiRows,
@@ -89,8 +92,30 @@ export const SessionSummary = memo(function SessionSummary({
                         transition={{ duration: 0.25 }}
                         onClick={e => e.stopPropagation()}
                     >
-                        <div className="text-2xl mb-4">📝</div>
-                        <h3 className="text-xl chalk text-[var(--color-gold)] mb-4">Session Complete</h3>
+                        {accuracy === 100 ? (
+                            <>
+                                <motion.div
+                                    className="text-3xl mb-2"
+                                    animate={{ scale: [1, 1.2, 1] }}
+                                    transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                                >
+                                    🏆
+                                </motion.div>
+                                <motion.h3
+                                    className="text-2xl chalk text-[var(--color-gold)] mb-4"
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: [0, 1.3, 1] }}
+                                    transition={{ duration: 0.5, delay: 0.2 }}
+                                >
+                                    ✨ PERFECT ✨
+                                </motion.h3>
+                            </>
+                        ) : (
+                            <>
+                                <div className="text-2xl mb-4">📝</div>
+                                <h3 className="text-xl chalk text-[var(--color-gold)] mb-4">Session Complete</h3>
+                            </>
+                        )}
 
                         <div className="flex justify-center gap-6 mb-4">
                             <div className="text-center">
