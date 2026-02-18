@@ -9,7 +9,7 @@ const MILESTONES: Record<number, string> = { 5: '🔥', 10: '⚡', 20: '👑', 5
 
 const BUFFER_SIZE = 8;
 const AUTO_ADVANCE_MS = 150;
-const FAIL_PAUSE_MS = 800;
+const FAIL_PAUSE_MS = 400;
 
 interface GameState {
     score: number;
