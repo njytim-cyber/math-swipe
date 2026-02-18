@@ -17,6 +17,7 @@ interface GameState {
     bestStreak: number;
     totalCorrect: number;
     totalAnswered: number;
+    answerHistory: boolean[];
     chalkState: ChalkState;
     flash: FeedbackFlash;
     frozen: boolean;
@@ -26,7 +27,7 @@ interface GameState {
 
 const INITIAL_STATE: GameState = {
     score: 0, streak: 0, bestStreak: 0,
-    totalCorrect: 0, totalAnswered: 0,
+    totalCorrect: 0, totalAnswered: 0, answerHistory: [],
     chalkState: 'idle', flash: 'none', frozen: false,
     milestone: '', speedBonus: false,
 };
@@ -114,6 +115,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
                 bestStreak: Math.max(prev.bestStreak, newStreak),
                 totalCorrect: prev.totalCorrect + 1,
                 totalAnswered: prev.totalAnswered + 1,
+                answerHistory: [...prev.answerHistory, true],
                 score: prev.score + 10 + Math.floor(newStreak / 5) * 5 + (isFast ? 2 : 0),
                 flash: 'correct',
                 chalkState: newStreak >= 10 ? 'streak' : 'success',
@@ -135,6 +137,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
                 ...prev,
                 streak: 0,
                 totalAnswered: prev.totalAnswered + 1,
+                answerHistory: [...prev.answerHistory, false],
                 flash: 'wrong',
                 chalkState: 'fail',
                 frozen: true,

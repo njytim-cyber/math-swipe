@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Props {
@@ -7,13 +7,70 @@ interface Props {
     bestStreak: number;
     accuracy: number;
     xpEarned: number;
+    answerHistory: boolean[];
+    questionType: string;
     visible: boolean;
     onDismiss: () => void;
 }
 
+function buildShareText(
+    xp: number, streak: number, accuracy: number,
+    history: boolean[], questionType: string,
+): string {
+    // Build Wordle-style grid (max 20 chars per row)
+    const grid = history.map(ok => ok ? '🟩' : '🟥').join('');
+    const rows: string[] = [];
+    // Split into rows of 10
+    for (let i = 0; i < grid.length; i += 20) {  // 20 chars = 10 emoji (each emoji is 2 chars in some envs)
+        rows.push(grid.slice(i, i + 20));
+    }
+    // Actually emoji length varies, let's split by count
+    const emojis = history.map(ok => ok ? '🟩' : '🟥');
+    const emojiRows: string[] = [];
+    for (let i = 0; i < emojis.length; i += 10) {
+        emojiRows.push(emojis.slice(i, i + 10).join(''));
+    }
+
+    const typeLabel = questionType.startsWith('mix-') ? 'Mix' : questionType.charAt(0).toUpperCase() + questionType.slice(1);
+
+    return [
+        `🧮 Math Swipe — ${typeLabel}`,
+        `⚡ ${xp} XP · 🔥 ${streak} streak · 🎯 ${accuracy}%`,
+        '',
+        ...emojiRows,
+        '',
+        `Can you beat me? 👉 ${window.location.origin}`,
+    ].join('\n');
+}
+
 export const SessionSummary = memo(function SessionSummary({
-    solved, bestStreak: streak, accuracy, xpEarned, visible, onDismiss,
+    solved, bestStreak: streak, accuracy, xpEarned, answerHistory, questionType, visible, onDismiss,
 }: Props) {
+    const [copied, setCopied] = useState(false);
+
+    const handleShare = async () => {
+        const text = buildShareText(xpEarned, streak, accuracy, answerHistory, questionType);
+
+        try {
+            if (navigator.share) {
+                await navigator.share({ text });
+            } else {
+                await navigator.clipboard.writeText(text);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            }
+        } catch {
+            // User cancelled or share failed — try clipboard
+            try {
+                await navigator.clipboard.writeText(text);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            } catch {
+                // Silent fail
+            }
+        }
+    };
+
     return (
         <AnimatePresence>
             {visible && (
@@ -50,7 +107,31 @@ export const SessionSummary = memo(function SessionSummary({
                             </div>
                         </div>
 
+                        {/* Answer history grid */}
+                        {answerHistory.length > 0 && (
+                            <div className="flex flex-wrap justify-center gap-[3px] mb-4 max-w-[220px] mx-auto">
+                                {answerHistory.map((ok, i) => (
+                                    <motion.div
+                                        key={i}
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        transition={{ delay: i * 0.02 }}
+                                        className={`w-4 h-4 rounded-sm ${ok ? 'bg-[var(--color-correct)]' : 'bg-[var(--color-wrong)]'}`}
+                                    />
+                                ))}
+                            </div>
+                        )}
+
                         <div className="text-lg chalk text-[var(--color-gold)] mb-4">+{xpEarned} XP</div>
+
+                        {/* Share button */}
+                        <motion.button
+                            onClick={handleShare}
+                            className="w-full py-2.5 rounded-xl bg-[var(--color-gold)]/20 border border-[var(--color-gold)]/30 text-sm ui text-[var(--color-gold)] mb-3 active:bg-[var(--color-gold)]/30 transition-colors"
+                            whileTap={{ scale: 0.95 }}
+                        >
+                            {copied ? '✅ Copied!' : '📤 Share Result'}
+                        </motion.button>
 
                         <button
                             onClick={onDismiss}

@@ -29,6 +29,7 @@ function App() {
     bestStreak,
     totalCorrect,
     totalAnswered,
+    answerHistory,
     chalkState,
     flash,
     frozen,
@@ -312,6 +313,8 @@ function App() {
           bestStreak={bestStreak}
           accuracy={sessionAccuracy}
           xpEarned={score}
+          answerHistory={answerHistory}
+          questionType={questionType}
           visible={showSummary}
           onDismiss={() => setShowSummary(false)}
         />
