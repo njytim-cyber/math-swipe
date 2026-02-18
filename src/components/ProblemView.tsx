@@ -124,7 +124,7 @@ export const ProblemView = memo(function ProblemView({ problem, frozen, highligh
             </motion.div>
             {/* Problem expression */}
             <motion.div className="text-center mb-12" animate={pulseAnim}>
-                <div className="landscape-question text-6xl chalk leading-tight tracking-wider text-white">
+                <div className={`landscape-question chalk leading-tight tracking-wider text-white whitespace-nowrap ${problem.expression.length > 10 ? 'text-4xl' : 'text-6xl'}`}>
                     {problem.latex
                         ? <MathExpr latex={problem.latex} />
                         : problem.expression
