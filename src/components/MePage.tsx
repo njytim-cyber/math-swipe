@@ -73,9 +73,9 @@ export const MePage = memo(function MePage({ stats, accuracy, sessionScore, sess
                 <div className="text-[10px] ui text-white/20 uppercase tracking-widest text-center mb-3">
                     by type
                 </div>
-                <div className="flex justify-between">
-                    {QUESTION_TYPES.map(t => {
-                        const ts = stats.byType[t.id];
+                <div className="grid grid-cols-5 gap-2 justify-items-center">
+                    {QUESTION_TYPES.filter(t => !t.id.startsWith('mix-')).map(t => {
+                        const ts = stats.byType[t.id] ?? { solved: 0, correct: 0 };
                         const pct = ts.solved > 0 ? Math.round((ts.correct / ts.solved) * 100) : 0;
                         return (
                             <div key={t.id} className="flex flex-col items-center gap-1">
@@ -144,8 +144,8 @@ export const MePage = memo(function MePage({ stats, accuracy, sessionScore, sess
                                 onClick={() => isAvailable && onThemeChange(t)}
                                 title={isAvailable ? t.name : `Unlock at ${['', 'Beginner', 'Learner', 'Thinker', 'Wizard', 'Legend'][t.minLevel]}`}
                                 className={`w-8 h-8 rounded-full border-2 transition-all ${isActive ? 'border-[var(--color-gold)] scale-110' :
-                                        isAvailable ? 'border-white/20 hover:border-white/40' :
-                                            'border-white/8 opacity-30 cursor-not-allowed'
+                                    isAvailable ? 'border-white/20 hover:border-white/40' :
+                                        'border-white/8 opacity-30 cursor-not-allowed'
                                     }`}
                                 style={{ backgroundColor: t.color }}
                             />

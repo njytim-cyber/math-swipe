@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { motion, useMotionValue, useTransform, useMotionTemplate, type MotionValue } from 'framer-motion';
 import type { PanInfo } from 'framer-motion';
 import type { Problem } from '../utils/mathGenerator';
+import { MathExpr } from './MathExpr';
 
 interface Props {
     problem: Problem;
@@ -32,9 +33,9 @@ const glowTransition = { duration: 1.2, repeat: Infinity, ease: 'easeInOut' as c
 
 /** Single answer option */
 const AnswerOption = memo(function AnswerOption({
-    value, dir, dirLabel, glow, frozen, onSwipe, highlighted,
+    value, label, dir, dirLabel, glow, frozen, onSwipe, highlighted,
 }: {
-    value: number; dir: 'left' | 'down' | 'right'; dirLabel: string;
+    value: number; label?: string; dir: 'left' | 'down' | 'right'; dirLabel: string;
     glow: MotionValue<number>; frozen: boolean;
     onSwipe: (d: 'left' | 'right' | 'up' | 'down') => void;
     highlighted?: boolean;
@@ -63,7 +64,7 @@ const AnswerOption = memo(function AnswerOption({
                 animate={highlighted ? glowAnim : {}}
                 transition={highlighted ? glowTransition : {}}
             >
-                {value}
+                {label ?? value}
             </motion.div>
         </motion.button>
     );
@@ -124,7 +125,10 @@ export const ProblemView = memo(function ProblemView({ problem, frozen, highligh
             {/* Problem expression */}
             <motion.div className="text-center mb-12" animate={pulseAnim}>
                 <div className="landscape-question text-6xl chalk leading-tight tracking-wider text-white">
-                    {problem.expression}
+                    {problem.latex
+                        ? <MathExpr latex={problem.latex} />
+                        : problem.expression
+                    }
                 </div>
             </motion.div>
 
@@ -145,6 +149,7 @@ export const ProblemView = memo(function ProblemView({ problem, frozen, highligh
                     <AnswerOption
                         key={`${opt}-${i}`}
                         value={opt}
+                        label={problem.optionLabels?.[i]}
                         dir={DIRS[i]}
                         dirLabel={DIR_LABELS[i]}
                         glow={glows[i]}

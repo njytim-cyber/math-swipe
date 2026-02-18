@@ -36,6 +36,12 @@ const EMPTY_STATS: Stats = {
         divide: { ...EMPTY_TYPE },
         square: { ...EMPTY_TYPE },
         sqrt: { ...EMPTY_TYPE },
+        fraction: { ...EMPTY_TYPE },
+        decimal: { ...EMPTY_TYPE },
+        percent: { ...EMPTY_TYPE },
+        linear: { ...EMPTY_TYPE },
+        'mix-basic': { ...EMPTY_TYPE },
+        'mix-all': { ...EMPTY_TYPE },
     },
 };
 
