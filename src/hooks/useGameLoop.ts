@@ -32,7 +32,7 @@ export function useGameLoop() {
     // Single consolidated state object — ONE re-render per answer
     const [gs, setGs] = useState<GameState>(INITIAL_STATE);
 
-    const chalkTimerRef = useRef<ReturnType<typeof setTimeout>>();
+    const chalkTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const startedRef = useRef(false);
 
     // ── Initialize buffer ──

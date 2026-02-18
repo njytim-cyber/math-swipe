@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { motion, useMotionValue, useTransform } from 'framer-motion';
+import { motion, useMotionValue, useTransform, type MotionValue } from 'framer-motion';
 import type { PanInfo } from 'framer-motion';
 import type { Problem } from '../utils/mathGenerator';
 
@@ -35,7 +35,7 @@ const AnswerOption = memo(function AnswerOption({
     value, dir, dirLabel, glow, frozen, onSwipe, highlighted,
 }: {
     value: number; dir: 'left' | 'down' | 'right'; dirLabel: string;
-    glow: ReturnType<typeof useMotionValue>; frozen: boolean;
+    glow: MotionValue<number>; frozen: boolean;
     onSwipe: (d: 'left' | 'right' | 'up' | 'down') => void;
     highlighted?: boolean;
 }) {

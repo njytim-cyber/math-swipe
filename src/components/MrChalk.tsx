@@ -84,7 +84,7 @@ const anims: Record<ChalkState, object> = {
 export function MrChalk({ state }: { state: ChalkState }) {
     const [message, setMessage] = useState('');
     const lastMsg = useRef('');
-    const timerRef = useRef<ReturnType<typeof setTimeout>>();
+    const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
     // Show a new message when state changes
     useEffect(() => {
@@ -109,7 +109,7 @@ export function MrChalk({ state }: { state: ChalkState }) {
     return (
         <motion.div
             className={`absolute bottom-6 right-3 pointer-events-none z-30 ${state === 'streak' ? 'on-fire' : ''}`}
-            animate={anims[state]}
+            animate={anims[state] as any}
         >
             {/* Speech bubble */}
             <AnimatePresence mode="wait">
@@ -120,7 +120,7 @@ export function MrChalk({ state }: { state: ChalkState }) {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -6, scale: 0.8 }}
                         transition={{ duration: 0.25 }}
-                        className="absolute -top-12 right-0 whitespace-nowrap bg-white/10 backdrop-blur-sm border border-white/15 rounded-xl px-3 py-1.5 text-[11px] font-[family-name:var(--font-ui)] text-white/80"
+                        className="absolute -top-12 right-0 whitespace-nowrap bg-white/10 border border-white/15 rounded-xl px-3 py-1.5 text-[11px] font-[family-name:var(--font-ui)] text-white/80"
                     >
                         {message}
                         {/* Tail */}
