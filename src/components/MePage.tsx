@@ -31,7 +31,7 @@ export const MePage = memo(function MePage({ stats, accuracy, sessionScore, sess
 
 
     return (
-        <div className="flex-1 flex flex-col items-center justify-center px-6 pb-24">
+        <div className="flex-1 flex flex-col items-center overflow-y-auto px-6 pt-4 pb-20">
             {/* Title — big chalk style like score on game screen */}
             <motion.div
                 className="text-center mb-10"
