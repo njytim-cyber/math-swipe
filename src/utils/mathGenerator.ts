@@ -1,3 +1,5 @@
+export type QuestionType = 'add' | 'subtract' | 'multiply' | 'divide' | 'square' | 'sqrt';
+
 export interface Problem {
     id: number;
     expression: string;
@@ -8,79 +10,127 @@ export interface Problem {
 }
 
 /**
- * Difficulty levels:
- *  1 = easy     (2-5) × (2-5)
- *  2 = normal   (2-9) × (2-9)
- *  3 = medium   (3-9) × (6-12)
- *  4 = hard     (6-12)× (8-15)
- *  5 = extreme  (10-15)×(10-15)
+ * Difficulty levels scale the range of operands.
+ * Each question type adapts its own sensible ranges.
  */
-export function generateProblem(difficulty: number): Problem {
-    let minA = 2, maxA = 9, minB = 2, maxB = 9;
-
-    switch (difficulty) {
-        case 1: maxA = 5; maxB = 5; break;
-        case 3: minA = 3; maxA = 9; minB = 6; maxB = 12; break;
-        case 4: minA = 6; maxA = 12; minB = 8; maxB = 15; break;
-        case 5: minA = 10; maxA = 15; minB = 10; maxB = 15; break;
-        // default is level 2
+export function generateProblem(difficulty: number, type: QuestionType = 'multiply'): Problem {
+    switch (type) {
+        case 'add': return genAdd(difficulty);
+        case 'subtract': return genSubtract(difficulty);
+        case 'multiply': return genMultiply(difficulty);
+        case 'divide': return genDivide(difficulty);
+        case 'square': return genSquare(difficulty);
+        case 'sqrt': return genSqrt(difficulty);
     }
-
-    const a = randInt(minA, maxA);
-    const b = randInt(minB, maxB);
-    const answer = a * b;
-
-    // Build expression (randomly flip for variety)
-    const flip = Math.random() > 0.5;
-    const expression = flip ? `${b} × ${a}` : `${a} × ${b}`;
-
-    // Generate 2 plausible distractors
-    const distractors = generateDistractors(a, b, answer);
-
-    // Shuffle answer into the options
-    const correctIndex = randInt(0, 2);
-    const options: number[] = [...distractors];
-    options.splice(correctIndex, 0, answer);
-
-    return {
-        id: Date.now() + Math.random(),
-        expression,
-        answer,
-        options,
-        correctIndex,
-    };
 }
 
-function generateDistractors(a: number, b: number, answer: number): [number, number] {
+// ── Generators ──────────────────────────────────────────
+
+function genAdd(d: number): Problem {
+    const [lo, hi] = addRange(d);
+    const a = randInt(lo, hi), b = randInt(lo, hi);
+    return pack(`${a} + ${b}`, a + b, nearDistractors);
+}
+
+function genSubtract(d: number): Problem {
+    const [lo, hi] = addRange(d);
+    let a = randInt(lo, hi), b = randInt(lo, hi);
+    if (a < b) [a, b] = [b, a]; // keep positive
+    return pack(`${a} − ${b}`, a - b, nearDistractors);
+}
+
+function genMultiply(d: number): Problem {
+    const [minA, maxA, minB, maxB] = mulRange(d);
+    const a = randInt(minA, maxA), b = randInt(minB, maxB);
+    const flip = Math.random() > 0.5;
+    return pack(flip ? `${b} × ${a}` : `${a} × ${b}`, a * b, (ans) => mulDistractors(a, b, ans));
+}
+
+function genDivide(d: number): Problem {
+    const [minA, maxA, minB, maxB] = mulRange(d);
+    const a = randInt(minA, maxA), b = randInt(minB, maxB);
+    const product = a * b;
+    return pack(`${product} ÷ ${b}`, a, nearDistractors);
+}
+
+function genSquare(d: number): Problem {
+    const max = d <= 2 ? 9 : d <= 4 ? 12 : 15;
+    const n = randInt(2, max);
+    return pack(`${n}²`, n * n, nearDistractors);
+}
+
+function genSqrt(d: number): Problem {
+    const max = d <= 2 ? 9 : d <= 4 ? 12 : 15;
+    const n = randInt(2, max);
+    return pack(`√${n * n}`, n, nearDistractors);
+}
+
+// ── Ranges ──────────────────────────────────────────────
+
+function addRange(d: number): [number, number] {
+    if (d <= 1) return [2, 20];
+    if (d <= 2) return [5, 50];
+    if (d <= 3) return [10, 100];
+    if (d <= 4) return [20, 200];
+    return [50, 500];
+}
+
+function mulRange(d: number): [number, number, number, number] {
+    if (d <= 1) return [2, 5, 2, 5];
+    if (d <= 2) return [2, 9, 2, 9];
+    if (d <= 3) return [3, 9, 6, 12];
+    if (d <= 4) return [6, 12, 8, 15];
+    return [10, 15, 10, 15];
+}
+
+// ── Distractor strategies ───────────────────────────────
+
+function nearDistractors(answer: number): [number, number] {
     const used = new Set<number>([answer]);
     const result: number[] = [];
-
-    const strategies = [
-        () => (a + (Math.random() > 0.5 ? 1 : -1)) * b,  // off-by-one on factor a
-        () => a * (b + (Math.random() > 0.5 ? 1 : -1)),   // off-by-one on factor b
-        () => answer + (Math.random() > 0.5 ? a : -a),     // off by one factor
-        () => answer + (Math.random() > 0.5 ? b : -b),     // off by the other factor
-        () => answer + randInt(-5, 5),                      // close random
-    ];
-
     let safety = 0;
     while (result.length < 2 && safety < 50) {
         safety++;
-        const strat = strategies[randInt(0, strategies.length - 1)];
-        const d = strat();
-        if (d > 0 && !used.has(d)) {
-            used.add(d);
-            result.push(d);
-        }
+        const offset = randInt(1, Math.max(3, Math.floor(answer * 0.15)));
+        const d = answer + (Math.random() > 0.5 ? offset : -offset);
+        if (d > 0 && !used.has(d)) { used.add(d); result.push(d); }
     }
-
-    // Fallback if we couldn't generate 2 unique distractors
-    while (result.length < 2) {
-        const d = answer + result.length + 1;
-        if (!used.has(d)) { result.push(d); used.add(d); }
-    }
-
+    while (result.length < 2) { result.push(answer + result.length + 1); }
     return [result[0], result[1]];
+}
+
+function mulDistractors(a: number, b: number, answer: number): [number, number] {
+    const used = new Set<number>([answer]);
+    const result: number[] = [];
+    const strategies = [
+        () => (a + (Math.random() > 0.5 ? 1 : -1)) * b,
+        () => a * (b + (Math.random() > 0.5 ? 1 : -1)),
+        () => answer + (Math.random() > 0.5 ? a : -a),
+        () => answer + (Math.random() > 0.5 ? b : -b),
+        () => answer + randInt(-5, 5),
+    ];
+    let safety = 0;
+    while (result.length < 2 && safety < 50) {
+        safety++;
+        const d = strategies[randInt(0, strategies.length - 1)]();
+        if (d > 0 && !used.has(d)) { used.add(d); result.push(d); }
+    }
+    while (result.length < 2) { result.push(answer + result.length + 1); }
+    return [result[0], result[1]];
+}
+
+// ── Helpers ─────────────────────────────────────────────
+
+function pack(
+    expression: string,
+    answer: number,
+    distractorFn: (ans: number) => [number, number],
+): Problem {
+    const distractors = distractorFn(answer);
+    const correctIndex = randInt(0, 2);
+    const options: number[] = [...distractors];
+    options.splice(correctIndex, 0, answer);
+    return { id: Date.now() + Math.random(), expression, answer, options, correctIndex };
 }
 
 function randInt(min: number, max: number): number {

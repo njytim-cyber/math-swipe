@@ -1,107 +1,149 @@
+import { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BlackboardLayout } from './components/BlackboardLayout';
 import { ProblemView } from './components/ProblemView';
 import { MrChalk } from './components/MrChalk';
 import { ScoreCounter } from './components/ScoreCounter';
-
+import { BottomNav } from './components/BottomNav';
+import { ActionButtons } from './components/ActionButtons';
+import { LeaguePage } from './components/LeaguePage';
+import { MePage } from './components/MePage';
 import { useGameLoop } from './hooks/useGameLoop';
+import { useStats } from './hooks/useStats';
+import type { QuestionType } from './utils/mathGenerator';
+
+type Tab = 'game' | 'league' | 'me';
 
 function App() {
+  const [activeTab, setActiveTab] = useState<Tab>('game');
+  const [questionType, setQuestionType] = useState<QuestionType>('multiply');
+
   const {
     problems,
     score,
     streak,
+    bestStreak,
+    totalCorrect,
     totalAnswered,
     chalkState,
     flash,
     frozen,
     handleSwipe,
-  } = useGameLoop();
+  } = useGameLoop(questionType);
+
+  const { stats, accuracy, recordSession } = useStats();
 
   const currentProblem = problems[0];
   const isFirstQuestion = totalAnswered === 0;
 
+  // Record session data when switching away from game tab
+  const prevTab = useRef<Tab>('game');
+  useEffect(() => {
+    if (prevTab.current === 'game' && activeTab !== 'game' && totalAnswered > 0) {
+      recordSession(score, totalCorrect, totalAnswered, bestStreak);
+    }
+    prevTab.current = activeTab;
+  }, [activeTab, score, totalCorrect, totalAnswered, bestStreak, recordSession]);
+
   return (
     <BlackboardLayout>
+      {activeTab === 'game' && (
+        <>
+          {/* ── Score (centered, pushed down from edge) ── */}
+          <div className="flex flex-col items-center pt-[calc(env(safe-area-inset-top,16px)+40px)] z-30">
+            <ScoreCounter value={score} />
 
-      {/* ── Score (centered, pushed down from edge) ── */}
-      <div className="flex flex-col items-center pt-[calc(env(safe-area-inset-top,16px)+40px)] z-30">
-        <ScoreCounter value={score} />
-
-        {/* Streak display */}
-        <AnimatePresence>
-          {streak > 1 && (
-            <motion.div
-              key="streak"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              className="mt-2 flex items-center gap-1"
-            >
-              <div className="flex gap-0.5">
-                {Array.from({ length: Math.min(streak, 15) }, (_, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: i * 0.03 }}
-                    className={`w-2 h-2 rounded-full ${streak >= 10
-                      ? 'bg-[var(--color-streak-fire)]'
+            {/* Streak display */}
+            <AnimatePresence>
+              {streak > 1 && (
+                <motion.div
+                  key="streak"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="mt-2 flex items-center gap-1"
+                >
+                  <div className="flex gap-0.5">
+                    {Array.from({ length: Math.min(streak, 15) }, (_, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: i * 0.03 }}
+                        className={`w-2 h-2 rounded-full ${streak >= 10
+                          ? 'bg-[var(--color-streak-fire)]'
+                          : streak >= 5
+                            ? 'bg-[var(--color-gold)]'
+                            : 'bg-white/40'
+                          }`}
+                      />
+                    ))}
+                  </div>
+                  <span
+                    className={`text-sm font-[family-name:var(--font-ui)] ml-2 ${streak >= 10
+                      ? 'text-[var(--color-streak-fire)]'
                       : streak >= 5
-                        ? 'bg-[var(--color-gold)]'
-                        : 'bg-white/40'
+                        ? 'text-[var(--color-gold)]'
+                        : 'text-white/40'
                       }`}
-                  />
-                ))}
-              </div>
-              <span
-                className={`text-sm font-[family-name:var(--font-ui)] ml-2 ${streak >= 10
-                  ? 'text-[var(--color-streak-fire)]'
-                  : streak >= 5
-                    ? 'text-[var(--color-gold)]'
-                    : 'text-white/40'
-                  }`}
+                  >
+                    {streak >= 10 ? `🔥 ${streak}×` : `${streak}×`}
+                  </span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* ── Main Problem Area ── */}
+          <AnimatePresence mode="popLayout">
+            {currentProblem && (
+              <motion.div
+                key={currentProblem.id}
+                className="flex-1 flex flex-col"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -60 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
               >
-                {streak >= 10 ? `🔥 ${streak}×` : `${streak}×`}
-              </span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+                <ProblemView
+                  problem={currentProblem}
+                  frozen={frozen}
+                  highlightCorrect={isFirstQuestion}
+                  onSwipe={handleSwipe}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-      {/* ── Main Problem Area ── */}
-      <AnimatePresence mode="popLayout">
-        {currentProblem && (
-          <motion.div
-            key={currentProblem.id}
-            className="flex-1 flex flex-col"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -60 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-          >
-            <ProblemView
-              problem={currentProblem}
-              frozen={frozen}
-              highlightCorrect={isFirstQuestion}
-              onSwipe={handleSwipe}
+          {/* ── TikTok-style action buttons ── */}
+          <ActionButtons questionType={questionType} onTypeChange={setQuestionType} />
+
+          {/* ── Mr. Chalk PiP ── */}
+          <MrChalk state={chalkState} />
+
+          {/* ── Feedback flash overlay ── */}
+          {flash !== 'none' && (
+            <div
+              className={`absolute inset-0 pointer-events-none z-30 ${flash === 'correct' ? 'flash-correct' : 'flash-wrong'
+                }`}
             />
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </>
+      )}
 
+      {activeTab === 'league' && <LeaguePage />}
 
-
-      {/* ── Mr. Chalk PiP ── */}
-      <MrChalk state={chalkState} />
-
-      {/* ── Feedback flash overlay ── */}
-      {flash !== 'none' && (
-        <div
-          className={`absolute inset-0 pointer-events-none z-30 ${flash === 'correct' ? 'flash-correct' : 'flash-wrong'
-            }`}
+      {activeTab === 'me' && (
+        <MePage
+          stats={stats}
+          accuracy={accuracy}
+          sessionScore={score}
+          sessionStreak={bestStreak}
         />
       )}
+
+      {/* ── Bottom Navigation ── */}
+      <BottomNav active={activeTab} onChange={setActiveTab} />
     </BlackboardLayout>
   );
 }

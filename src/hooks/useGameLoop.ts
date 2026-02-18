@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { generateProblem, type Problem } from '../utils/mathGenerator';
+import { generateProblem, type Problem, type QuestionType } from '../utils/mathGenerator';
 import { useDifficulty } from './useDifficulty';
 
 export type ChalkState = 'idle' | 'success' | 'fail' | 'streak';
@@ -26,30 +26,39 @@ const INITIAL_STATE: GameState = {
     chalkState: 'idle', flash: 'none', frozen: false,
 };
 
-export function useGameLoop() {
+export function useGameLoop(questionType: QuestionType = 'multiply') {
     const { level, recordAnswer } = useDifficulty();
     const [problems, setProblems] = useState<Problem[]>([]);
-    // Single consolidated state object — ONE re-render per answer
     const [gs, setGs] = useState<GameState>(INITIAL_STATE);
 
     const chalkTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const startedRef = useRef(false);
+    const prevType = useRef(questionType);
 
     // ── Initialize buffer ──
     useEffect(() => {
         if (startedRef.current) return;
         startedRef.current = true;
-        const initial = Array.from({ length: BUFFER_SIZE }, () => generateProblem(level));
+        const initial = Array.from({ length: BUFFER_SIZE }, () => generateProblem(level, questionType));
         initial[0].startTime = Date.now();
         setProblems(initial);
-    }, [level]);
+    }, [level, questionType]);
+
+    // ── Regenerate on question type change ──
+    useEffect(() => {
+        if (prevType.current === questionType) return;
+        prevType.current = questionType;
+        const fresh = Array.from({ length: BUFFER_SIZE }, () => generateProblem(level, questionType));
+        fresh[0].startTime = Date.now();
+        setProblems(fresh);
+    }, [questionType, level]);
 
     // ── Keep buffer full ──
     useEffect(() => {
         if (problems.length > 0 && problems.length < BUFFER_SIZE) {
-            setProblems(prev => [...prev, generateProblem(level)]);
+            setProblems(prev => [...prev, generateProblem(level, questionType)]);
         }
-    }, [problems.length, level]);
+    }, [problems.length, level, questionType]);
 
     // ── Advance to next problem ──
     const advanceProblem = useCallback(() => {
@@ -75,14 +84,12 @@ export function useGameLoop() {
         const current = problems[0];
         const tts = Date.now() - (current.startTime || Date.now());
 
-        // SKIP
         if (direction === 'up') {
             setGs(prev => ({ ...prev, streak: 0, chalkState: 'idle' }));
             advanceProblem();
             return;
         }
 
-        // Map direction → option index
         const indexMap: Record<string, number> = { left: 0, down: 1, right: 2 };
         const selectedValue = current.options[indexMap[direction]];
         const correct = selectedValue === current.answer;
