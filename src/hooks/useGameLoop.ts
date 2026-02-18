@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { generateProblem, type Problem, type QuestionType } from '../utils/mathGenerator';
+import { generateDailyChallenge } from '../utils/dailyChallenge';
 import { useDifficulty } from './useDifficulty';
 
 export type ChalkState = 'idle' | 'success' | 'fail' | 'streak';
@@ -42,13 +43,23 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
     const prevType = useRef(questionType);
     const prevHard = useRef(hardMode);
 
+    const dailyRef = useRef<{ dateLabel: string } | null>(null);
+
     // ── Initialize buffer ──
     useEffect(() => {
         if (startedRef.current) return;
         startedRef.current = true;
-        const initial = Array.from({ length: BUFFER_SIZE }, () => generateProblem(level, questionType, hardMode));
-        initial[0].startTime = Date.now();
-        setProblems(initial);
+        if (questionType === 'daily') {
+            const { problems: dp, dateLabel } = generateDailyChallenge();
+            dailyRef.current = { dateLabel };
+            dp[0].startTime = Date.now();
+            setProblems(dp);
+        } else {
+            dailyRef.current = null;
+            const initial = Array.from({ length: BUFFER_SIZE }, () => generateProblem(level, questionType, hardMode));
+            initial[0].startTime = Date.now();
+            setProblems(initial);
+        }
     }, [level, questionType]);
 
     // ── Regenerate on question type change ──
@@ -56,13 +67,23 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
         if (prevType.current === questionType && prevHard.current === hardMode) return;
         prevType.current = questionType;
         prevHard.current = hardMode;
-        const fresh = Array.from({ length: BUFFER_SIZE }, () => generateProblem(level, questionType, hardMode));
-        fresh[0].startTime = Date.now();
-        setProblems(fresh);
+        if (questionType === 'daily') {
+            const { problems: dp, dateLabel } = generateDailyChallenge();
+            dailyRef.current = { dateLabel };
+            dp[0].startTime = Date.now();
+            setProblems(dp);
+            setGs(INITIAL_STATE);
+        } else {
+            dailyRef.current = null;
+            const fresh = Array.from({ length: BUFFER_SIZE }, () => generateProblem(level, questionType, hardMode));
+            fresh[0].startTime = Date.now();
+            setProblems(fresh);
+        }
     }, [questionType, hardMode, level]);
 
-    // ── Keep buffer full ──
+    // ── Keep buffer full (not for daily/challenge — fixed set) ──
     useEffect(() => {
+        if (questionType === 'daily' || questionType === 'challenge') return;
         if (problems.length > 0 && problems.length < BUFFER_SIZE) {
             setProblems(prev => [...prev, generateProblem(level, questionType, hardMode)]);
         }
@@ -151,10 +172,14 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
         }
     }, [gs.frozen, gs.streak, problems, recordAnswer, scheduleChalkReset, advanceProblem]);
 
+    const dailyComplete = questionType === 'daily' && gs.totalAnswered > 0 && problems.length === 0;
+
     return {
         problems,
         ...gs,
         level,
         handleSwipe,
+        dailyComplete,
+        dailyDateLabel: dailyRef.current?.dateLabel || '',
     };
 }

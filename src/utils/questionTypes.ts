@@ -1,15 +1,21 @@
-import type { QuestionType } from './mathGenerator';
+export type QuestionType =
+    | 'add' | 'subtract' | 'multiply' | 'divide' | 'square' | 'sqrt'
+    | 'fraction' | 'decimal' | 'percent' | 'linear'
+    | 'mix-basic' | 'mix-all'
+    | 'daily' | 'challenge';
 
-export type QuestionGroup = 'basic' | 'powers' | 'advanced' | 'mixed';
+export type QuestionGroup = 'daily' | 'basic' | 'powers' | 'advanced' | 'mixed';
 
 export interface QuestionTypeEntry {
     id: QuestionType;
     icon: string;
     label: string;
     group: QuestionGroup;
+    hidden?: boolean;
 }
 
 export const GROUP_LABELS: Record<QuestionGroup, string> = {
+    daily: '🗓️ Daily',
     basic: 'Basic',
     powers: 'Powers',
     advanced: 'Advanced',
@@ -18,6 +24,8 @@ export const GROUP_LABELS: Record<QuestionGroup, string> = {
 
 /** Shared question type definitions — single source of truth */
 export const QUESTION_TYPES: ReadonlyArray<QuestionTypeEntry> = [
+    // Daily
+    { id: 'daily', icon: '📅', label: 'Daily', group: 'daily' },
     // Basic
     { id: 'add', icon: '+', label: 'Add', group: 'basic' },
     { id: 'subtract', icon: '−', label: 'Subtract', group: 'basic' },

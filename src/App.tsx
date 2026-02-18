@@ -36,6 +36,8 @@ function App() {
     milestone,
     speedBonus,
     handleSwipe,
+    dailyComplete,
+    dailyDateLabel,
   } = useGameLoop(questionType, hardMode);
 
   const { stats, accuracy, recordSession, resetStats } = useStats();
@@ -56,6 +58,11 @@ function App() {
       return () => clearTimeout(t);
     }
   }, [score]);
+
+  // ── Auto-show summary when daily challenge finishes ──
+  useEffect(() => {
+    if (dailyComplete) setShowSummary(true);
+  }, [dailyComplete]);
 
   // Track previous tab for session recording (handled in handleTabChange)
   const prevTab = useRef<Tab>('game');
@@ -149,6 +156,14 @@ function App() {
           <>
             {/* ── Score (centered, pushed down from edge) ── */}
             <div className="landscape-score flex flex-col items-center pt-[calc(env(safe-area-inset-top,16px)+40px)] z-30">
+              {/* Daily challenge header */}
+              {questionType === 'daily' && (
+                <div className="text-xs ui text-[var(--color-gold)] mb-2 flex items-center gap-2">
+                  <span>📅 Daily · {dailyDateLabel}</span>
+                  <span className="text-white/30">·</span>
+                  <span className="text-white/40">{totalAnswered}/10</span>
+                </div>
+              )}
               <ScoreCounter value={score} />
 
               {/* Streak display */}

@@ -1,7 +1,5 @@
-export type QuestionType =
-    | 'add' | 'subtract' | 'multiply' | 'divide' | 'square' | 'sqrt'
-    | 'fraction' | 'decimal' | 'percent' | 'linear'
-    | 'mix-basic' | 'mix-all';
+import type { QuestionType } from './questionTypes';
+export type { QuestionType } from './questionTypes';
 
 export interface Problem {
     id: number;
@@ -22,8 +20,8 @@ const ALL_INDIVIDUAL: QuestionType[] = ['add', 'subtract', 'multiply', 'divide',
  * hardMode expands all ranges significantly.
  */
 export function generateProblem(difficulty: number, type: QuestionType = 'multiply', hardMode = false): Problem {
-    // Mixed modes delegate to a random sub-type
-    if (type === 'mix-basic') return generateProblem(difficulty, pickRandom(BASIC_TYPES), hardMode);
+    // Mixed/special modes delegate to a random sub-type
+    if (type === 'mix-basic' || type === 'daily' || type === 'challenge') return generateProblem(difficulty, pickRandom(BASIC_TYPES), hardMode);
     if (type === 'mix-all') return generateProblem(difficulty, pickRandom(ALL_INDIVIDUAL), hardMode);
 
     switch (type) {

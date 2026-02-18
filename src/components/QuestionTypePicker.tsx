@@ -1,7 +1,7 @@
 import { memo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { QuestionType } from '../utils/mathGenerator';
+import type { QuestionType } from '../utils/questionTypes';
 import { QUESTION_TYPES, GROUP_LABELS, type QuestionGroup } from '../utils/questionTypes';
 
 interface Props {
@@ -9,7 +9,7 @@ interface Props {
     onChange: (type: QuestionType) => void;
 }
 
-const GROUPS: QuestionGroup[] = ['basic', 'powers', 'advanced', 'mixed'];
+const GROUPS: QuestionGroup[] = ['daily', 'basic', 'powers', 'advanced', 'mixed'];
 
 export const QuestionTypePicker = memo(function QuestionTypePicker({ current, onChange }: Props) {
     const [open, setOpen] = useState(false);
