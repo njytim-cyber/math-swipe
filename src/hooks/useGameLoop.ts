@@ -5,6 +5,8 @@ import { useDifficulty } from './useDifficulty';
 export type ChalkState = 'idle' | 'success' | 'fail' | 'streak';
 export type FeedbackFlash = 'none' | 'correct' | 'wrong';
 
+const MILESTONES: Record<number, string> = { 5: '🔥', 10: '⚡', 20: '👑', 50: '🏆' };
+
 const BUFFER_SIZE = 8;
 const AUTO_ADVANCE_MS = 150;
 const FAIL_PAUSE_MS = 800;
@@ -18,12 +20,15 @@ interface GameState {
     chalkState: ChalkState;
     flash: FeedbackFlash;
     frozen: boolean;
+    milestone: string;    // emoji or '' — shown via CSS animation
+    speedBonus: boolean;  // true for ~0.8s after fast answer
 }
 
 const INITIAL_STATE: GameState = {
     score: 0, streak: 0, bestStreak: 0,
     totalCorrect: 0, totalAnswered: 0,
     chalkState: 'idle', flash: 'none', frozen: false,
+    milestone: '', speedBonus: false,
 };
 
 export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = false) {
@@ -100,17 +105,26 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
 
         if (correct) {
             const newStreak = gs.streak + 1;
+            const isFast = tts < 1200;
+            const milestoneEmoji = MILESTONES[newStreak] || '';
+
             setGs(prev => ({
                 ...prev,
                 streak: newStreak,
                 bestStreak: Math.max(prev.bestStreak, newStreak),
                 totalCorrect: prev.totalCorrect + 1,
                 totalAnswered: prev.totalAnswered + 1,
-                score: prev.score + 10 + Math.floor(newStreak / 5) * 5,
+                score: prev.score + 10 + Math.floor(newStreak / 5) * 5 + (isFast ? 2 : 0),
                 flash: 'correct',
                 chalkState: newStreak >= 10 ? 'streak' : 'success',
+                milestone: milestoneEmoji,
+                speedBonus: isFast,
             }));
             scheduleChalkReset(newStreak >= 10 ? 2000 : 800);
+
+            // Auto-clear milestone after CSS animation
+            if (milestoneEmoji) setTimeout(() => setGs(p => ({ ...p, milestone: '' })), 1300);
+            if (isFast) setTimeout(() => setGs(p => ({ ...p, speedBonus: false })), 900);
 
             setTimeout(() => {
                 setGs(prev => ({ ...prev, flash: 'none' }));

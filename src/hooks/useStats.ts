@@ -12,6 +12,8 @@ interface Stats {
     totalCorrect: number;
     bestStreak: number;
     sessionsPlayed: number;
+    dayStreak: number;
+    lastPlayedDate: string; // YYYY-MM-DD
     byType: Record<QuestionType, TypeStat>;
 }
 
@@ -25,6 +27,8 @@ const EMPTY_STATS: Stats = {
     totalCorrect: 0,
     bestStreak: 0,
     sessionsPlayed: 0,
+    dayStreak: 0,
+    lastPlayedDate: '',
     byType: {
         add: { ...EMPTY_TYPE },
         subtract: { ...EMPTY_TYPE },
@@ -65,12 +69,20 @@ export function useStats() {
     ) => {
         setStats(prev => {
             const prevType = prev.byType[questionType] || { ...EMPTY_TYPE };
+            const today = new Date().toISOString().slice(0, 10);
+            let dayStreak = prev.dayStreak;
+            if (prev.lastPlayedDate !== today) {
+                const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+                dayStreak = prev.lastPlayedDate === yesterday ? prev.dayStreak + 1 : 1;
+            }
             return {
                 totalXP: prev.totalXP + score,
                 totalSolved: prev.totalSolved + answered,
                 totalCorrect: prev.totalCorrect + correct,
                 bestStreak: Math.max(prev.bestStreak, bestStreak),
                 sessionsPlayed: prev.sessionsPlayed + 1,
+                dayStreak,
+                lastPlayedDate: today,
                 byType: {
                     ...prev.byType,
                     [questionType]: {

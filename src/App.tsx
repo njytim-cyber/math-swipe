@@ -29,6 +29,8 @@ function App() {
     chalkState,
     flash,
     frozen,
+    milestone,
+    speedBonus,
     handleSwipe,
   } = useGameLoop(questionType, hardMode);
 
@@ -111,6 +113,13 @@ function App() {
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* Daily streak */}
+              {stats.dayStreak > 0 && (
+                <div className="mt-1 text-[10px] ui text-white/25">
+                  🔥 Day {stats.dayStreak}
+                </div>
+              )}
             </div>
 
             {/* ── Main Problem Area ── */}
@@ -154,10 +163,24 @@ function App() {
                   }`}
               />
             )}
+
+            {/* ── Streak milestone popup ── */}
+            {milestone && (
+              <div key={milestone + streak} className="milestone-pop absolute inset-0 flex items-center justify-center z-40 text-8xl">
+                {milestone}
+              </div>
+            )}
+
+            {/* ── Speed bonus ── */}
+            {speedBonus && (
+              <div key={'speed' + score} className="speed-pop absolute left-1/2 -translate-x-1/2 top-[30%] z-40 text-sm ui text-[var(--color-gold)] whitespace-nowrap">
+                ⚡ SPEED BONUS +2
+              </div>
+            )}
           </>
         )}
 
-        {activeTab === 'league' && <LeaguePage />}
+        {activeTab === 'league' && <LeaguePage userXP={stats.totalXP} userStreak={stats.bestStreak} />}
 
         {activeTab === 'me' && (
           <MePage

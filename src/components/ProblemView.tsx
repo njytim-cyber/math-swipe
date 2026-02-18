@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { motion, useMotionValue, useTransform, type MotionValue } from 'framer-motion';
+import { motion, useMotionValue, useTransform, useMotionTemplate, type MotionValue } from 'framer-motion';
 import type { PanInfo } from 'framer-motion';
 import type { Problem } from '../utils/mathGenerator';
 
@@ -78,6 +78,13 @@ export const ProblemView = memo(function ProblemView({ problem, frozen, highligh
     const downGlow = useTransform(y, [0, 50, 140], [0, 0.3, 1]);
     const glows = [leftGlow, downGlow, rightGlow];
 
+    // Swipe dust trail — driven by existing motion values, no extra animation
+    const trailOpacity = useTransform(
+        [x, y] as MotionValue[],
+        ([xv, yv]: number[]) => Math.min(Math.sqrt(xv * xv + yv * yv) / 120, 0.6)
+    );
+    const trailBg = useMotionTemplate`rgba(255,255,255,${trailOpacity})`;
+
     const handleDragEnd = (_: unknown, info: PanInfo) => {
         if (frozen) return;
         const t = 80;
@@ -96,6 +103,24 @@ export const ProblemView = memo(function ProblemView({ problem, frozen, highligh
             dragElastic={0.5}
             onDragEnd={handleDragEnd}
         >
+            {/* Swipe chalk dust trail */}
+            <motion.div
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0"
+                style={{ opacity: trailOpacity }}
+            >
+                {[0.3, 0.6, 0.9].map(s => (
+                    <motion.div
+                        key={s}
+                        className="absolute rounded-full"
+                        style={{
+                            width: 6, height: 6,
+                            background: trailBg,
+                            x: useTransform(x, v => -v * s),
+                            y: useTransform(y, v => -v * s),
+                        }}
+                    />
+                ))}
+            </motion.div>
             {/* Problem expression */}
             <motion.div className="text-center mb-12" animate={pulseAnim}>
                 <div className="landscape-question text-6xl chalk leading-tight tracking-wider text-white">
