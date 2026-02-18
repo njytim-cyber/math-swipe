@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { generateProblem, type Problem, type QuestionType } from '../utils/mathGenerator';
-import { generateDailyChallenge } from '../utils/dailyChallenge';
+import { generateDailyChallenge, generateChallenge } from '../utils/dailyChallenge';
 import { useDifficulty } from './useDifficulty';
 
 export type ChalkState = 'idle' | 'success' | 'fail' | 'streak';
@@ -33,7 +33,7 @@ const INITIAL_STATE: GameState = {
     milestone: '', speedBonus: false,
 };
 
-export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = false) {
+export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = false, challengeId: string | null = null) {
     const { level, recordAnswer } = useDifficulty();
     const [problems, setProblems] = useState<Problem[]>([]);
     const [gs, setGs] = useState<GameState>(INITIAL_STATE);
@@ -54,6 +54,10 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
             dailyRef.current = { dateLabel };
             dp[0].startTime = Date.now();
             setProblems(dp);
+        } else if (questionType === 'challenge' && challengeId) {
+            const cp = generateChallenge(challengeId);
+            cp[0].startTime = Date.now();
+            setProblems(cp);
         } else {
             dailyRef.current = null;
             const initial = Array.from({ length: BUFFER_SIZE }, () => generateProblem(level, questionType, hardMode));
@@ -72,6 +76,11 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
             dailyRef.current = { dateLabel };
             dp[0].startTime = Date.now();
             setProblems(dp);
+            setGs(INITIAL_STATE);
+        } else if (questionType === 'challenge' && challengeId) {
+            const cp = generateChallenge(challengeId);
+            cp[0].startTime = Date.now();
+            setProblems(cp);
             setGs(INITIAL_STATE);
         } else {
             dailyRef.current = null;
@@ -172,7 +181,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
         }
     }, [gs.frozen, gs.streak, problems, recordAnswer, scheduleChalkReset, advanceProblem]);
 
-    const dailyComplete = questionType === 'daily' && gs.totalAnswered > 0 && problems.length === 0;
+    const dailyComplete = (questionType === 'daily' || questionType === 'challenge') && gs.totalAnswered > 0 && problems.length === 0;
 
     return {
         problems,

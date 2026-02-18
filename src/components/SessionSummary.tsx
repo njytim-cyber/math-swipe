@@ -1,5 +1,6 @@
 import { memo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { createChallengeId } from '../utils/dailyChallenge';
 
 interface Props {
     solved: number;
@@ -17,14 +18,6 @@ function buildShareText(
     xp: number, streak: number, accuracy: number,
     history: boolean[], questionType: string,
 ): string {
-    // Build Wordle-style grid (max 20 chars per row)
-    const grid = history.map(ok => ok ? '🟩' : '🟥').join('');
-    const rows: string[] = [];
-    // Split into rows of 10
-    for (let i = 0; i < grid.length; i += 20) {  // 20 chars = 10 emoji (each emoji is 2 chars in some envs)
-        rows.push(grid.slice(i, i + 20));
-    }
-    // Actually emoji length varies, let's split by count
     const emojis = history.map(ok => ok ? '🟩' : '🟥');
     const emojiRows: string[] = [];
     for (let i = 0; i < emojis.length; i += 10) {
@@ -36,13 +29,16 @@ function buildShareText(
         ? `🧮 Math Swipe — PERFECT! 💯`
         : `🧮 Math Swipe — ${typeLabel}`;
 
+    // Generate a challenge link so the recipient can play the same set
+    const challengeUrl = `${window.location.origin}?c=${createChallengeId()}`;
+
     return [
         headline,
         `⚡ ${xp} XP · 🔥 ${streak} streak · 🎯 ${accuracy}%`,
         '',
         ...emojiRows,
         '',
-        `Can you beat me? 👉 ${window.location.origin}`,
+        `Can you beat me? 👉 ${challengeUrl}`,
     ].join('\n');
 }
 

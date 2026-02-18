@@ -10,7 +10,7 @@ import { LeaguePage } from './components/LeaguePage';
 import { MePage } from './components/MePage';
 import { useGameLoop } from './hooks/useGameLoop';
 import { useStats } from './hooks/useStats';
-import type { QuestionType } from './utils/mathGenerator';
+import type { QuestionType } from './utils/questionTypes';
 import { ACHIEVEMENTS, loadUnlocked, saveUnlocked, checkAchievements } from './utils/achievements';
 import { SessionSummary } from './components/SessionSummary';
 import { CHALK_THEMES, loadTheme, saveTheme, applyTheme, type ChalkTheme } from './utils/chalkThemes';
@@ -19,8 +19,21 @@ type Tab = 'game' | 'league' | 'me';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('game');
-  const [questionType, setQuestionType] = useState<QuestionType>('multiply');
   const [hardMode, setHardMode] = useState(false);
+
+  // ── Check URL for challenge link ──
+  const [challengeId] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const c = params.get('c');
+    if (c) {
+      // Clean URL so refresh doesn't re-trigger
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+    return c;
+  });
+  const [questionType, setQuestionType] = useState<QuestionType>(
+    challengeId ? 'challenge' : 'multiply'
+  );
 
   const {
     problems,
@@ -38,7 +51,7 @@ function App() {
     handleSwipe,
     dailyComplete,
     dailyDateLabel,
-  } = useGameLoop(questionType, hardMode);
+  } = useGameLoop(questionType, hardMode, challengeId);
 
   const { stats, accuracy, recordSession, resetStats } = useStats();
 
@@ -160,6 +173,14 @@ function App() {
               {questionType === 'daily' && (
                 <div className="text-xs ui text-[var(--color-gold)] mb-2 flex items-center gap-2">
                   <span>📅 Daily · {dailyDateLabel}</span>
+                  <span className="text-white/30">·</span>
+                  <span className="text-white/40">{totalAnswered}/10</span>
+                </div>
+              )}
+              {/* Challenge header */}
+              {questionType === 'challenge' && (
+                <div className="text-xs ui text-[var(--color-gold)] mb-2 flex items-center gap-2">
+                  <span>⚔️ Challenge</span>
                   <span className="text-white/30">·</span>
                   <span className="text-white/40">{totalAnswered}/10</span>
                 </div>
