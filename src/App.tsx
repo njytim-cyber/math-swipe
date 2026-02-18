@@ -43,6 +43,19 @@ function App() {
   const isFirstQuestion = totalAnswered === 0;
   const toggleHardMode = useCallback(() => setHardMode(h => !h), []);
 
+  // ── Score floater ──
+  const prevScoreRef = useRef(0);
+  const [pointsFloater, setPointsFloater] = useState(0);
+  useEffect(() => {
+    const delta = score - prevScoreRef.current;
+    prevScoreRef.current = score;
+    if (delta > 0) {
+      setPointsFloater(delta);
+      const t = setTimeout(() => setPointsFloater(0), 800);
+      return () => clearTimeout(t);
+    }
+  }, [score]);
+
   // Track previous tab for session recording (handled in handleTabChange)
   const prevTab = useRef<Tab>('game');
   useEffect(() => {
@@ -165,7 +178,7 @@ function App() {
                     </div>
                     <span
                       className={`text-sm ui ml-2 ${streak >= 10
-                        ? 'text-[var(--color-streak-fire)]'
+                        ? 'text-[var(--color-streak-fire)] on-fire'
                         : streak >= 5
                           ? 'text-[var(--color-gold)]'
                           : 'text-white/40'
@@ -184,6 +197,21 @@ function App() {
                 </div>
               )}
             </div>
+
+            {/* ── Points earned floater ── */}
+            <AnimatePresence>
+              {pointsFloater > 0 && (
+                <motion.div
+                  key={'pts' + score}
+                  initial={{ opacity: 1, y: 0 }}
+                  animate={{ opacity: 0, y: -30 }}
+                  transition={{ duration: 0.8, ease: 'easeOut' }}
+                  className="absolute left-1/2 -translate-x-1/2 top-[calc(env(safe-area-inset-top,16px)+100px)] z-30 text-lg chalk text-[var(--color-gold)] pointer-events-none"
+                >
+                  +{pointsFloater}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* ── Main Problem Area ── */}
             <AnimatePresence mode="popLayout">

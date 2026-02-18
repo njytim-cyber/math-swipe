@@ -32,13 +32,23 @@ const glowAnim = {
 const glowTransition = { duration: 1.2, repeat: Infinity, ease: 'easeInOut' as const };
 
 /** Single answer option */
+const correctFlashAnim = {
+    scale: [1, 1.15, 1],
+    boxShadow: [
+        '0 0 0 0 rgba(74,222,128,0)',
+        '0 0 20px 6px rgba(74,222,128,0.6)',
+        '0 0 0 0 rgba(74,222,128,0)',
+    ],
+};
+
 const AnswerOption = memo(function AnswerOption({
-    value, label, dir, dirLabel, glow, frozen, onSwipe, highlighted,
+    value, label, dir, dirLabel, glow, frozen, onSwipe, highlighted, correctFlash,
 }: {
     value: number; label?: string; dir: 'left' | 'down' | 'right'; dirLabel: string;
     glow: MotionValue<number>; frozen: boolean;
     onSwipe: (d: 'left' | 'right' | 'up' | 'down') => void;
     highlighted?: boolean;
+    correctFlash?: boolean;
 }) {
     const scale = useTransform(glow, [0, 1], [1, 1.18]);
     const opacity = useTransform(glow, [0, 1], [0.7, 1]);
@@ -57,12 +67,14 @@ const AnswerOption = memo(function AnswerOption({
             >
                 {dirLabel}
             </motion.div>
-            {/* Answer bubble — pulsing gold glow if highlighted */}
+            {/* Answer bubble — pulsing gold glow if highlighted, green flash if correct on wrong answer */}
             <motion.div
-                className={`w-[80px] h-[80px] rounded-full border-2 bg-white/[0.08] flex items-center justify-center text-[28px] chalk active:scale-90 transition-transform ${highlighted ? 'border-[var(--color-gold)] text-[var(--color-gold)]' : 'border-white/40 text-white'
+                className={`w-[80px] h-[80px] rounded-full border-2 bg-white/[0.08] flex items-center justify-center text-[28px] chalk active:scale-90 transition-transform ${correctFlash ? 'border-[var(--color-correct)] text-[var(--color-correct)]'
+                        : highlighted ? 'border-[var(--color-gold)] text-[var(--color-gold)]'
+                            : 'border-white/40 text-white'
                     }`}
-                animate={highlighted ? glowAnim : {}}
-                transition={highlighted ? glowTransition : {}}
+                animate={correctFlash ? correctFlashAnim : highlighted ? glowAnim : {}}
+                transition={correctFlash ? { duration: 0.35 } : highlighted ? glowTransition : {}}
             >
                 {label ?? value}
             </motion.div>
@@ -156,6 +168,7 @@ export const ProblemView = memo(function ProblemView({ problem, frozen, highligh
                         frozen={frozen}
                         onSwipe={onSwipe}
                         highlighted={highlightCorrect && i === problem.correctIndex}
+                        correctFlash={frozen && i === problem.correctIndex}
                     />
                 ))}
             </div>
