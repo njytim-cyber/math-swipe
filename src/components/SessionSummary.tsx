@@ -1,5 +1,5 @@
-import { memo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { memo, useState, useEffect } from 'react';
+import { motion, AnimatePresence, useSpring, useMotionValueEvent } from 'framer-motion';
 import { createChallengeId } from '../utils/dailyChallenge';
 
 interface Props {
@@ -46,6 +46,23 @@ export const SessionSummary = memo(function SessionSummary({
     solved, bestStreak: streak, accuracy, xpEarned, answerHistory, questionType, visible, onDismiss,
 }: Props) {
     const [copied, setCopied] = useState(false);
+
+    // Rolling count-up for XP
+    const xpSpring = useSpring(0, { stiffness: 60, damping: 20 });
+    const [xpDisplay, setXpDisplay] = useState(0);
+
+    useMotionValueEvent(xpSpring, 'change', (v) => {
+        setXpDisplay(Math.round(v));
+    });
+
+    useEffect(() => {
+        if (visible) {
+            xpSpring.jump(0);
+            // Small delay so the modal animates in first
+            const t = setTimeout(() => xpSpring.set(xpEarned), 300);
+            return () => clearTimeout(t);
+        }
+    }, [visible, xpEarned, xpSpring]);
 
     const handleShare = async () => {
         const text = buildShareText(xpEarned, streak, accuracy, answerHistory, questionType);
@@ -143,7 +160,7 @@ export const SessionSummary = memo(function SessionSummary({
                             </div>
                         )}
 
-                        <div className="text-lg chalk text-[var(--color-gold)] mb-4">+{xpEarned} XP</div>
+                        <div className="text-lg chalk text-[var(--color-gold)] mb-4 tabular-nums">+{xpDisplay} XP</div>
 
                         {/* Share button */}
                         <motion.button

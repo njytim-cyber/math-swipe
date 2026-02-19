@@ -11,6 +11,7 @@ const MILESTONES: Record<number, string> = { 5: '🔥', 10: '⚡', 20: '👑', 5
 const BUFFER_SIZE = 8;
 const AUTO_ADVANCE_MS = 150;
 const FAIL_PAUSE_MS = 400;
+const TIMED_MODE_MS = 10_000;
 
 interface GameState {
     score: number;
@@ -33,7 +34,7 @@ const INITIAL_STATE: GameState = {
     milestone: '', speedBonus: false,
 };
 
-export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = false, challengeId: string | null = null) {
+export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = false, challengeId: string | null = null, timedMode = false) {
     const { level, recordAnswer } = useDifficulty();
     const [problems, setProblems] = useState<Problem[]>([]);
     const [gs, setGs] = useState<GameState>(INITIAL_STATE);
@@ -44,6 +45,13 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
     const prevHard = useRef(hardMode);
 
     const dailyRef = useRef<{ dateLabel: string } | null>(null);
+
+    // ── Timed mode ──
+    const [timerProgress, setTimerProgress] = useState(0); // 0 → 1
+    const timerStartRef = useRef<number>(0);
+    const timerRafRef = useRef<number>(0);
+    const timedModeRef = useRef(timedMode);
+    timedModeRef.current = timedMode;
 
     // ── Initialize buffer ──
     useEffect(() => {
@@ -105,6 +113,11 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
             if (next[0]) next[0].startTime = Date.now();
             return next;
         });
+        // Reset timer for next question
+        if (timedModeRef.current) {
+            timerStartRef.current = Date.now();
+            setTimerProgress(0);
+        }
     }, []);
 
     // ── Reset chalk state after delay ──
@@ -181,6 +194,46 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
         }
     }, [gs.frozen, gs.streak, problems, recordAnswer, scheduleChalkReset, advanceProblem]);
 
+    // ── Timed mode tick + auto-skip ──
+    useEffect(() => {
+        if (!timedMode || gs.frozen || problems.length === 0) {
+            cancelAnimationFrame(timerRafRef.current);
+            if (!timedMode) setTimerProgress(0);
+            return;
+        }
+        timerStartRef.current = Date.now();
+        setTimerProgress(0);
+
+        const tick = () => {
+            const elapsed = Date.now() - timerStartRef.current;
+            const p = Math.min(elapsed / TIMED_MODE_MS, 1);
+            setTimerProgress(p);
+            if (p >= 1) {
+                // Time's up — skip and break streak
+                setGs(prev => ({
+                    ...prev,
+                    streak: 0,
+                    totalAnswered: prev.totalAnswered + 1,
+                    answerHistory: [...prev.answerHistory, false],
+                    flash: 'wrong',
+                    chalkState: 'fail',
+                    frozen: true,
+                }));
+                scheduleChalkReset(FAIL_PAUSE_MS);
+                setTimeout(() => {
+                    setGs(prev => ({ ...prev, flash: 'none', frozen: false }));
+                    advanceProblem();
+                }, FAIL_PAUSE_MS);
+                return;
+            }
+            timerRafRef.current = requestAnimationFrame(tick);
+        };
+        timerRafRef.current = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(timerRafRef.current);
+        // Reset when problem changes (problems[0] identity)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [timedMode, problems[0]?.id, gs.frozen]);
+
     const dailyComplete = (questionType === 'daily' || questionType === 'challenge') && gs.totalAnswered > 0 && problems.length === 0;
 
     return {
@@ -188,6 +241,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
         ...gs,
         level,
         handleSwipe,
+        timerProgress,
         dailyComplete,
         dailyDateLabel: dailyRef.current?.dateLabel || '',
     };

@@ -4,7 +4,7 @@ export type QuestionType =
     | 'mix-basic' | 'mix-all'
     | 'daily' | 'challenge';
 
-export type QuestionGroup = 'daily' | 'basic' | 'powers' | 'advanced' | 'mixed';
+export type QuestionGroup = 'daily' | 'whole' | 'advanced' | 'parts' | 'mixed';
 
 export interface QuestionTypeEntry {
     id: QuestionType;
@@ -16,9 +16,9 @@ export interface QuestionTypeEntry {
 
 export const GROUP_LABELS: Record<QuestionGroup, string> = {
     daily: '🗓️ Daily',
-    basic: 'Basic',
-    powers: 'Powers',
+    whole: 'Whole',
     advanced: 'Advanced',
+    parts: 'Parts',
     mixed: 'Mixed',
 };
 
@@ -26,20 +26,20 @@ export const GROUP_LABELS: Record<QuestionGroup, string> = {
 export const QUESTION_TYPES: ReadonlyArray<QuestionTypeEntry> = [
     // Daily
     { id: 'daily', icon: '📅', label: 'Daily', group: 'daily' },
-    // Basic
-    { id: 'add', icon: '+', label: 'Add', group: 'basic' },
-    { id: 'subtract', icon: '−', label: 'Subtract', group: 'basic' },
-    { id: 'multiply', icon: '×', label: 'Multiply', group: 'basic' },
-    { id: 'divide', icon: '÷', label: 'Divide', group: 'basic' },
-    // Powers
-    { id: 'square', icon: 'x²', label: 'Square', group: 'powers' },
-    { id: 'sqrt', icon: '√', label: 'Root', group: 'powers' },
-    // Advanced
-    { id: 'fraction', icon: '⅓', label: 'Fractions', group: 'advanced' },
-    { id: 'decimal', icon: '.5', label: 'Decimals', group: 'advanced' },
-    { id: 'percent', icon: '%', label: 'Percent', group: 'advanced' },
-    { id: 'linear', icon: 'x=', label: 'Equations', group: 'advanced' },
+    // Whole (formerly Basic)
+    { id: 'add', icon: '+', label: 'Add', group: 'whole' },
+    { id: 'subtract', icon: '−', label: 'Subtract', group: 'whole' },
+    { id: 'multiply', icon: '×', label: 'Multiply', group: 'whole' },
+    { id: 'divide', icon: '÷', label: 'Divide', group: 'whole' },
+    // Advanced (formerly Powers, now includes Linear)
+    { id: 'square', icon: 'x²', label: 'Square', group: 'advanced' },
+    { id: 'sqrt', icon: '√', label: 'Root', group: 'advanced' },
+    { id: 'linear', icon: 'x=', label: 'Linear', group: 'advanced' },
+    // Parts (formerly Advanced)
+    { id: 'fraction', icon: '⅓', label: 'Fractions', group: 'parts' },
+    { id: 'decimal', icon: '.5', label: 'Decimals', group: 'parts' },
+    { id: 'percent', icon: '%', label: 'Percent', group: 'parts' },
     // Mixed
-    { id: 'mix-basic', icon: '🎲', label: 'Basic Mix', group: 'mixed' },
+    { id: 'mix-basic', icon: '+-\n×÷', label: 'Basic Mix', group: 'mixed' },
     { id: 'mix-all', icon: '🌀', label: 'All Mix', group: 'mixed' },
 ] as const;

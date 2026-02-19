@@ -41,7 +41,7 @@ export const MePage = memo(function MePage({ stats, accuracy, sessionScore, sess
                 <div className="text-7xl chalk text-[var(--color-gold)] leading-tight">
                     {stats.totalXP.toLocaleString()}
                 </div>
-                <div className="text-sm ui text-white/30 mt-1">
+                <div className="text-sm ui text-white/40 mt-1">
                     XP · {LEVEL_NAMES[level - 1]}
                 </div>
             </motion.div>
@@ -52,25 +52,25 @@ export const MePage = memo(function MePage({ stats, accuracy, sessionScore, sess
                     <div className="text-2xl chalk text-[var(--color-streak-fire)]">
                         {stats.bestStreak}
                     </div>
-                    <div className="text-[10px] ui text-white/30">🔥 streak</div>
+                    <div className="text-[11px] ui text-white/40">🔥 streak</div>
                 </div>
                 <div className="text-center">
                     <div className="text-2xl chalk text-[var(--color-correct)]">
                         {accuracy}%
                     </div>
-                    <div className="text-[10px] ui text-white/30">🎯 accuracy</div>
+                    <div className="text-[11px] ui text-white/40">🎯 accuracy</div>
                 </div>
                 <div className="text-center">
                     <div className="text-2xl chalk text-white/70">
                         {stats.totalSolved}
                     </div>
-                    <div className="text-[10px] ui text-white/30">✅ solved</div>
+                    <div className="text-[11px] ui text-white/40">✅ solved</div>
                 </div>
             </div>
 
             {/* Per question type row */}
             <div className="w-full max-w-sm">
-                <div className="text-[10px] ui text-white/20 uppercase tracking-widest text-center mb-3">
+                <div className="text-[11px] ui text-white/35 uppercase tracking-widest text-center mb-3">
                     by type
                 </div>
                 <div className="grid grid-cols-5 gap-2 justify-items-center">
@@ -82,14 +82,14 @@ export const MePage = memo(function MePage({ stats, accuracy, sessionScore, sess
                                 <div className="text-lg chalk text-white/50">
                                     {t.icon}
                                 </div>
-                                <div className={`text-xs chalk ${ts.solved === 0 ? 'text-white/15' :
+                                <div className={`text-sm ui font-semibold ${ts.solved === 0 ? 'text-white/20' :
                                     pct >= 80 ? 'text-[var(--color-correct)]' :
                                         pct >= 50 ? 'text-[var(--color-gold)]' :
-                                            'text-white/40'
+                                            'text-white/50'
                                     }`}>
                                     {ts.solved === 0 ? '—' : `${pct}%`}
                                 </div>
-                                <div className="text-[9px] ui text-white/15">
+                                <div className="text-[10px] ui text-white/25">
                                     {ts.solved === 0 ? '' : ts.solved}
                                 </div>
                             </div>
@@ -100,7 +100,7 @@ export const MePage = memo(function MePage({ stats, accuracy, sessionScore, sess
 
             {/* Achievements */}
             <div className="w-full max-w-sm mt-8">
-                <div className="text-[10px] ui text-white/20 uppercase tracking-widest text-center mb-3">
+                <div className="text-[11px] ui text-white/35 uppercase tracking-widest text-center mb-3">
                     achievements · {[...unlocked].length}/{ACHIEVEMENTS.length}
                 </div>
                 <div className="grid grid-cols-4 gap-3 justify-items-center">
@@ -125,13 +125,13 @@ export const MePage = memo(function MePage({ stats, accuracy, sessionScore, sess
                     })}
                 </div>
                 {[...unlocked].some(id => ['streak-5', 'streak-20', 'sharpshooter', 'math-machine', 'century'].includes(id)) && (
-                    <p className="text-[8px] ui text-white/15 text-center mt-2">tap a badge to equip on Mr. Chalk</p>
+                    <p className="text-[9px] ui text-white/25 text-center mt-2">tap a badge to equip on Mr. Chalk</p>
                 )}
             </div>
 
             {/* Chalk Themes */}
             <div className="w-full max-w-sm mt-6">
-                <div className="text-[10px] ui text-white/20 uppercase tracking-widest text-center mb-3">
+                <div className="text-[11px] ui text-white/35 uppercase tracking-widest text-center mb-3">
                     chalk color
                 </div>
                 <div className="flex justify-center gap-2 flex-wrap">
@@ -161,13 +161,13 @@ export const MePage = memo(function MePage({ stats, accuracy, sessionScore, sess
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                 >
-                    <div className="text-[10px] ui text-white/20 uppercase tracking-widest mb-2">
+                    <div className="text-[11px] ui text-white/35 uppercase tracking-widest mb-2">
                         this session
                     </div>
                     <span className="text-lg chalk text-[var(--color-gold)]">
                         {sessionScore} xp
                     </span>
-                    <span className="text-white/20 mx-2">·</span>
+                    <span className="text-white/25 mx-2">·</span>
                     <span className="text-lg chalk text-[var(--color-streak-fire)]">
                         {sessionStreak}🔥
                     </span>
@@ -176,7 +176,7 @@ export const MePage = memo(function MePage({ stats, accuracy, sessionScore, sess
 
             {/* Aura */}
             <motion.p
-                className="text-xs ui text-white/15 mt-auto"
+                className="text-xs ui text-white/25 mt-auto"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
@@ -190,7 +190,7 @@ export const MePage = memo(function MePage({ stats, accuracy, sessionScore, sess
 
             <button
                 onClick={onReset}
-                className="text-[10px] ui text-white/15 mt-4 hover:text-white/30 transition-colors"
+                className="text-[11px] ui text-white/20 mt-4 hover:text-white/35 transition-colors"
             >
                 reset stats
             </button>

@@ -20,6 +20,7 @@ type Tab = 'game' | 'league' | 'me';
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('game');
   const [hardMode, setHardMode] = useState(false);
+  const [timedMode, setTimedMode] = useState(false);
 
   // ── Check URL for challenge link ──
   const [challengeId] = useState<string | null>(() => {
@@ -49,15 +50,17 @@ function App() {
     milestone,
     speedBonus,
     handleSwipe,
+    timerProgress,
     dailyComplete,
     dailyDateLabel,
-  } = useGameLoop(questionType, hardMode, challengeId);
+  } = useGameLoop(questionType, hardMode, challengeId, timedMode);
 
   const { stats, accuracy, recordSession, resetStats } = useStats();
 
   const currentProblem = problems[0];
   const isFirstQuestion = totalAnswered === 0;
   const toggleHardMode = useCallback(() => setHardMode(h => !h), []);
+  const toggleTimedMode = useCallback(() => setTimedMode(t => !t), []);
 
   // ── Score floater ──
   const prevScoreRef = useRef(0);
@@ -277,6 +280,9 @@ function App() {
               onTypeChange={setQuestionType}
               hardMode={hardMode}
               onHardModeToggle={toggleHardMode}
+              timedMode={timedMode}
+              onTimedModeToggle={toggleTimedMode}
+              timerProgress={timerProgress}
             />
 
             {/* ── Mr. Chalk PiP ── */}

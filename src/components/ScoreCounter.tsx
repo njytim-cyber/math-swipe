@@ -1,13 +1,14 @@
-import { memo, useEffect, useRef } from 'react';
-import { motion, useSpring } from 'framer-motion';
+import { memo, useState, useEffect, useRef } from 'react';
+import { motion, useSpring, useMotionValueEvent } from 'framer-motion';
 
 /**
  * Animated score counter that "rolls" up to the new value.
- * Memoized to avoid re-renders during drag.
+ * Uses a spring-driven animation so points visibly count up —
+ * feels way more satisfying than an instant jump.
  */
 export const ScoreCounter = memo(function ScoreCounter({ value }: { value: number }) {
-    const spring = useSpring(0, { stiffness: 80, damping: 20 });
-    const displayRef = useRef(0);
+    const spring = useSpring(0, { stiffness: 100, damping: 18 });
+    const [display, setDisplay] = useState(0);
     const prevValue = useRef(0);
     const justBumped = value > prevValue.current;
 
@@ -16,10 +17,10 @@ export const ScoreCounter = memo(function ScoreCounter({ value }: { value: numbe
         spring.set(value);
     }, [value, spring]);
 
-    useEffect(() => {
-        const unsub = spring.on('change', (v) => { displayRef.current = Math.round(v); });
-        return unsub;
-    }, [spring]);
+    // Drive visible number from the spring motion value
+    useMotionValueEvent(spring, 'change', (v) => {
+        setDisplay(Math.round(v));
+    });
 
     return (
         <motion.div
@@ -29,7 +30,7 @@ export const ScoreCounter = memo(function ScoreCounter({ value }: { value: numbe
         >
             {value === 0 ? (
                 <span className="text-5xl leading-tight">Let's<br />Goooooooo!</span>
-            ) : value}
+            ) : display}
         </motion.div>
     );
 });

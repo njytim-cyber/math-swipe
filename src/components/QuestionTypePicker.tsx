@@ -9,7 +9,7 @@ interface Props {
     onChange: (type: QuestionType) => void;
 }
 
-const GROUPS: QuestionGroup[] = ['daily', 'basic', 'powers', 'advanced', 'mixed'];
+const GROUPS: QuestionGroup[] = ['daily', 'whole', 'advanced', 'parts', 'mixed'];
 
 export const QuestionTypePicker = memo(function QuestionTypePicker({ current, onChange }: Props) {
     const [open, setOpen] = useState(false);
@@ -21,10 +21,16 @@ export const QuestionTypePicker = memo(function QuestionTypePicker({ current, on
             {/* Toggle button */}
             <motion.button
                 onClick={() => setOpen(o => !o)}
-                className="w-11 h-11 rounded-full border border-white/25 flex items-center justify-center text-white/70 text-lg chalk active:text-[var(--color-gold)]"
+                className="w-11 h-11 flex items-center justify-center text-white/70 text-lg chalk active:text-[var(--color-gold)]"
                 whileTap={{ scale: 0.88 }}
             >
-                {currentIcon}
+                {currentIcon.includes('\n') ? (
+                    <span className="inline-grid grid-cols-2 gap-x-0.5 text-[11px] leading-tight">{
+                        currentIcon.replace('\n', '').split('').map((ch, i) => (
+                            <span key={i}>{ch}</span>
+                        ))
+                    }</span>
+                ) : currentIcon}
             </motion.button>
 
             {/* Full-screen overlay picker — portaled to body to escape #root's position:fixed */}
@@ -71,7 +77,13 @@ export const QuestionTypePicker = memo(function QuestionTypePicker({ current, on
                                                         whileTap={{ scale: 0.92 }}
                                                     >
                                                         <span className={`text-xl chalk ${t.id === current ? 'text-[var(--color-gold)]' : 'text-white/60'}`}>
-                                                            {t.icon}
+                                                            {t.icon.includes('\n') ? (
+                                                                <span className="inline-grid grid-cols-2 gap-x-0.5 text-[13px] leading-tight">{
+                                                                    t.icon.replace('\n', '').split('').map((ch, i) => (
+                                                                        <span key={i}>{ch}</span>
+                                                                    ))
+                                                                }</span>
+                                                            ) : t.icon}
                                                         </span>
                                                         <span className={`text-[8px] ui ${t.id === current ? 'text-[var(--color-gold)]/80' : 'text-white/30'}`}>
                                                             {t.label}

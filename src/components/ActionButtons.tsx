@@ -8,9 +8,47 @@ interface Props {
     onTypeChange: (type: QuestionType) => void;
     hardMode: boolean;
     onHardModeToggle: () => void;
+    timedMode: boolean;
+    onTimedModeToggle: () => void;
+    timerProgress: number; // 0 → 1
 }
 
-export const ActionButtons = memo(function ActionButtons({ questionType, onTypeChange, hardMode, onHardModeToggle }: Props) {
+/** Circular countdown ring drawn as an SVG arc */
+function TimerRing({ progress, active }: { progress: number; active: boolean }) {
+    const r = 19;
+    const circumference = 2 * Math.PI * r;
+    const offset = circumference * (1 - progress);
+
+    return (
+        <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 44 44">
+            {/* Track */}
+            <circle
+                cx="22" cy="22" r={r}
+                fill="none"
+                stroke={active ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.15)'}
+                strokeWidth="2.5"
+            />
+            {/* Progress arc */}
+            {active && (
+                <circle
+                    cx="22" cy="22" r={r}
+                    fill="none"
+                    stroke={progress > 0.75 ? 'var(--color-streak-fire)' : 'var(--color-gold)'}
+                    strokeWidth="2.5"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={offset}
+                    strokeLinecap="round"
+                    style={{ transition: 'stroke 0.3s' }}
+                />
+            )}
+        </svg>
+    );
+}
+
+export const ActionButtons = memo(function ActionButtons({
+    questionType, onTypeChange, hardMode, onHardModeToggle,
+    timedMode, onTimedModeToggle, timerProgress,
+}: Props) {
     const handleShare = async () => {
         const shareData = {
             title: 'Math Swipe',
@@ -29,29 +67,64 @@ export const ActionButtons = memo(function ActionButtons({ questionType, onTypeC
     };
 
     return (
-        <div className="absolute right-3 top-[35%] -translate-y-1/2 flex flex-col gap-4 z-20">
-            {/* Share */}
+        <div className="absolute right-3 top-[38%] -translate-y-1/2 flex flex-col gap-5 z-20">
+            {/* Share — TikTok-style thick arrow */}
             <motion.button
                 onClick={handleShare}
-                className="w-11 h-11 rounded-full border border-white/25 flex items-center justify-center text-white/70 active:text-[var(--color-gold)]"
+                className="w-11 h-11 flex items-center justify-center text-white/70 active:text-[var(--color-gold)]"
                 whileTap={{ scale: 0.88 }}
             >
-                <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7" />
-                    <polyline points="16,6 12,2 8,6" />
-                    <line x1="12" y1="2" x2="12" y2="15" />
+                <svg viewBox="0 0 24 24" className="w-7 h-7" fill="currentColor">
+                    <path d="M12 2C12 2 12 9 12 10L18 10L12 17L12 14C12 14 4.5 13.5 2 20C2 20 2 12.5 12 10L12 2Z" transform="rotate(-90 12 12)" />
                 </svg>
             </motion.button>
 
             {/* Question type */}
             <QuestionTypePicker current={questionType} onChange={onTypeChange} />
 
+            {/* Stopwatch / timed mode */}
+            <motion.button
+                onClick={onTimedModeToggle}
+                className={`w-11 h-11 relative flex items-center justify-center ${timedMode
+                    ? 'text-[var(--color-gold)]'
+                    : 'text-white/40'
+                    }`}
+                whileTap={{ scale: 0.88 }}
+            >
+                <TimerRing progress={timerProgress} active={timedMode} />
+                <motion.svg
+                    viewBox="0 0 24 24"
+                    className="w-5 h-5 relative z-10"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    animate={timedMode ? { rotate: [0, -6, 6, -3, 3, 0] } : {}}
+                    transition={timedMode ? {
+                        duration: 1.8,
+                        repeat: Infinity,
+                        repeatDelay: 3,
+                        ease: 'easeInOut',
+                    } : {}}
+                >
+                    {/* Stopwatch body */}
+                    <circle cx="12" cy="14" r="7" />
+                    {/* Top button */}
+                    <line x1="12" y1="3" x2="12" y2="7" />
+                    {/* Top bar */}
+                    <line x1="9" y1="3" x2="15" y2="3" />
+                    {/* Minute hand */}
+                    <line x1="12" y1="14" x2="12" y2="10" />
+                </motion.svg>
+            </motion.button>
+
             {/* Hard mode skull */}
             <motion.button
                 onClick={onHardModeToggle}
-                className={`w-11 h-11 rounded-full border flex items-center justify-center text-xl ${hardMode
-                    ? 'border-[var(--color-streak-fire)]/50 text-[var(--color-streak-fire)]'
-                    : 'border-white/25 text-white/40'
+                className={`w-11 h-11 flex items-center justify-center text-xl ${hardMode
+                    ? 'text-[var(--color-gold)]'
+                    : 'text-white/40'
                     }`}
                 whileTap={{ scale: 0.88 }}
                 animate={hardMode ? {
