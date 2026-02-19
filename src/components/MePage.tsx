@@ -1,5 +1,5 @@
-import { memo } from 'react';
-import { motion } from 'framer-motion';
+import { memo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { useStats } from '../hooks/useStats';
 import { QUESTION_TYPES } from '../utils/questionTypes';
 import { ACHIEVEMENTS } from '../utils/achievements';
@@ -19,67 +19,119 @@ interface Props {
     onThemeChange: (theme: ChalkTheme) => void;
 }
 
+/** Ranks with progressive XP thresholds (gets harder to level up) */
+const RANKS = [
+    { name: 'Beginner', emoji: '🌱', xp: 0 },
+    { name: 'Learner', emoji: '📚', xp: 100 },
+    { name: 'Thinker', emoji: '🧠', xp: 300 },
+    { name: 'Problem Solver', emoji: '🔧', xp: 600 },
+    { name: 'Calculator', emoji: '🖩', xp: 1000 },
+    { name: 'Mathematician', emoji: '📐', xp: 1800 },
+    { name: 'Wizard', emoji: '🧙', xp: 3000 },
+    { name: 'Grandmaster', emoji: '♟️', xp: 5000 },
+    { name: 'Legend', emoji: '👑', xp: 8000 },
+    { name: 'Mythic', emoji: '🌌', xp: 12000 },
+    { name: 'Transcendent', emoji: '✨', xp: 20000 },
+];
 
+function getRank(xp: number) {
+    let rank = RANKS[0];
+    let nextRank: typeof RANKS[number] | null = RANKS[1];
+    for (let i = RANKS.length - 1; i >= 0; i--) {
+        if (xp >= RANKS[i].xp) {
+            rank = RANKS[i];
+            nextRank = RANKS[i + 1] || null;
+            break;
+        }
+    }
+    const progress = nextRank
+        ? (xp - rank.xp) / (nextRank.xp - rank.xp)
+        : 1;
+    return { rank, nextRank, progress };
+}
 
-const LEVEL_NAMES = ['Beginner', 'Learner', 'Thinker', 'Wizard', 'Legend'] as const;
-
-export const MePage = memo(function MePage({ stats, accuracy, sessionScore, sessionStreak, onReset, unlocked, activeCostume, onCostumeChange, activeTheme, onThemeChange }: Props) {
-    const level = stats.totalXP < 100 ? 1
-        : stats.totalXP < 500 ? 2
-            : stats.totalXP < 1500 ? 3
-                : stats.totalXP < 5000 ? 4 : 5;
-
+export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked, activeCostume, onCostumeChange, activeTheme, onThemeChange }: Props) {
+    const [showRanks, setShowRanks] = useState(false);
+    const { rank, nextRank, progress } = getRank(stats.totalXP);
 
     return (
         <div className="flex-1 flex flex-col items-center overflow-y-auto px-6 pt-4 pb-20">
-            {/* Title — big chalk style like score on game screen */}
+            {/* Title — rank display */}
             <motion.div
-                className="text-center mb-10"
+                className="text-center mb-8"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
             >
-                <div className="text-7xl chalk text-[var(--color-gold)] leading-tight">
-                    {stats.totalXP.toLocaleString()}
-                </div>
-                <div className="text-sm ui text-white/40 mt-1">
-                    XP · {LEVEL_NAMES[level - 1]}
-                </div>
+                <div className="text-5xl mb-2">{rank.emoji}</div>
+                <button
+                    onClick={() => setShowRanks(true)}
+                    className="text-2xl chalk text-[var(--color-gold)] leading-tight hover:opacity-80 transition-opacity"
+                >
+                    {rank.name}
+                </button>
+                {/* Progress to next rank */}
+                {nextRank && (
+                    <div className="mt-3 w-48 mx-auto">
+                        <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                            <motion.div
+                                className="h-full rounded-full bg-[var(--color-gold)]"
+                                initial={{ width: 0 }}
+                                animate={{ width: `${Math.round(progress * 100)}%` }}
+                                transition={{ duration: 0.8, ease: 'easeOut' }}
+                            />
+                        </div>
+                        <div className="text-xs ui text-white/30 mt-1.5">
+                            {stats.totalXP.toLocaleString()} / {nextRank.xp.toLocaleString()} → {nextRank.name}
+                        </div>
+                    </div>
+                )}
+                {!nextRank && (
+                    <div className="text-xs ui text-white/30 mt-2">
+                        Max rank reached! {stats.totalXP.toLocaleString()} points ✨
+                    </div>
+                )}
             </motion.div>
 
             {/* Core stats — horizontal, chalk style */}
-            <div className="flex gap-8 mb-10">
+            <div className="flex gap-6 mb-8">
                 <div className="text-center">
                     <div className="text-2xl chalk text-[var(--color-streak-fire)]">
                         {stats.bestStreak}
                     </div>
-                    <div className="text-[11px] ui text-white/40">🔥 streak</div>
+                    <div className="text-xs ui text-white/40">🔥 streak</div>
                 </div>
                 <div className="text-center">
                     <div className="text-2xl chalk text-[var(--color-correct)]">
                         {accuracy}%
                     </div>
-                    <div className="text-[11px] ui text-white/40">🎯 accuracy</div>
+                    <div className="text-xs ui text-white/40">🎯 accuracy</div>
                 </div>
                 <div className="text-center">
                     <div className="text-2xl chalk text-white/70">
                         {stats.totalSolved}
                     </div>
-                    <div className="text-[11px] ui text-white/40">✅ solved</div>
+                    <div className="text-xs ui text-white/40">✅ solved</div>
+                </div>
+                <div className="text-center">
+                    <div className="text-2xl chalk text-[var(--color-gold)]">
+                        {stats.dayStreak}
+                    </div>
+                    <div className="text-xs ui text-white/40">📅 days</div>
                 </div>
             </div>
 
             {/* Per question type row */}
             <div className="w-full max-w-sm">
-                <div className="text-[11px] ui text-white/35 uppercase tracking-widest text-center mb-3">
+                <div className="text-xs ui text-white/35 uppercase tracking-widest text-center mb-3">
                     by type
                 </div>
                 <div className="grid grid-cols-5 gap-2 justify-items-center">
-                    {QUESTION_TYPES.filter(t => !t.id.startsWith('mix-')).map(t => {
+                    {QUESTION_TYPES.filter(t => !t.id.startsWith('mix-') && t.id !== 'daily' && t.id !== 'challenge').map(t => {
                         const ts = stats.byType[t.id] ?? { solved: 0, correct: 0 };
                         const pct = ts.solved > 0 ? Math.round((ts.correct / ts.solved) * 100) : 0;
                         return (
                             <div key={t.id} className="flex flex-col items-center gap-1">
-                                <div className="text-lg chalk text-white/50">
+                                <div className={`chalk text-white/50 ${t.icon.length === 1 ? 'text-xl' : 'text-lg'}`}>
                                     {t.icon}
                                 </div>
                                 <div className={`text-sm ui font-semibold ${ts.solved === 0 ? 'text-white/20' :
@@ -100,7 +152,7 @@ export const MePage = memo(function MePage({ stats, accuracy, sessionScore, sess
 
             {/* Achievements */}
             <div className="w-full max-w-sm mt-8">
-                <div className="text-[11px] ui text-white/35 uppercase tracking-widest text-center mb-3">
+                <div className="text-xs ui text-white/35 uppercase tracking-widest text-center mb-3">
                     achievements · {[...unlocked].length}/{ACHIEVEMENTS.length}
                 </div>
                 <div className="grid grid-cols-4 gap-3 justify-items-center">
@@ -117,6 +169,7 @@ export const MePage = memo(function MePage({ stats, accuracy, sessionScore, sess
                                 <AchievementBadge
                                     achievementId={a.id}
                                     unlocked={isUnlocked}
+                                    equipped={isActive}
                                     name={a.name}
                                     desc={isActive ? '✅ equipped' : a.desc}
                                 />
@@ -125,27 +178,27 @@ export const MePage = memo(function MePage({ stats, accuracy, sessionScore, sess
                     })}
                 </div>
                 {[...unlocked].some(id => ['streak-5', 'streak-20', 'sharpshooter', 'math-machine', 'century'].includes(id)) && (
-                    <p className="text-[9px] ui text-white/25 text-center mt-2">tap a badge to equip on Mr. Chalk</p>
+                    <p className="text-[10px] ui text-white/25 text-center mt-2">tap a badge to equip on Mr. Chalk</p>
                 )}
             </div>
 
-            {/* Chalk Themes */}
+            {/* Chalk Themes — locked ones faded like achievements */}
             <div className="w-full max-w-sm mt-6">
-                <div className="text-[11px] ui text-white/35 uppercase tracking-widest text-center mb-3">
+                <div className="text-xs ui text-white/35 uppercase tracking-widest text-center mb-3">
                     chalk color
                 </div>
-                <div className="flex justify-center gap-2 flex-wrap">
+                <div className="flex justify-center gap-2.5 flex-wrap">
                     {CHALK_THEMES.map(t => {
-                        const isAvailable = level >= t.minLevel;
+                        const rankIdx = RANKS.findIndex(r => r.name === rank.name);
+                        const isAvailable = rankIdx >= (t.minLevel - 1);
                         const isActive = activeTheme === t.id;
                         return (
                             <button
                                 key={t.id}
                                 onClick={() => isAvailable && onThemeChange(t)}
-                                title={isAvailable ? t.name : `Unlock at ${['', 'Beginner', 'Learner', 'Thinker', 'Wizard', 'Legend'][t.minLevel]}`}
                                 className={`w-8 h-8 rounded-full border-2 transition-all ${isActive ? 'border-[var(--color-gold)] scale-110' :
                                     isAvailable ? 'border-white/20 hover:border-white/40' :
-                                        'border-white/8 opacity-30 cursor-not-allowed'
+                                        'border-white/8 opacity-40 cursor-not-allowed'
                                     }`}
                                 style={{ backgroundColor: t.color }}
                             />
@@ -153,26 +206,6 @@ export const MePage = memo(function MePage({ stats, accuracy, sessionScore, sess
                     })}
                 </div>
             </div>
-
-            {/* Session */}
-            {sessionScore > 0 && (
-                <motion.div
-                    className="mt-10 text-center"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                >
-                    <div className="text-[11px] ui text-white/35 uppercase tracking-widest mb-2">
-                        this session
-                    </div>
-                    <span className="text-lg chalk text-[var(--color-gold)]">
-                        {sessionScore} xp
-                    </span>
-                    <span className="text-white/25 mx-2">·</span>
-                    <span className="text-lg chalk text-[var(--color-streak-fire)]">
-                        {sessionStreak}🔥
-                    </span>
-                </motion.div>
-            )}
 
             {/* Aura */}
             <motion.p
@@ -191,7 +224,7 @@ export const MePage = memo(function MePage({ stats, accuracy, sessionScore, sess
             <button
                 onClick={() => {
                     const prompts = [
-                        `You've earned ${stats.totalXP} XP! Are you sure you want to start fresh? 🥺`,
+                        `You've earned ${stats.totalXP.toLocaleString()} points! Are you sure you want to start fresh? 🥺`,
                         `Mr. Chalk will miss your ${stats.bestStreak}-streak record! Reset anyway? 🤔`,
                         `${stats.totalSolved} problems solved and counting… wipe it all? 😱`,
                         'A fresh start can be beautiful! Ready to begin again? 🌱',
@@ -201,10 +234,71 @@ export const MePage = memo(function MePage({ stats, accuracy, sessionScore, sess
                     const msg = prompts[Math.floor(Math.random() * prompts.length)];
                     if (window.confirm(msg)) onReset();
                 }}
-                className="text-[11px] ui text-white/20 mt-4 hover:text-white/35 transition-colors"
+                className="text-xs ui text-white/20 mt-4 hover:text-white/35 transition-colors"
             >
                 reset stats
             </button>
+
+            {/* Rank list modal */}
+            <AnimatePresence>
+                {showRanks && (
+                    <>
+                        <motion.div
+                            className="fixed inset-0 bg-black/60 z-50"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setShowRanks(false)}
+                        />
+                        <motion.div
+                            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-black/95 border border-white/15 rounded-2xl px-5 py-5 max-h-[75vh] overflow-y-auto w-[300px]"
+                            initial={{ opacity: 0, scale: 0.85 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.85 }}
+                            transition={{ duration: 0.15 }}
+                        >
+                            <h3 className="text-lg chalk text-[var(--color-gold)] text-center mb-4">Ranks</h3>
+                            <div className="space-y-2">
+                                {RANKS.map((r) => {
+                                    const isCurrent = r.name === rank.name;
+                                    const isReached = stats.totalXP >= r.xp;
+                                    return (
+                                        <div
+                                            key={r.name}
+                                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl ${isCurrent
+                                                ? 'bg-[var(--color-gold)]/10 border border-[var(--color-gold)]/30'
+                                                : ''
+                                                }`}
+                                        >
+                                            <span className="text-xl">{r.emoji}</span>
+                                            <div className="flex-1">
+                                                <div className={`text-sm ui font-semibold ${isCurrent ? 'text-[var(--color-gold)]' :
+                                                    isReached ? 'text-white/70' : 'text-white/30'
+                                                    }`}>
+                                                    {r.name}
+                                                    {isCurrent && <span className="ml-1 text-xs">← you</span>}
+                                                </div>
+                                                <div className="text-[11px] ui text-white/25">
+                                                    {r.xp === 0 ? 'Starting rank' : `${r.xp.toLocaleString()} points`}
+                                                </div>
+                                            </div>
+                                            {isReached && (
+                                                <span className="text-xs text-[var(--color-correct)]">✓</span>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            <button
+                                onClick={() => setShowRanks(false)}
+                                className="w-full mt-4 py-2 text-sm ui text-white/40 hover:text-white/60 transition-colors"
+                            >
+                                close
+                            </button>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
         </div>
     );
 });

@@ -112,28 +112,31 @@ const BADGE_MAP: Record<string, React.FC<BadgeProps>> = {
 interface Props {
     achievementId: string;
     unlocked: boolean;
+    equipped?: boolean;
     name: string;
     desc: string;
 }
 
-export const AchievementBadge = memo(function AchievementBadge({ achievementId, unlocked, name, desc }: Props) {
+export const AchievementBadge = memo(function AchievementBadge({ achievementId, unlocked, equipped, name, desc }: Props) {
     const Icon = BADGE_MAP[achievementId];
     if (!Icon) return null;
 
     return (
         <div className={`flex flex-col items-center gap-1 w-16 ${unlocked ? '' : 'opacity-40'}`}>
-            <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center ${unlocked
-                ? 'border-white/20 bg-white/[0.05]'
-                : 'border-white/8 bg-transparent'
+            <div className={`w-14 h-14 rounded-2xl border-2 flex items-center justify-center ${equipped
+                ? 'border-[var(--color-gold)] bg-[var(--color-gold)]/5'
+                : unlocked
+                    ? 'border-white/20 bg-white/[0.05]'
+                    : 'border-white/8 bg-transparent'
                 }`}>
                 <Icon size={36} unlocked={unlocked} />
             </div>
-            <span className={`text-[9px] ui font-medium text-center leading-tight ${unlocked ? 'text-white/60' : 'text-white/25'
+            <span className={`text-[10px] ui font-medium text-center leading-tight ${unlocked ? 'text-white/60' : 'text-white/25'
                 }`}>
                 {name}
             </span>
             {unlocked && (
-                <span className="text-[8px] ui text-white/30 text-center leading-tight">
+                <span className="text-[9px] ui text-white/30 text-center leading-tight">
                     {desc}
                 </span>
             )}

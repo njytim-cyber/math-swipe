@@ -34,7 +34,7 @@ function buildShareText(
 
     return [
         headline,
-        `⚡ ${xp} XP · 🔥 ${streak} streak · 🎯 ${accuracy}%`,
+        `⚡ ${xp} pts · 🔥 ${streak} streak · 🎯 ${accuracy}%`,
         '',
         ...emojiRows,
         '',
@@ -160,7 +160,7 @@ export const SessionSummary = memo(function SessionSummary({
                             </div>
                         )}
 
-                        <div className="text-lg chalk text-[var(--color-gold)] mb-4 tabular-nums">+{xpDisplay} XP</div>
+                        <div className="text-lg chalk text-[var(--color-gold)] mb-4 tabular-nums">+{xpDisplay} pts</div>
 
                         {/* Share button */}
                         <motion.button

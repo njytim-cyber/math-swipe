@@ -9,7 +9,7 @@ interface Props {
     onChange: (type: QuestionType) => void;
 }
 
-const GROUPS: QuestionGroup[] = ['daily', 'whole', 'advanced', 'parts', 'mixed'];
+const GROUPS: QuestionGroup[] = ['daily', 'whole', 'parts', 'advanced', 'mixed'];
 
 export const QuestionTypePicker = memo(function QuestionTypePicker({ current, onChange }: Props) {
     const [open, setOpen] = useState(false);
@@ -76,7 +76,7 @@ export const QuestionTypePicker = memo(function QuestionTypePicker({ current, on
                                                             }`}
                                                         whileTap={{ scale: 0.92 }}
                                                     >
-                                                        <span className={`text-xl chalk ${t.id === current ? 'text-[var(--color-gold)]' : 'text-white/60'}`}>
+                                                        <span className={`chalk ${t.id === current ? 'text-[var(--color-gold)]' : 'text-white/60'} ${t.icon.length === 1 ? 'text-2xl' : 'text-xl'}`}>
                                                             {t.icon.includes('\n') ? (
                                                                 <span className="inline-grid grid-cols-2 gap-x-0.5 text-[13px] leading-tight">{
                                                                     t.icon.replace('\n', '').split('').map((ch, i) => (
