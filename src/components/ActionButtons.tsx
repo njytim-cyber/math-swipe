@@ -142,12 +142,17 @@ export const ActionButtons = memo(function ActionButtons({
                     ease: 'easeInOut' as const,
                 } : {}}
             >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="9" cy="12" r="1" fill="currentColor" stroke="none" />
-                    <circle cx="15" cy="12" r="1" fill="currentColor" stroke="none" />
-                    <path d="M8 20v-4a8 8 0 0 1 .5-2.8A6 6 0 0 1 12 4a6 6 0 0 1 3.5 9.2 8 8 0 0 1 .5 2.8v4" />
-                    <path d="M10 20h4" />
-                    <path d="M12 16v4" />
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    {/* Cranium */}
+                    <path d="M12 3a7 7 0 0 0-7 7c0 2.4 1.2 4.5 3 5.8V18h8v-2.2c1.8-1.3 3-3.4 3-5.8a7 7 0 0 0-7-7z" />
+                    {/* Eyes */}
+                    <circle cx="9.5" cy="11" r="1.5" fill="currentColor" stroke="none" />
+                    <circle cx="14.5" cy="11" r="1.5" fill="currentColor" stroke="none" />
+                    {/* Jaw */}
+                    <path d="M8 18v2.5a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V18" />
+                    {/* Teeth */}
+                    <line x1="10.5" y1="18" x2="10.5" y2="20.5" />
+                    <line x1="13.5" y1="18" x2="13.5" y2="20.5" />
                 </svg>
             </motion.button>
         </div>
