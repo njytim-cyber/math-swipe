@@ -42,6 +42,8 @@ const EMPTY_STATS: Stats = {
         linear: { ...EMPTY_TYPE },
         'mix-basic': { ...EMPTY_TYPE },
         'mix-all': { ...EMPTY_TYPE },
+        daily: { ...EMPTY_TYPE },
+        challenge: { ...EMPTY_TYPE },
     },
 };
 
