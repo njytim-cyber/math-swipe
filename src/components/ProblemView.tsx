@@ -50,8 +50,13 @@ const AnswerOption = memo(function AnswerOption({
     highlighted?: boolean;
     correctFlash?: boolean;
 }) {
-    const scale = useTransform(glow, [0, 1], [1, 1.18]);
-    const opacity = useTransform(glow, [0, 1], [0.7, 1]);
+    const scale = useTransform(glow, [0, 0.3, 1], [1, 1.05, 1.35]);
+    const opacity = useTransform(glow, [0, 1], [0.55, 1]);
+    // Gold border + text intensity driven by drag distance
+    const borderAlpha = useTransform(glow, [0, 0.3, 1], [0, 0.3, 1]);
+    const borderColor = useMotionTemplate`rgba(251,191,36,${borderAlpha})`;
+    const shadowSpread = useTransform(glow, [0, 1], [0, 16]);
+    const boxShadow = useMotionTemplate`0 0 ${shadowSpread}px 2px rgba(251,191,36,0.4)`;
 
     return (
         <motion.button
@@ -67,12 +72,13 @@ const AnswerOption = memo(function AnswerOption({
             >
                 {dirLabel}
             </motion.div>
-            {/* Answer bubble — pulsing gold glow if highlighted, green flash if correct on wrong answer */}
+            {/* Answer bubble — lights up gold as you drag toward it */}
             <motion.div
                 className={`w-[80px] h-[80px] rounded-full border-2 bg-white/[0.08] flex items-center justify-center text-[28px] chalk active:scale-90 transition-transform ${correctFlash ? 'border-[var(--color-correct)] text-[var(--color-correct)]'
-                        : highlighted ? 'border-[var(--color-gold)] text-[var(--color-gold)]'
-                            : 'border-white/40 text-white'
+                    : highlighted ? 'border-[var(--color-gold)] text-[var(--color-gold)]'
+                        : 'border-white/40 text-white'
                     }`}
+                style={!correctFlash && !highlighted ? { borderColor, boxShadow } : {}}
                 animate={correctFlash ? correctFlashAnim : highlighted ? glowAnim : {}}
                 transition={correctFlash ? { duration: 0.35 } : highlighted ? glowTransition : {}}
             >
