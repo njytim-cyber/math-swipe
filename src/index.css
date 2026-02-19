@@ -251,18 +251,22 @@
   transform: translateZ(0);
 }
 
-/* ── Desktop gate ── */
-.desktop-gate {
-  display: none;
-}
+/* ── Desktop: center the app in a mobile-width column (TikTok style) ── */
+@media (min-width: 768px) {
 
-@media (min-width: 768px) and (min-height: 600px) {
-  .desktop-gate {
-    display: block !important;
+  html,
+  body,
+  #root {
+    overflow: visible;
+    position: static;
   }
 
-  .desktop-gate~* {
-    display: none !important;
+  #root {
+    max-width: 430px;
+    min-height: 100vh;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
   }
 }
 

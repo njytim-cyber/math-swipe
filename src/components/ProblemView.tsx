@@ -1,9 +1,16 @@
-import { memo } from 'react';
+import { memo, useEffect } from 'react';
 import { motion, useMotionValue, useTransform, useMotionTemplate, type MotionValue } from 'framer-motion';
 import type { PanInfo } from 'framer-motion';
 import type { Problem } from '../utils/mathGenerator';
 import { MathExpr } from './MathExpr';
 
+/** Arrow-key → swipe direction map for desktop play */
+const KEY_MAP: Record<string, 'left' | 'right' | 'up' | 'down'> = {
+    ArrowLeft: 'left',
+    ArrowRight: 'right',
+    ArrowDown: 'down',
+    ArrowUp: 'up',
+};
 interface Props {
     problem: Problem;
     frozen: boolean;
@@ -95,6 +102,19 @@ const AnswerOption = memo(function AnswerOption({
 export const ProblemView = memo(function ProblemView({ problem, frozen, highlightCorrect, showHints = true, onSwipe }: Props) {
     const x = useMotionValue(0);
     const y = useMotionValue(0);
+
+    // Desktop arrow-key support
+    useEffect(() => {
+        const handler = (e: KeyboardEvent) => {
+            const dir = KEY_MAP[e.key];
+            if (dir && !frozen) {
+                e.preventDefault();
+                onSwipe(dir);
+            }
+        };
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+    }, [frozen, onSwipe]);
 
     const leftGlow = useTransform(x, [-140, -50, 0], [1, 0.3, 0]);
     const rightGlow = useTransform(x, [0, 50, 140], [0, 0.3, 1]);

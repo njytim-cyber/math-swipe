@@ -163,21 +163,6 @@ function App() {
 
   return (
     <>
-      {/* Desktop gate */}
-      <div className="desktop-gate hidden">
-        <div className="flex flex-col items-center justify-center h-screen bg-[var(--color-board)] text-[var(--color-chalk)] text-center px-8">
-          <div className="text-6xl mb-4">📱</div>
-          <h1 className="text-3xl chalk text-[var(--color-gold)] mb-3">
-            Math Swipe
-          </h1>
-          <p className="text-lg chalk text-[rgb(var(--color-fg))]/50 mb-6">
-            This game is designed for mobile
-          </p>
-          <p className="text-sm ui text-[rgb(var(--color-fg))]/25">
-            Open on your phone or resize your browser to a narrow width
-          </p>
-        </div>
-      </div>
 
       <BlackboardLayout>
         {/* ── Top-right theme toggle (visible on all tabs) ── */}
