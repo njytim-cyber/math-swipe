@@ -33,7 +33,7 @@ export const QuestionTypePicker = memo(function QuestionTypePicker({ current, on
             {/* Toggle button */}
             <motion.button
                 onClick={() => setOpen(o => !o)}
-                className="w-11 h-11 flex items-center justify-center text-white/70 text-lg chalk active:text-[var(--color-gold)]"
+                className="w-11 h-11 flex items-center justify-center text-white/50 text-2xl chalk active:text-[var(--color-gold)]"
                 whileTap={{ scale: 0.88 }}
             >
                 {currentIcon.includes('\n') ? (
@@ -88,15 +88,17 @@ export const QuestionTypePicker = memo(function QuestionTypePicker({ current, on
                                                             }`}
                                                         whileTap={{ scale: 0.92 }}
                                                     >
-                                                        <span className={`chalk ${t.id === current ? 'text-[var(--color-gold)]' : 'text-white/70'} ${iconSizeClass(t.icon)} leading-none`}>
-                                                            {t.icon.includes('\n') ? (
-                                                                <span className="inline-grid grid-cols-2 gap-x-1 text-base leading-tight font-bold">{
-                                                                    t.icon.replace('\n', '').split('').map((ch, i) => (
-                                                                        <span key={i}>{ch}</span>
-                                                                    ))
-                                                                }</span>
-                                                            ) : t.icon}
-                                                        </span>
+                                                        <div className="h-8 flex items-center justify-center">
+                                                            <span className={`chalk ${t.id === current ? 'text-[var(--color-gold)]' : 'text-white/70'} ${iconSizeClass(t.icon)} leading-none`}>
+                                                                {t.icon.includes('\n') ? (
+                                                                    <span className="inline-grid grid-cols-2 gap-x-1 text-base leading-tight font-bold">{
+                                                                        t.icon.replace('\n', '').split('').map((ch, i) => (
+                                                                            <span key={i}>{ch}</span>
+                                                                        ))
+                                                                    }</span>
+                                                                ) : t.icon}
+                                                            </span>
+                                                        </div>
                                                         <span className={`text-[10px] ui ${t.id === current ? 'text-[var(--color-gold)]/80' : 'text-white/40'}`}>
                                                             {t.label}
                                                         </span>

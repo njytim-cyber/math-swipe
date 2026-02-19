@@ -71,10 +71,10 @@ export const ActionButtons = memo(function ActionButtons({
             {/* Share — TikTok-style thick arrow */}
             <motion.button
                 onClick={handleShare}
-                className="w-11 h-11 flex items-center justify-center text-white/70 active:text-[var(--color-gold)]"
+                className="w-11 h-11 flex items-center justify-center text-white/50 active:text-[var(--color-gold)]"
                 whileTap={{ scale: 0.88 }}
             >
-                <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="18" cy="5" r="3" />
                     <circle cx="6" cy="12" r="3" />
                     <circle cx="18" cy="19" r="3" />
@@ -91,14 +91,14 @@ export const ActionButtons = memo(function ActionButtons({
                 onClick={onTimedModeToggle}
                 className={`w-11 h-11 relative flex items-center justify-center ${timedMode
                     ? 'text-[var(--color-gold)]'
-                    : 'text-white/40'
+                    : 'text-white/50'
                     }`}
                 whileTap={{ scale: 0.88 }}
             >
                 <TimerRing progress={timerProgress} active={timedMode} />
                 <motion.svg
                     viewBox="0 0 24 24"
-                    className="w-5 h-5 relative z-10"
+                    className="w-6 h-6 relative z-10"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
@@ -126,9 +126,9 @@ export const ActionButtons = memo(function ActionButtons({
             {/* Hard mode skull */}
             <motion.button
                 onClick={onHardModeToggle}
-                className={`w-11 h-11 flex items-center justify-center text-xl ${hardMode
+                className={`w-11 h-11 flex items-center justify-center text-2xl ${hardMode
                     ? 'text-[var(--color-gold)]'
-                    : 'text-white/40'
+                    : 'text-white/50'
                     }`}
                 whileTap={{ scale: 0.88 }}
                 animate={hardMode ? {
