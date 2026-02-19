@@ -52,13 +52,23 @@ const AnswerOption = memo(function AnswerOption({
     correctFlash?: boolean;
     showHint?: boolean;
 }) {
-    const scale = useTransform(glow, [0, 0.3, 1], [1, 1.05, 1.35]);
-    const opacity = useTransform(glow, [0, 1], [0.55, 1]);
+    const scale = useTransform(glow, [0, 0.25, 1], [1, 1.12, 1.5]);
+    const opacity = useTransform(glow, [0, 0.2, 1], [0.5, 0.8, 1]);
     // Gold border + text intensity driven by drag distance
-    const borderAlpha = useTransform(glow, [0, 0.3, 1], [0, 0.3, 1]);
+    const borderAlpha = useTransform(glow, [0, 0.2, 1], [0, 0.5, 1]);
     const borderColor = useMotionTemplate`rgba(251,191,36,${borderAlpha})`;
-    const shadowSpread = useTransform(glow, [0, 1], [0, 16]);
-    const boxShadow = useMotionTemplate`0 0 ${shadowSpread}px 2px rgba(251,191,36,0.4)`;
+    // Strong double-layered glow: inner sharp ring + outer diffuse halo
+    const shadowSpread = useTransform(glow, [0, 1], [0, 28]);
+    const shadowBlur = useTransform(glow, [0, 1], [0, 40]);
+    const boxShadow = useMotionTemplate`0 0 ${shadowSpread}px 4px rgba(251,191,36,0.7), 0 0 ${shadowBlur}px 12px rgba(251,191,36,0.35)`;
+    // Background fill: transparent → gold
+    const bgAlpha = useTransform(glow, [0, 0.3, 1], [0.08, 0.12, 0.35]);
+    const bgGoldAlpha = useTransform(glow, [0, 0.3, 1], [0, 0.05, 0.5]);
+    const background = useMotionTemplate`linear-gradient(135deg, rgba(251,191,36,${bgGoldAlpha}), rgba(255,255,255,${bgAlpha}))`;
+    // Border width grows when dragged toward
+    const borderWidth = useTransform(glow, [0, 0.3, 1], [2, 2.5, 4]);
+    // Text color transitions to bright white when fully selected
+    const textBrightness = useTransform(glow, [0, 0.3, 1], [0.85, 1, 1]);
 
     return (
         <motion.button
@@ -72,21 +82,24 @@ const AnswerOption = memo(function AnswerOption({
                     className={`text-xl tracking-widest font-bold ui ${highlighted ? 'text-[var(--color-gold)]' : 'text-white/60'}`}
                     animate={highlighted ? { opacity: [0.5, 1, 0.5] } : {}}
                     transition={highlighted ? { duration: 1, repeat: Infinity } : {}}
+                    style={!highlighted ? { opacity: useTransform(glow, [0, 0.3, 1], [0.6, 0.8, 1]), color: useMotionTemplate`rgba(251,191,36,${borderAlpha})` } : {}}
                 >
                     {dirLabel}
                 </motion.div>
             )}
             {/* Answer bubble — lights up gold as you drag toward it */}
             <motion.div
-                className={`w-[80px] h-[80px] rounded-full border-2 bg-white/[0.08] flex items-center justify-center text-[28px] chalk active:scale-90 transition-transform ${correctFlash ? 'border-[var(--color-correct)] text-[var(--color-correct)]'
-                    : highlighted ? 'border-[var(--color-gold)] text-[var(--color-gold)]'
-                        : 'border-white/40 text-white'
+                className={`w-[80px] h-[80px] rounded-full flex items-center justify-center text-[28px] chalk active:scale-90 transition-transform ${correctFlash ? 'border-[var(--color-correct)] text-[var(--color-correct)] border-2'
+                    : highlighted ? 'border-[var(--color-gold)] text-[var(--color-gold)] border-2'
+                        : 'text-white'
                     }`}
-                style={!correctFlash && !highlighted ? { borderColor, boxShadow } : {}}
+                style={!correctFlash && !highlighted ? { borderColor, boxShadow, background, borderWidth, borderStyle: 'solid' } : { background: 'rgba(255,255,255,0.08)', borderWidth: 2, borderStyle: 'solid' }}
                 animate={correctFlash ? correctFlashAnim : highlighted ? glowAnim : {}}
                 transition={correctFlash ? { duration: 0.35 } : highlighted ? glowTransition : {}}
             >
-                {label ?? value}
+                <motion.span style={!correctFlash && !highlighted ? { filter: useMotionTemplate`brightness(${textBrightness})` } : {}}>
+                    {label ?? value}
+                </motion.span>
             </motion.div>
         </motion.button>
     );

@@ -123,7 +123,7 @@ export const AchievementBadge = memo(function AchievementBadge({ achievementId, 
 
     return (
         <div className={`flex flex-col items-center gap-1 w-16 ${unlocked ? '' : 'opacity-40'}`}>
-            <div className={`w-14 h-14 rounded-2xl border-2 flex items-center justify-center ${equipped
+            <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center ${equipped
                 ? 'border-[var(--color-gold)] bg-[var(--color-gold)]/5'
                 : unlocked
                     ? 'border-white/20 bg-white/[0.05]'

@@ -4,6 +4,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { QuestionType } from '../utils/questionTypes';
 import { QUESTION_TYPES, GROUP_LABELS, type QuestionGroup } from '../utils/questionTypes';
 
+/** Size class for each icon — keeps the grid visually balanced */
+function iconSizeClass(icon: string): string {
+    // Single-char math operators render large
+    if ('+ − × ÷ √ %'.split(' ').includes(icon)) return 'text-3xl';
+    // Emoji
+    if (icon === '📅' || icon === '🌀') return 'text-2xl';
+    // Multi-char grid (Basic Mix) — keep compact
+    if (icon.includes('\n')) return '';
+    // Everything else (x², x=, .5, ⅓) — medium
+    return 'text-xl';
+}
+
 interface Props {
     current: QuestionType;
     onChange: (type: QuestionType) => void;
@@ -50,7 +62,7 @@ export const QuestionTypePicker = memo(function QuestionTypePicker({ current, on
 
                             {/* Centered grouped picker */}
                             <motion.div
-                                className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-black/90 border border-white/15 rounded-2xl px-4 py-4 max-h-[70vh] overflow-y-auto w-[280px]"
+                                className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-black/90 border border-white/15 rounded-2xl px-5 py-5 max-h-[70vh] overflow-y-auto w-[300px]"
                                 initial={{ opacity: 0, scale: 0.85 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.85 }}
@@ -61,7 +73,7 @@ export const QuestionTypePicker = memo(function QuestionTypePicker({ current, on
                                     return (
                                         <div key={group} className="mb-3 last:mb-0">
                                             {/* Group header */}
-                                            <div className="text-[9px] ui text-white/25 uppercase tracking-widest mb-2 px-1">
+                                            <div className="text-[10px] ui text-white/30 uppercase tracking-widest mb-2 px-1">
                                                 {GROUP_LABELS[group]}
                                             </div>
                                             {/* 3-column grid */}
@@ -76,16 +88,16 @@ export const QuestionTypePicker = memo(function QuestionTypePicker({ current, on
                                                             }`}
                                                         whileTap={{ scale: 0.92 }}
                                                     >
-                                                        <span className={`chalk ${t.id === current ? 'text-[var(--color-gold)]' : 'text-white/60'} ${t.icon.length === 1 ? 'text-2xl' : 'text-xl'}`}>
+                                                        <span className={`chalk ${t.id === current ? 'text-[var(--color-gold)]' : 'text-white/70'} ${iconSizeClass(t.icon)} leading-none`}>
                                                             {t.icon.includes('\n') ? (
-                                                                <span className="inline-grid grid-cols-2 gap-x-0.5 text-[13px] leading-tight">{
+                                                                <span className="inline-grid grid-cols-2 gap-x-1 text-base leading-tight font-bold">{
                                                                     t.icon.replace('\n', '').split('').map((ch, i) => (
                                                                         <span key={i}>{ch}</span>
                                                                     ))
                                                                 }</span>
                                                             ) : t.icon}
                                                         </span>
-                                                        <span className={`text-[8px] ui ${t.id === current ? 'text-[var(--color-gold)]/80' : 'text-white/30'}`}>
+                                                        <span className={`text-[10px] ui ${t.id === current ? 'text-[var(--color-gold)]/80' : 'text-white/40'}`}>
                                                             {t.label}
                                                         </span>
                                                     </motion.button>

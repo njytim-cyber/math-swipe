@@ -149,7 +149,7 @@ export const MrChalk = memo(function MrChalk({ state, costume, streak = 0, total
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -6, scale: 0.8 }}
                         transition={{ duration: 0.25 }}
-                        className="absolute -top-12 right-0 whitespace-nowrap bg-white/10 border border-white/15 rounded-xl px-3 py-1.5 text-[11px] ui text-white/80"
+                        className="absolute bottom-full mb-2 right-0 max-w-[180px] text-right bg-white/10 border border-white/15 rounded-xl px-3 py-1.5 text-[11px] ui text-white/80 leading-snug"
                     >
                         {message}
                         <div className="absolute -bottom-1.5 right-4 w-3 h-3 bg-white/10 border-b border-r border-white/15 rotate-45" />

@@ -52,6 +52,7 @@ function getRank(xp: number) {
 
 export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked, activeCostume, onCostumeChange, activeTheme, onThemeChange }: Props) {
     const [showRanks, setShowRanks] = useState(false);
+    const [resetConfirm, setResetConfirm] = useState<string | null>(null);
     const { rank, nextRank, progress } = getRank(stats.totalXP);
 
     return (
@@ -114,9 +115,12 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                 </div>
                 <div className="text-center">
                     <div className="text-2xl chalk text-[var(--color-gold)]">
-                        {stats.dayStreak}
+                        {(() => {
+                            const d = stats.byType.daily ?? { solved: 0, correct: 0 };
+                            return d.solved > 0 ? `${Math.round((d.correct / d.solved) * 100)}%` : '?';
+                        })()}
                     </div>
-                    <div className="text-xs ui text-white/40">📅 days</div>
+                    <div className="text-xs ui text-white/40">📅 challenge</div>
                 </div>
             </div>
 
@@ -152,7 +156,7 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
 
             {/* Achievements */}
             <div className="w-full max-w-sm mt-8">
-                <div className="text-xs ui text-white/35 uppercase tracking-widest text-center mb-3">
+                <div className="text-sm ui text-white/35 uppercase tracking-widest text-center mb-3">
                     achievements · {[...unlocked].length}/{ACHIEVEMENTS.length}
                 </div>
                 <div className="grid grid-cols-4 gap-3 justify-items-center">
@@ -177,15 +181,12 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                         );
                     })}
                 </div>
-                {[...unlocked].some(id => ['streak-5', 'streak-20', 'sharpshooter', 'math-machine', 'century'].includes(id)) && (
-                    <p className="text-[10px] ui text-white/25 text-center mt-2">tap a badge to equip on Mr. Chalk</p>
-                )}
             </div>
 
             {/* Chalk Themes — locked ones faded like achievements */}
             <div className="w-full max-w-sm mt-6">
-                <div className="text-xs ui text-white/35 uppercase tracking-widest text-center mb-3">
-                    chalk color
+                <div className="text-sm ui text-white/35 uppercase tracking-widest text-center mb-3">
+                    CHALK COLOR
                 </div>
                 <div className="flex justify-center gap-2.5 flex-wrap">
                     {CHALK_THEMES.map(t => {
@@ -207,20 +208,6 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                 </div>
             </div>
 
-            {/* Aura */}
-            <motion.p
-                className="text-xs ui text-white/25 mt-auto"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-            >
-                {accuracy >= 90 ? '✨ radiant aura ✨' :
-                    accuracy >= 70 ? '🌟 bright aura' :
-                        accuracy >= 50 ? '💫 growing aura' :
-                            stats.totalSolved > 0 ? '🌱 budding aura' :
-                                '🎮 play to build your aura'}
-            </motion.p>
-
             <button
                 onClick={() => {
                     const prompts = [
@@ -231,12 +218,11 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                         'Your math journey so far has been amazing! Really reset? ✨',
                         'Even superheroes get a fresh origin story! Reset? 🦸',
                     ];
-                    const msg = prompts[Math.floor(Math.random() * prompts.length)];
-                    if (window.confirm(msg)) onReset();
+                    setResetConfirm(prompts[Math.floor(Math.random() * prompts.length)]);
                 }}
-                className="text-xs ui text-white/20 mt-4 hover:text-white/35 transition-colors"
+                className="text-sm ui text-white/20 mt-auto hover:text-white/35 transition-colors uppercase tracking-widest"
             >
-                reset stats
+                RESET STATS
             </button>
 
             {/* Rank list modal */}
@@ -295,6 +281,47 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                             >
                                 close
                             </button>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
+
+            {/* Reset confirmation modal */}
+            <AnimatePresence>
+                {resetConfirm && (
+                    <>
+                        <motion.div
+                            className="fixed inset-0 bg-black/60 z-50"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setResetConfirm(null)}
+                        />
+                        <motion.div
+                            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-black/95 border border-white/15 rounded-2xl px-6 py-6 w-[280px] text-center"
+                            initial={{ opacity: 0, scale: 0.85 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.85 }}
+                            transition={{ duration: 0.15 }}
+                        >
+                            <div className="text-4xl mb-3">🧹</div>
+                            <p className="chalk text-white/80 text-base leading-relaxed mb-6">
+                                {resetConfirm}
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setResetConfirm(null)}
+                                    className="flex-1 py-2.5 rounded-xl border border-white/15 text-sm ui text-white/50 hover:text-white/70 hover:border-white/30 transition-colors"
+                                >
+                                    cancel
+                                </button>
+                                <button
+                                    onClick={() => { onReset(); setResetConfirm(null); }}
+                                    className="flex-1 py-2.5 rounded-xl border border-[var(--color-streak-fire)]/40 bg-[var(--color-streak-fire)]/10 text-sm ui text-[var(--color-streak-fire)] hover:bg-[var(--color-streak-fire)]/20 transition-colors"
+                                >
+                                    reset
+                                </button>
+                            </div>
                         </motion.div>
                     </>
                 )}

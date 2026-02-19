@@ -74,8 +74,10 @@ export const ActionButtons = memo(function ActionButtons({
                 className="w-11 h-11 flex items-center justify-center text-white/70 active:text-[var(--color-gold)]"
                 whileTap={{ scale: 0.88 }}
             >
-                <svg viewBox="0 0 24 24" className="w-7 h-7" fill="currentColor">
-                    <path d="M12 2C12 2 12 9 12 10L18 10L12 17L12 14C12 14 4.5 13.5 2 20C2 20 2 12.5 12 10L12 2Z" transform="rotate(-90 12 12)" />
+                <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7" />
+                    <polyline points="16 6 12 2 8 6" />
+                    <line x1="12" y1="2" x2="12" y2="15" />
                 </svg>
             </motion.button>
 

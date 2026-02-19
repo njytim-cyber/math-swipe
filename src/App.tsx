@@ -259,7 +259,7 @@ function App() {
                     problem={currentProblem}
                     frozen={frozen}
                     highlightCorrect={isFirstQuestion}
-                    showHints={totalAnswered < 2}
+                    showHints={totalCorrect < 4}
                     onSwipe={handleSwipe}
                   />
                 </motion.div>
