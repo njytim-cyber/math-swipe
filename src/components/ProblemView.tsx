@@ -53,7 +53,7 @@ const AnswerOption = memo(function AnswerOption({
     showHint?: boolean;
 }) {
     const scale = useTransform(glow, [0, 0.3, 1], [1, 1.05, 1.35]);
-    const opacity = useTransform(glow, [0, 1], [0.55, 1]);
+    const opacity = useTransform(glow, [0, 1], [0.8, 1]);
     // Gold border + text intensity driven by drag distance
     const borderAlpha = useTransform(glow, [0, 0.3, 1], [0, 0.3, 1]);
     const borderColor = useMotionTemplate`rgba(251,191,36,${borderAlpha})`;

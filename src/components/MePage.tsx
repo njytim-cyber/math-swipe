@@ -81,13 +81,13 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                                 transition={{ duration: 0.8, ease: 'easeOut' }}
                             />
                         </div>
-                        <div className="text-xs ui text-white/30 mt-1.5">
+                        <div className="text-xs ui text-white/50 mt-1.5">
                             {stats.totalXP.toLocaleString()} / {nextRank.xp.toLocaleString()} → {nextRank.name}
                         </div>
                     </div>
                 )}
                 {!nextRank && (
-                    <div className="text-xs ui text-white/30 mt-2">
+                    <div className="text-xs ui text-white/50 mt-2">
                         Max rank reached! {stats.totalXP.toLocaleString()} points ✨
                     </div>
                 )}
@@ -99,7 +99,7 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                     <div className="text-2xl chalk text-[var(--color-streak-fire)]">
                         {stats.bestStreak}
                     </div>
-                    <div className="text-xs ui text-white/40">🔥 streak</div>
+                    <div className="text-xs ui text-white/60">🔥 streak</div>
                 </div>
                 <div className="text-center">
                     <div className="text-2xl chalk text-[var(--color-correct)]">
@@ -126,7 +126,7 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
 
             {/* Per question type row */}
             <div className="w-full max-w-sm">
-                <div className="text-xs ui text-white/35 uppercase tracking-widest text-center mb-3">
+                <div className="text-xs ui text-white/50 uppercase tracking-widest text-center mb-3">
                     by type
                 </div>
                 <div className="grid grid-cols-5 gap-2 justify-items-center">
@@ -145,7 +145,7 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                                     }`}>
                                     {ts.solved === 0 ? '—' : `${pct}%`}
                                 </div>
-                                <div className="text-[10px] ui text-white/25">
+                                <div className="text-[10px] ui text-white/40">
                                     {ts.solved === 0 ? '' : ts.solved}
                                 </div>
                             </div>
@@ -156,7 +156,7 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
 
             {/* Achievements */}
             <div className="w-full max-w-sm mt-8">
-                <div className="text-sm ui text-white/35 uppercase tracking-widest text-center mb-3">
+                <div className="text-sm ui text-white/50 uppercase tracking-widest text-center mb-3">
                     achievements · {[...unlocked].length}/{ACHIEVEMENTS.length}
                 </div>
                 <div className="grid grid-cols-4 gap-3 justify-items-center">
@@ -185,7 +185,7 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
 
             {/* Chalk Themes — locked ones faded like achievements */}
             <div className="w-full max-w-sm mt-6">
-                <div className="text-sm ui text-white/35 uppercase tracking-widest text-center mb-3">
+                <div className="text-sm ui text-white/50 uppercase tracking-widest text-center mb-3">
                     CHALK COLOR
                 </div>
                 <div className="flex justify-center gap-2.5 flex-wrap">
@@ -220,7 +220,7 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                     ];
                     setResetConfirm(prompts[Math.floor(Math.random() * prompts.length)]);
                 }}
-                className="text-sm ui text-white/20 mt-auto hover:text-white/35 transition-colors uppercase tracking-widest"
+                className="text-sm ui text-white/35 mt-12 hover:text-white/50 transition-colors uppercase tracking-widest"
             >
                 RESET STATS
             </button>
