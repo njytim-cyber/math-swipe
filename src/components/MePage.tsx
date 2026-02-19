@@ -120,7 +120,7 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                             return d.solved > 0 ? `${Math.round((d.correct / d.solved) * 100)}%` : '?';
                         })()}
                     </div>
-                    <div className="text-xs ui text-white/40">📅 challenge</div>
+                    <div className="text-xs ui text-white/60">📅 daily</div>
                 </div>
             </div>
 

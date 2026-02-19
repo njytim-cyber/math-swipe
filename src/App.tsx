@@ -191,32 +191,30 @@ function App() {
                     exit={{ opacity: 0, scale: 0.8 }}
                     className="mt-2 flex items-center gap-1"
                   >
-                    <div className="flex gap-0.5">
-                      {Array.from({ length: Math.min(streak, 15) }, (_, i) => (
-                        <motion.div
-                          key={i}
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ delay: i * 0.03 }}
-                          className={`w-2 h-2 rounded-full ${streak >= 10
-                            ? 'bg-[var(--color-streak-fire)]'
-                            : streak >= 5
-                              ? 'bg-[var(--color-gold)]'
-                              : 'bg-white/40'
-                            }`}
-                        />
-                      ))}
-                    </div>
-                    <span
-                      className={`text-sm ui ml-2 ${streak >= 10
-                        ? 'text-[var(--color-streak-fire)] on-fire'
-                        : streak >= 5
-                          ? 'text-[var(--color-gold)]'
-                          : 'text-white/40'
-                        }`}
-                    >
-                      {streak >= 10 ? `🔥 ${streak}×` : `${streak}×`}
-                    </span>
+                    {streak <= 5 ? (
+                      /* Dots for small streaks */
+                      <div className="flex gap-1">
+                        {Array.from({ length: streak }, (_, i) => (
+                          <motion.div
+                            key={i}
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: i * 0.04 }}
+                            className="w-2 h-2 rounded-full bg-[var(--color-gold)]/60"
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      /* Multiplier label for 6+ */
+                      <span
+                        className={`text-sm ui font-semibold ${streak >= 10
+                          ? 'text-[var(--color-streak-fire)] on-fire'
+                          : 'text-[var(--color-gold)]'
+                          }`}
+                      >
+                        {streak >= 10 ? `🔥 ${streak}×` : `${streak}×`}
+                      </span>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
