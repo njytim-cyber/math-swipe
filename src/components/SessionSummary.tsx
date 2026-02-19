@@ -103,13 +103,40 @@ export const SessionSummary = memo(function SessionSummary({
                     onClick={onDismiss}
                 >
                     <motion.div
-                        className="bg-[var(--color-board)] border border-[rgb(var(--color-fg))]/15 rounded-3xl px-8 py-6 max-w-xs w-full text-center"
+                        className="bg-[var(--color-board)] border border-[rgb(var(--color-fg))]/15 rounded-3xl px-8 py-6 max-w-xs w-full text-center relative overflow-hidden"
                         initial={{ scale: 0.85, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.85, opacity: 0 }}
                         transition={{ duration: 0.25 }}
                         onClick={e => e.stopPropagation()}
                     >
+                        {/* Emoji rain — performance-based floating emojis */}
+                        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+                            {(() => {
+                                const emojis: string[] = [];
+                                if (streak >= 5) emojis.push('🔥');
+                                if (accuracy >= 90) emojis.push('⭐');
+                                if (accuracy === 100) emojis.push('🎯', '💯');
+                                if (solved >= 20) emojis.push('💪');
+                                if (emojis.length === 0) emojis.push('✨');
+                                return Array.from({ length: 12 }, (_, i) => (
+                                    <motion.div
+                                        key={i}
+                                        className="absolute text-lg"
+                                        style={{ left: `${8 + (i * 7.5) % 84}%` }}
+                                        initial={{ y: -20, opacity: 0 }}
+                                        animate={{ y: 300, opacity: [0, 0.7, 0.7, 0] }}
+                                        transition={{
+                                            duration: 2.5 + Math.random() * 1.5,
+                                            delay: 0.3 + i * 0.15,
+                                            ease: 'easeIn',
+                                        }}
+                                    >
+                                        {emojis[i % emojis.length]}
+                                    </motion.div>
+                                ));
+                            })()}
+                        </div>
                         {accuracy === 100 ? (
                             <>
                                 <motion.div

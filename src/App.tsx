@@ -231,7 +231,7 @@ function App() {
         </button>
 
         {activeTab === 'game' && (
-          <>
+          <div key={totalAnswered} className={flash === 'wrong' ? 'wrong-shake' : flash === 'correct' ? 'answer-bounce' : ''}>
             {/* ── Score (centered, pushed down from edge) ── */}
             <div className="landscape-score flex flex-col items-center pt-[calc(env(safe-area-inset-top,16px)+40px)] z-30">
               {/* Challenge header */}
@@ -277,6 +277,17 @@ function App() {
                       >
                         {streak >= 10 ? `🔥 ${streak}×` : `${streak}×`}
                       </span>
+                    )}
+                    {/* Milestone pulse */}
+                    {[5, 10, 20, 50].includes(streak) && (
+                      <motion.div
+                        key={`milestone-glow-${streak}`}
+                        className="absolute inset-0 rounded-full"
+                        initial={{ scale: 1, opacity: 0.6 }}
+                        animate={{ scale: 2.5, opacity: 0 }}
+                        transition={{ duration: 0.6 }}
+                        style={{ background: 'var(--color-gold)', filter: 'blur(8px)' }}
+                      />
                     )}
                   </motion.div>
                 )}
@@ -378,7 +389,7 @@ function App() {
                 </motion.div>
               )}
             </AnimatePresence>
-          </>
+          </div>
         )}
 
         {activeTab === 'league' && <Suspense fallback={null}><LeaguePage userXP={stats.totalXP} userStreak={stats.bestStreak} uid={uid} displayName={user?.displayName ?? 'You'} /></Suspense>}

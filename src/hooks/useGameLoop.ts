@@ -3,7 +3,7 @@ import { generateProblem, type Problem, type QuestionType } from '../utils/mathG
 import { generateDailyChallenge, generateChallenge } from '../utils/dailyChallenge';
 import { useDifficulty } from './useDifficulty';
 
-export type ChalkState = 'idle' | 'success' | 'fail' | 'streak';
+export type ChalkState = 'idle' | 'success' | 'fail' | 'streak' | 'comeback';
 export type FeedbackFlash = 'none' | 'correct' | 'wrong';
 
 const MILESTONES: Record<number, string> = { 5: '🔥', 10: '⚡', 20: '👑', 50: '🏆' };
@@ -26,13 +26,14 @@ interface GameState {
     frozen: boolean;
     milestone: string;    // emoji or '' — shown via CSS animation
     speedBonus: boolean;  // true for ~0.8s after fast answer
+    wrongStreak: number;  // consecutive wrong answers (for comeback detection)
 }
 
 const INITIAL_STATE: GameState = {
     score: 0, streak: 0, bestStreak: 0,
     totalCorrect: 0, totalAnswered: 0, answerHistory: [],
     chalkState: 'idle', flash: 'none', frozen: false,
-    milestone: '', speedBonus: false,
+    milestone: '', speedBonus: false, wrongStreak: 0,
 };
 
 /** Shared wrong-answer state transform (avoids 3x duplication) */
@@ -45,6 +46,7 @@ function wrongAnswerState(prev: GameState): GameState {
         flash: 'wrong',
         chalkState: 'fail',
         frozen: true,
+        wrongStreak: prev.wrongStreak + 1,
     };
 }
 
@@ -185,9 +187,10 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
                 answerHistory: [...prev.answerHistory, true].slice(-MAX_HISTORY),
                 score: prev.score + 10 + Math.floor(newStreak / 5) * 5 + (isFast ? 2 : 0),
                 flash: 'correct',
-                chalkState: newStreak >= 10 ? 'streak' : 'success',
+                chalkState: newStreak >= 10 ? 'streak' : (prev.wrongStreak >= 3 ? 'comeback' as ChalkState : 'success'),
                 milestone: milestoneEmoji,
                 speedBonus: isFast,
+                wrongStreak: 0,
             }));
             scheduleChalkReset(newStreak >= 10 ? 2000 : 800);
 

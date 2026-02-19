@@ -134,10 +134,16 @@ export const ProblemView = memo(function ProblemView({ problem, frozen, highligh
     const trailY2 = useTransform(y, v => -v * 0.6);
     const trailX3 = useTransform(x, v => -v * 0.9);
     const trailY3 = useTransform(y, v => -v * 0.9);
+    const trailX4 = useTransform(x, v => -v * 0.45);
+    const trailY4 = useTransform(y, v => -v * 0.45 + 4);
+    const trailX5 = useTransform(x, v => -v * 0.75);
+    const trailY5 = useTransform(y, v => -v * 0.75 - 4);
     const trailDots = [
-        { x: trailX1, y: trailY1 },
-        { x: trailX2, y: trailY2 },
-        { x: trailX3, y: trailY3 },
+        { x: trailX1, y: trailY1, size: 5 },
+        { x: trailX4, y: trailY4, size: 3 },
+        { x: trailX2, y: trailY2, size: 6 },
+        { x: trailX5, y: trailY5, size: 3 },
+        { x: trailX3, y: trailY3, size: 4 },
     ];
 
     const handleDragEnd = (_: unknown, info: PanInfo) => {
@@ -168,7 +174,7 @@ export const ProblemView = memo(function ProblemView({ problem, frozen, highligh
                         key={i}
                         className="absolute rounded-full"
                         style={{
-                            width: 6, height: 6,
+                            width: dot.size, height: dot.size,
                             background: trailBg,
                             x: dot.x,
                             y: dot.y,

@@ -163,6 +163,19 @@ const EASTER_EGGS = [
     'Parallel lines have so much in common… it\'s a shame they\'ll never meet 🥲',
 ];
 
+// ── Comeback encouragement (after 3+ wrongs → correct) ────────────
+
+const COMEBACK = [
+    'COMEBACK! Never gave up! 💪🔥',
+    'That\'s what resilience looks like! 🦁',
+    'Back in the game! 🎮✨',
+    'You just powered through! 💥',
+    'REDEMPTION ARC! 🌈',
+    'Fall down 7 times, stand up 8! 🥊',
+    'The comeback is always greater! 👑',
+    'From the ashes! 🔥🔥🔥',
+];
+
 // ── Picker logic ───────────────────────────────────────────────────
 
 let lastMessage = '';
@@ -225,7 +238,10 @@ export function pickChalkMessage(ctx: ChalkContext): string {
         if (streak >= 1) return chance(40) ? pick(STREAK_EARLY) : pick(BASE_SUCCESS);
     }
 
-    // 8. Base pools (fallback)
+    // 8. Comeback encouragement
+    if (state === 'comeback') return pick(COMEBACK);
+
+    // 9. Base pools (fallback)
     switch (state) {
         case 'idle': return pick(BASE_IDLE);
         case 'success': return pick(BASE_SUCCESS);
