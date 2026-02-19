@@ -12,6 +12,32 @@
   --color-streak-fire: #f97316;
 }
 
+/* ── Semantic runtime tokens (dark defaults) ── */
+:root {
+  --color-fg: 255 255 255;
+  /* white for dark mode — used as rgb() triple */
+  --color-overlay: rgba(0, 0, 0, 0.85);
+  --color-overlay-dim: rgba(0, 0, 0, 0.60);
+  --color-surface: rgba(255, 255, 255, 0.08);
+  --color-locked: rgba(255, 255, 255, 0.12);
+}
+
+/* ── Light mode overrides ── */
+[data-theme="light"] {
+  --color-board: #f5f0e8;
+  --color-chalk: #2c2c2c;
+  --color-fg: 40 40 40;
+  /* dark text for light mode */
+  --color-overlay: rgba(255, 255, 255, 0.92);
+  --color-overlay-dim: rgba(0, 0, 0, 0.30);
+  --color-surface: rgba(0, 0, 0, 0.06);
+  --color-locked: rgba(0, 0, 0, 0.10);
+  --color-correct: #16a34a;
+  --color-wrong: #dc2626;
+  --color-gold: #d97706;
+  --color-streak-fire: #ea580c;
+}
+
 /* ── Base ── */
 @layer base {
 
@@ -52,6 +78,22 @@
     radial-gradient(ellipse at 15% 40%, rgba(28, 50, 35, 0.25) 0%, transparent 60%),
     radial-gradient(ellipse at 85% 25%, rgba(22, 38, 55, 0.20) 0%, transparent 55%),
     radial-gradient(ellipse at 50% 80%, rgba(40, 30, 20, 0.15) 0%, transparent 50%);
+}
+
+[data-theme="light"] .blackboard-bg {
+  background-image:
+    radial-gradient(ellipse at 15% 40%, rgba(200, 180, 150, 0.12) 0%, transparent 60%),
+    radial-gradient(ellipse at 85% 25%, rgba(180, 160, 140, 0.08) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 80%, rgba(160, 140, 120, 0.06) 0%, transparent 50%);
+}
+
+/* ── Vignette overlay ── */
+.vignette-overlay {
+  background: radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0, 0, 0, 0.55) 100%);
+}
+
+[data-theme="light"] .vignette-overlay {
+  background: radial-gradient(ellipse at 50% 50%, transparent 50%, rgba(0, 0, 0, 0.06) 100%);
 }
 
 /* ── Chalk text — minimal, no filters ── */

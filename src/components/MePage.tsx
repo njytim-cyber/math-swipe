@@ -73,7 +73,7 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                 {/* Progress to next rank */}
                 {nextRank && (
                     <div className="mt-3 w-48 mx-auto">
-                        <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                        <div className="h-1.5 rounded-full bg-[rgb(var(--color-fg))]/10 overflow-hidden">
                             <motion.div
                                 className="h-full rounded-full bg-[var(--color-gold)]"
                                 initial={{ width: 0 }}
@@ -81,13 +81,13 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                                 transition={{ duration: 0.8, ease: 'easeOut' }}
                             />
                         </div>
-                        <div className="text-xs ui text-white/50 mt-1.5">
+                        <div className="text-xs ui text-[rgb(var(--color-fg))]/50 mt-1.5">
                             {stats.totalXP.toLocaleString()} / {nextRank.xp.toLocaleString()} → {nextRank.name}
                         </div>
                     </div>
                 )}
                 {!nextRank && (
-                    <div className="text-xs ui text-white/50 mt-2">
+                    <div className="text-xs ui text-[rgb(var(--color-fg))]/50 mt-2">
                         Max rank reached! {stats.totalXP.toLocaleString()} points ✨
                     </div>
                 )}
@@ -99,19 +99,19 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                     <div className="text-2xl chalk text-[var(--color-streak-fire)]">
                         {stats.bestStreak}
                     </div>
-                    <div className="text-xs ui text-white/60">🔥 streak</div>
+                    <div className="text-xs ui text-[rgb(var(--color-fg))]/60">🔥 streak</div>
                 </div>
                 <div className="text-center">
                     <div className="text-2xl chalk text-[var(--color-correct)]">
                         {accuracy}%
                     </div>
-                    <div className="text-xs ui text-white/40">🎯 accuracy</div>
+                    <div className="text-xs ui text-[rgb(var(--color-fg))]/40">🎯 accuracy</div>
                 </div>
                 <div className="text-center">
-                    <div className="text-2xl chalk text-white/70">
+                    <div className="text-2xl chalk text-[rgb(var(--color-fg))]/70">
                         {stats.totalSolved}
                     </div>
-                    <div className="text-xs ui text-white/40">✅ solved</div>
+                    <div className="text-xs ui text-[rgb(var(--color-fg))]/40">✅ solved</div>
                 </div>
                 <div className="text-center">
                     <div className="text-2xl chalk text-[var(--color-gold)]">
@@ -120,13 +120,13 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                             return d.solved > 0 ? `${Math.round((d.correct / d.solved) * 100)}%` : '?';
                         })()}
                     </div>
-                    <div className="text-xs ui text-white/60">📅 daily</div>
+                    <div className="text-xs ui text-[rgb(var(--color-fg))]/60">📅 daily</div>
                 </div>
             </div>
 
             {/* Per question type row */}
             <div className="w-full max-w-sm">
-                <div className="text-xs ui text-white/50 uppercase tracking-widest text-center mb-3">
+                <div className="text-xs ui text-[rgb(var(--color-fg))]/50 uppercase tracking-widest text-center mb-3">
                     by type
                 </div>
                 <div className="grid grid-cols-5 gap-2 justify-items-center">
@@ -135,17 +135,17 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                         const pct = ts.solved > 0 ? Math.round((ts.correct / ts.solved) * 100) : 0;
                         return (
                             <div key={t.id} className="flex flex-col items-center gap-1">
-                                <div className={`chalk text-white/50 ${t.icon.length === 1 ? 'text-xl' : 'text-lg'}`}>
+                                <div className={`chalk text-[rgb(var(--color-fg))]/50 ${t.icon.length === 1 ? 'text-xl' : 'text-lg'}`}>
                                     {t.icon}
                                 </div>
-                                <div className={`text-sm ui font-semibold ${ts.solved === 0 ? 'text-white/20' :
+                                <div className={`text-sm ui font-semibold ${ts.solved === 0 ? 'text-[rgb(var(--color-fg))]/20' :
                                     pct >= 80 ? 'text-[var(--color-correct)]' :
                                         pct >= 50 ? 'text-[var(--color-gold)]' :
-                                            'text-white/50'
+                                            'text-[rgb(var(--color-fg))]/50'
                                     }`}>
                                     {ts.solved === 0 ? '—' : `${pct}%`}
                                 </div>
-                                <div className="text-[10px] ui text-white/40">
+                                <div className="text-[10px] ui text-[rgb(var(--color-fg))]/40">
                                     {ts.solved === 0 ? '' : ts.solved}
                                 </div>
                             </div>
@@ -156,7 +156,7 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
 
             {/* Achievements */}
             <div className="w-full max-w-sm mt-8">
-                <div className="text-sm ui text-white/50 uppercase tracking-widest text-center mb-3">
+                <div className="text-sm ui text-[rgb(var(--color-fg))]/50 uppercase tracking-widest text-center mb-3">
                     achievements · {[...unlocked].length}/{ACHIEVEMENTS.length}
                 </div>
                 <div className="grid grid-cols-4 gap-3 justify-items-center">
@@ -185,7 +185,7 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
 
             {/* Chalk Themes — locked ones faded like achievements */}
             <div className="w-full max-w-sm mt-6">
-                <div className="text-sm ui text-white/50 uppercase tracking-widest text-center mb-3">
+                <div className="text-sm ui text-[rgb(var(--color-fg))]/50 uppercase tracking-widest text-center mb-3">
                     CHALK COLOR
                 </div>
                 <div className="flex justify-center gap-2.5 flex-wrap">
@@ -198,8 +198,8 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                                 key={t.id}
                                 onClick={() => isAvailable && onThemeChange(t)}
                                 className={`w-8 h-8 rounded-full border-2 transition-all ${isActive ? 'border-[var(--color-gold)] scale-110' :
-                                    isAvailable ? 'border-white/20 hover:border-white/40' :
-                                        'border-white/8 opacity-40 cursor-not-allowed'
+                                    isAvailable ? 'border-[rgb(var(--color-fg))]/20 hover:border-[rgb(var(--color-fg))]/40' :
+                                        'border-[rgb(var(--color-fg))]/8 opacity-40 cursor-not-allowed'
                                     }`}
                                 style={{ backgroundColor: t.color }}
                             />
@@ -220,7 +220,7 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                     ];
                     setResetConfirm(prompts[Math.floor(Math.random() * prompts.length)]);
                 }}
-                className="text-sm ui text-white/35 mt-12 hover:text-white/50 transition-colors uppercase tracking-widest"
+                className="text-sm ui text-[rgb(var(--color-fg))]/35 mt-12 hover:text-[rgb(var(--color-fg))]/50 transition-colors uppercase tracking-widest"
             >
                 RESET STATS
             </button>
@@ -230,14 +230,14 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                 {showRanks && (
                     <>
                         <motion.div
-                            className="fixed inset-0 bg-black/60 z-50"
+                            className="fixed inset-0 bg-[var(--color-overlay-dim)] z-50"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setShowRanks(false)}
                         />
                         <motion.div
-                            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-black/95 border border-white/15 rounded-2xl px-5 py-5 max-h-[75vh] overflow-y-auto w-[300px]"
+                            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-[var(--color-overlay)] border border-[rgb(var(--color-fg))]/15 rounded-2xl px-5 py-5 max-h-[75vh] overflow-y-auto w-[300px]"
                             initial={{ opacity: 0, scale: 0.85 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.85 }}
@@ -259,12 +259,12 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                                             <span className="text-xl">{r.emoji}</span>
                                             <div className="flex-1">
                                                 <div className={`text-sm ui font-semibold ${isCurrent ? 'text-[var(--color-gold)]' :
-                                                    isReached ? 'text-white/70' : 'text-white/30'
+                                                    isReached ? 'text-[rgb(var(--color-fg))]/70' : 'text-[rgb(var(--color-fg))]/30'
                                                     }`}>
                                                     {r.name}
                                                     {isCurrent && <span className="ml-1 text-xs">← you</span>}
                                                 </div>
-                                                <div className="text-[11px] ui text-white/25">
+                                                <div className="text-[11px] ui text-[rgb(var(--color-fg))]/25">
                                                     {r.xp === 0 ? 'Starting rank' : `${r.xp.toLocaleString()} points`}
                                                 </div>
                                             </div>
@@ -277,7 +277,7 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                             </div>
                             <button
                                 onClick={() => setShowRanks(false)}
-                                className="w-full mt-4 py-2 text-sm ui text-white/40 hover:text-white/60 transition-colors"
+                                className="w-full mt-4 py-2 text-sm ui text-[rgb(var(--color-fg))]/40 hover:text-[rgb(var(--color-fg))]/60 transition-colors"
                             >
                                 close
                             </button>
@@ -291,27 +291,27 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                 {resetConfirm && (
                     <>
                         <motion.div
-                            className="fixed inset-0 bg-black/60 z-50"
+                            className="fixed inset-0 bg-[var(--color-overlay-dim)] z-50"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setResetConfirm(null)}
                         />
                         <motion.div
-                            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-black/95 border border-white/15 rounded-2xl px-6 py-6 w-[280px] text-center"
+                            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-[var(--color-overlay)] border border-[rgb(var(--color-fg))]/15 rounded-2xl px-6 py-6 w-[280px] text-center"
                             initial={{ opacity: 0, scale: 0.85 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.85 }}
                             transition={{ duration: 0.15 }}
                         >
                             <div className="text-4xl mb-3">🧹</div>
-                            <p className="chalk text-white/80 text-base leading-relaxed mb-6">
+                            <p className="chalk text-[rgb(var(--color-fg))]/80 text-base leading-relaxed mb-6">
                                 {resetConfirm}
                             </p>
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => setResetConfirm(null)}
-                                    className="flex-1 py-2.5 rounded-xl border border-white/15 text-sm ui text-white/50 hover:text-white/70 hover:border-white/30 transition-colors"
+                                    className="flex-1 py-2.5 rounded-xl border border-[rgb(var(--color-fg))]/15 text-sm ui text-[rgb(var(--color-fg))]/50 hover:text-[rgb(var(--color-fg))]/70 hover:border-[rgb(var(--color-fg))]/30 transition-colors"
                                 >
                                     cancel
                                 </button>

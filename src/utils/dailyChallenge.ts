@@ -13,26 +13,18 @@ export function generateDailyChallenge(): { problems: Problem[]; dateLabel: stri
     const seed = dateSeed(today);
     const rng = createSeededRng(seed);
 
-    // Temporarily replace Math.random with our seeded version
-    const origRandom = Math.random;
-    Math.random = rng;
-
-    try {
-        const problems: Problem[] = [];
-        for (let i = 0; i < DAILY_COUNT; i++) {
-            const type = DAILY_TYPES[Math.floor(rng() * DAILY_TYPES.length)];
-            const difficulty = 2 + Math.floor(i / 3); // ramp from 2 to 5
-            problems.push(generateProblem(difficulty, type, false));
-        }
-        // Assign sequential IDs for stability
-        problems.forEach((p, i) => { p.id = seed + i; });
-        return {
-            problems,
-            dateLabel: today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        };
-    } finally {
-        Math.random = origRandom;
+    const problems: Problem[] = [];
+    for (let i = 0; i < DAILY_COUNT; i++) {
+        const type = DAILY_TYPES[Math.floor(rng() * DAILY_TYPES.length)];
+        const difficulty = 2 + Math.floor(i / 3); // ramp from 2 to 5
+        problems.push(generateProblem(difficulty, type, false, rng));
     }
+    // Assign sequential IDs for stability
+    problems.forEach((p, i) => { p.id = `daily-${seed}-${i}`; });
+    return {
+        problems,
+        dateLabel: today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    };
 }
 
 /**
@@ -43,21 +35,14 @@ export function generateChallenge(challengeId: string): Problem[] {
     const seed = stringSeed(challengeId);
     const rng = createSeededRng(seed);
 
-    const origRandom = Math.random;
-    Math.random = rng;
-
-    try {
-        const problems: Problem[] = [];
-        for (let i = 0; i < DAILY_COUNT; i++) {
-            const type = DAILY_TYPES[Math.floor(rng() * DAILY_TYPES.length)];
-            const difficulty = 2 + Math.floor(i / 3);
-            problems.push(generateProblem(difficulty, type, false));
-        }
-        problems.forEach((p, i) => { p.id = seed + i; });
-        return problems;
-    } finally {
-        Math.random = origRandom;
+    const problems: Problem[] = [];
+    for (let i = 0; i < DAILY_COUNT; i++) {
+        const type = DAILY_TYPES[Math.floor(rng() * DAILY_TYPES.length)];
+        const difficulty = 2 + Math.floor(i / 3);
+        problems.push(generateProblem(difficulty, type, false, rng));
     }
+    problems.forEach((p, i) => { p.id = `challenge-${seed}-${i}`; });
+    return problems;
 }
 
 /** Create a short challenge ID from current timestamp */

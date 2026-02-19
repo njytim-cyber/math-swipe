@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BlackboardLayout } from './components/BlackboardLayout';
 import { ProblemView } from './components/ProblemView';
@@ -6,14 +6,15 @@ import { MrChalk } from './components/MrChalk';
 import { ScoreCounter } from './components/ScoreCounter';
 import { BottomNav } from './components/BottomNav';
 import { ActionButtons } from './components/ActionButtons';
-import { LeaguePage } from './components/LeaguePage';
-import { MePage } from './components/MePage';
+const LeaguePage = lazy(() => import('./components/LeaguePage').then(m => ({ default: m.LeaguePage })));
+const MePage = lazy(() => import('./components/MePage').then(m => ({ default: m.MePage })));
 import { useGameLoop } from './hooks/useGameLoop';
 import { useStats } from './hooks/useStats';
 import type { QuestionType } from './utils/questionTypes';
 import { ACHIEVEMENTS, loadUnlocked, saveUnlocked, checkAchievements } from './utils/achievements';
 import { SessionSummary } from './components/SessionSummary';
 import { CHALK_THEMES, loadTheme, saveTheme, applyTheme, type ChalkTheme } from './utils/chalkThemes';
+import { loadMode, saveMode, applyMode, type ThemeMode } from './hooks/useThemeMode';
 
 type Tab = 'game' | 'league' | 'me';
 
@@ -113,7 +114,8 @@ function App() {
       const badge = ACHIEVEMENTS.find(a => a.id === fresh[0]);
       if (badge) {
         setUnlockToast(badge.name);
-        setTimeout(() => setUnlockToast(''), 2500);
+        const t = setTimeout(() => setUnlockToast(''), 2500);
+        return () => clearTimeout(t);
       }
     }
   }, [stats, bestStreak]);
@@ -158,19 +160,34 @@ function App() {
     saveTheme(t.id);
   }, []);
 
+  // ── Theme mode (dark/light) ──
+  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
+    const m = loadMode();
+    applyMode(m);
+    return m;
+  });
+  const toggleThemeMode = useCallback(() => {
+    setThemeMode(prev => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      saveMode(next);
+      applyMode(next);
+      return next;
+    });
+  }, []);
+
   return (
     <>
       {/* Desktop gate */}
       <div className="desktop-gate hidden">
-        <div className="flex flex-col items-center justify-center h-screen bg-[var(--color-board)] text-center px-8">
+        <div className="flex flex-col items-center justify-center h-screen bg-[var(--color-board)] text-[var(--color-chalk)] text-center px-8">
           <div className="text-6xl mb-4">📱</div>
           <h1 className="text-3xl chalk text-[var(--color-gold)] mb-3">
             Math Swipe
           </h1>
-          <p className="text-lg chalk text-white/50 mb-6">
+          <p className="text-lg chalk text-[rgb(var(--color-fg))]/50 mb-6">
             This game is designed for mobile
           </p>
-          <p className="text-sm ui text-white/25">
+          <p className="text-sm ui text-[rgb(var(--color-fg))]/25">
             Open on your phone or resize your browser to a narrow width
           </p>
         </div>
@@ -185,8 +202,8 @@ function App() {
               {questionType === 'challenge' && (
                 <div className="text-xs ui text-[var(--color-gold)] mb-2 flex items-center gap-2">
                   <span>⚔️ Challenge</span>
-                  <span className="text-white/30">·</span>
-                  <span className="text-white/40">{totalAnswered}/10</span>
+                  <span className="text-[rgb(var(--color-fg))]/30">·</span>
+                  <span className="text-[rgb(var(--color-fg))]/40">{totalAnswered}/10</span>
                 </div>
               )}
               <ScoreCounter value={score} />
@@ -231,7 +248,7 @@ function App() {
 
               {/* Daily streak */}
               {stats.dayStreak > 0 && (
-                <div className="mt-1 text-[10px] ui text-white/25">
+                <div className="mt-1 text-[10px] ui text-[rgb(var(--color-fg))]/25">
                   🔥 Day {stats.dayStreak}
                 </div>
               )}
@@ -283,6 +300,8 @@ function App() {
               timedMode={timedMode}
               onTimedModeToggle={toggleTimedMode}
               timerProgress={timerProgress}
+              themeMode={themeMode}
+              onThemeModeToggle={toggleThemeMode}
             />
 
             {/* ── Mr. Chalk PiP ── */}
@@ -328,10 +347,10 @@ function App() {
           </>
         )}
 
-        {activeTab === 'league' && <LeaguePage userXP={stats.totalXP} userStreak={stats.bestStreak} />}
+        {activeTab === 'league' && <Suspense fallback={null}><LeaguePage userXP={stats.totalXP} userStreak={stats.bestStreak} /></Suspense>}
 
         {activeTab === 'me' && (
-          <MePage
+          <Suspense fallback={null}><MePage
             stats={stats}
             accuracy={accuracy}
             sessionScore={score}
@@ -342,7 +361,7 @@ function App() {
             onCostumeChange={handleCostumeChange}
             activeTheme={activeThemeId}
             onThemeChange={handleThemeChange}
-          />
+          /></Suspense>
         )}
 
         {/* ── Bottom Navigation ── */}
@@ -370,11 +389,11 @@ function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 40 }}
               transition={{ duration: 0.3 }}
-              className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-black/80 border border-[var(--color-gold)]/30 rounded-2xl px-5 py-3 flex items-center gap-3"
+              className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-[var(--color-overlay)] border border-[var(--color-gold)]/30 rounded-2xl px-5 py-3 flex items-center gap-3"
             >
               <span className="text-2xl">🏅</span>
               <div>
-                <div className="text-xs ui text-white/40">Achievement Unlocked!</div>
+                <div className="text-xs ui text-[rgb(var(--color-fg))]/40">Achievement Unlocked!</div>
                 <div className="text-sm chalk text-[var(--color-gold)]">{unlockToast}</div>
               </div>
             </motion.div>

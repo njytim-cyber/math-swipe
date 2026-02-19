@@ -51,8 +51,15 @@ export function useConfetti() {
     const fire = useCallback(() => {
         if (!canvasRef.current) return;
         const canvas = canvasRef.current;
-        const w = canvas.width = window.innerWidth;
-        const h = canvas.height = window.innerHeight;
+        const dpr = window.devicePixelRatio || 1;
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        canvas.style.width = `${w}px`;
+        canvas.style.height = `${h}px`;
+        const ctx = canvas.getContext('2d');
+        if (ctx) ctx.scale(dpr, dpr);
         const cx = w / 2;
         const cy = h * 0.35;
 

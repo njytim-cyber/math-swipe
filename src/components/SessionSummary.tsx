@@ -91,14 +91,14 @@ export const SessionSummary = memo(function SessionSummary({
         <AnimatePresence>
             {visible && (
                 <motion.div
-                    className="absolute inset-0 z-50 flex items-center justify-center bg-black/60"
+                    className="absolute inset-0 z-50 flex items-center justify-center bg-[var(--color-overlay-dim)]"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     onClick={onDismiss}
                 >
                     <motion.div
-                        className="bg-[var(--color-board)] border border-white/15 rounded-3xl px-8 py-6 max-w-xs w-full text-center"
+                        className="bg-[var(--color-board)] border border-[rgb(var(--color-fg))]/15 rounded-3xl px-8 py-6 max-w-xs w-full text-center"
                         initial={{ scale: 0.85, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.85, opacity: 0 }}
@@ -132,16 +132,16 @@ export const SessionSummary = memo(function SessionSummary({
 
                         <div className="flex justify-center gap-6 mb-4">
                             <div className="text-center">
-                                <div className="text-2xl chalk text-white/80">{solved}</div>
-                                <div className="text-[9px] ui text-white/30">solved</div>
+                                <div className="text-2xl chalk text-[rgb(var(--color-fg))]/80">{solved}</div>
+                                <div className="text-[9px] ui text-[rgb(var(--color-fg))]/30">solved</div>
                             </div>
                             <div className="text-center">
                                 <div className="text-2xl chalk text-[var(--color-correct)]">{accuracy}%</div>
-                                <div className="text-[9px] ui text-white/30">accuracy</div>
+                                <div className="text-[9px] ui text-[rgb(var(--color-fg))]/30">accuracy</div>
                             </div>
                             <div className="text-center">
                                 <div className="text-2xl chalk text-[var(--color-streak-fire)]">{streak}🔥</div>
-                                <div className="text-[9px] ui text-white/30">best streak</div>
+                                <div className="text-[9px] ui text-[rgb(var(--color-fg))]/30">best streak</div>
                             </div>
                         </div>
 
@@ -173,7 +173,7 @@ export const SessionSummary = memo(function SessionSummary({
 
                         <button
                             onClick={onDismiss}
-                            className="text-xs ui text-white/30 hover:text-white/50 transition-colors"
+                            className="text-xs ui text-[rgb(var(--color-fg))]/30 hover:text-[rgb(var(--color-fg))]/50 transition-colors"
                         >
                             tap to continue
                         </button>

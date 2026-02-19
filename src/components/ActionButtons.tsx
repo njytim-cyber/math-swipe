@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { QuestionTypePicker } from './QuestionTypePicker';
 import type { QuestionType } from '../utils/mathGenerator';
+import type { ThemeMode } from '../hooks/useThemeMode';
 
 interface Props {
     questionType: QuestionType;
@@ -11,6 +12,8 @@ interface Props {
     timedMode: boolean;
     onTimedModeToggle: () => void;
     timerProgress: number; // 0 → 1
+    themeMode: ThemeMode;
+    onThemeModeToggle: () => void;
 }
 
 /** Circular countdown ring drawn as an SVG arc */
@@ -25,7 +28,7 @@ function TimerRing({ progress, active }: { progress: number; active: boolean }) 
             <circle
                 cx="22" cy="22" r={r}
                 fill="none"
-                stroke={active ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.15)'}
+                stroke={active ? 'rgb(var(--color-fg) / 0.12)' : 'rgb(var(--color-fg) / 0.15)'}
                 strokeWidth="2.5"
             />
             {/* Progress arc */}
@@ -48,6 +51,7 @@ function TimerRing({ progress, active }: { progress: number; active: boolean }) 
 export const ActionButtons = memo(function ActionButtons({
     questionType, onTypeChange, hardMode, onHardModeToggle,
     timedMode, onTimedModeToggle, timerProgress,
+    themeMode, onThemeModeToggle,
 }: Props) {
     const handleShare = async () => {
         const shareData = {
@@ -71,7 +75,7 @@ export const ActionButtons = memo(function ActionButtons({
             {/* Share — TikTok-style thick arrow */}
             <motion.button
                 onClick={handleShare}
-                className="w-11 h-11 flex items-center justify-center text-white/50 active:text-[var(--color-gold)]"
+                className="w-11 h-11 flex items-center justify-center text-[rgb(var(--color-fg))]/50 active:text-[var(--color-gold)]"
                 whileTap={{ scale: 0.88 }}
             >
                 <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -91,7 +95,7 @@ export const ActionButtons = memo(function ActionButtons({
                 onClick={onTimedModeToggle}
                 className={`w-11 h-11 relative flex items-center justify-center ${timedMode
                     ? 'text-[var(--color-gold)]'
-                    : 'text-white/50'
+                    : 'text-[rgb(var(--color-fg))]/50'
                     }`}
                 whileTap={{ scale: 0.88 }}
             >
@@ -128,7 +132,7 @@ export const ActionButtons = memo(function ActionButtons({
                 onClick={onHardModeToggle}
                 className={`w-11 h-11 flex items-center justify-center text-2xl ${hardMode
                     ? 'text-[var(--color-gold)]'
-                    : 'text-white/50'
+                    : 'text-[rgb(var(--color-fg))]/50'
                     }`}
                 whileTap={{ scale: 0.88 }}
                 animate={hardMode ? {
@@ -143,6 +147,31 @@ export const ActionButtons = memo(function ActionButtons({
                 } : {}}
             >
                 💀
+            </motion.button>
+
+            {/* Theme mode toggle */}
+            <motion.button
+                onClick={onThemeModeToggle}
+                className="w-11 h-11 flex items-center justify-center text-[rgb(var(--color-fg))]/50 active:text-[var(--color-gold)]"
+                whileTap={{ scale: 0.88 }}
+            >
+                {themeMode === 'dark' ? (
+                    <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="5" />
+                        <line x1="12" y1="1" x2="12" y2="3" />
+                        <line x1="12" y1="21" x2="12" y2="23" />
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                        <line x1="1" y1="12" x2="3" y2="12" />
+                        <line x1="21" y1="12" x2="23" y2="12" />
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                    </svg>
+                ) : (
+                    <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                    </svg>
+                )}
             </motion.button>
         </div>
     );

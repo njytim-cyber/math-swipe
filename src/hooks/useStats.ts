@@ -77,11 +77,14 @@ export function useStats() {
     ) => {
         setStats(prev => {
             const prevType = prev.byType[questionType] || { ...EMPTY_TYPE };
-            const today = new Date().toISOString().slice(0, 10);
+            const today = new Date();
+            const todayStr = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
             let dayStreak = prev.dayStreak;
-            if (prev.lastPlayedDate !== today) {
-                const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-                dayStreak = prev.lastPlayedDate === yesterday ? prev.dayStreak + 1 : 1;
+            if (prev.lastPlayedDate !== todayStr) {
+                const yest = new Date(today);
+                yest.setDate(yest.getDate() - 1);
+                const yesterdayStr = `${yest.getFullYear()}-${yest.getMonth() + 1}-${yest.getDate()}`;
+                dayStreak = prev.lastPlayedDate === yesterdayStr ? prev.dayStreak + 1 : 1;
             }
             return {
                 totalXP: prev.totalXP + score,
@@ -90,7 +93,7 @@ export function useStats() {
                 bestStreak: Math.max(prev.bestStreak, bestStreak),
                 sessionsPlayed: prev.sessionsPlayed + 1,
                 dayStreak,
-                lastPlayedDate: today,
+                lastPlayedDate: todayStr,
                 byType: {
                     ...prev.byType,
                     [questionType]: {

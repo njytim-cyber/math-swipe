@@ -10,7 +10,7 @@
 
   <!-- PWA -->
   <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#1b1b1b" />
+  <meta name="theme-color" content="#1b1b1b" id="meta-theme-color" />
   <link rel="icon" type="image/svg+xml" href="/icon.svg" />
   <link rel="apple-touch-icon" href="/icon.svg" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -40,6 +40,8 @@
 </head>
 
 <body>
+  <!-- Prevent flash of wrong theme on load + set correct PWA theme-color -->
+  <script>try { if (localStorage.getItem('math-swipe-theme') === 'light') { document.documentElement.setAttribute('data-theme', 'light'); document.getElementById('meta-theme-color')?.setAttribute('content', '#f5f0e8') } } catch (e) { }</script>
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>

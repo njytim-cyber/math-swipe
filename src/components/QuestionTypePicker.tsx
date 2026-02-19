@@ -33,7 +33,7 @@ export const QuestionTypePicker = memo(function QuestionTypePicker({ current, on
             {/* Toggle button */}
             <motion.button
                 onClick={() => setOpen(o => !o)}
-                className={`w-11 h-11 flex items-center justify-center text-white/50 chalk active:text-[var(--color-gold)] ${iconSizeClass(currentIcon)}`}
+                className={`w-11 h-11 flex items-center justify-center text-[rgb(var(--color-fg))]/50 chalk active:text-[var(--color-gold)] ${iconSizeClass(currentIcon)}`}
                 whileTap={{ scale: 0.88 }}
             >
                 {currentIcon.includes('\n') ? (
@@ -52,7 +52,7 @@ export const QuestionTypePicker = memo(function QuestionTypePicker({ current, on
                         <>
                             {/* Dim backdrop — tap to close */}
                             <motion.div
-                                className="fixed inset-0 bg-black/50 z-50"
+                                className="fixed inset-0 bg-[var(--color-overlay-dim)] z-50"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
@@ -62,7 +62,7 @@ export const QuestionTypePicker = memo(function QuestionTypePicker({ current, on
 
                             {/* Centered grouped picker */}
                             <motion.div
-                                className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-black/90 border border-white/15 rounded-2xl px-5 py-5 max-h-[70vh] overflow-y-auto w-[300px]"
+                                className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-[var(--color-overlay)] border border-[rgb(var(--color-fg))]/15 rounded-2xl px-5 py-5 max-h-[70vh] overflow-y-auto w-[300px]"
                                 initial={{ opacity: 0, scale: 0.85 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.85 }}
@@ -73,7 +73,7 @@ export const QuestionTypePicker = memo(function QuestionTypePicker({ current, on
                                     return (
                                         <div key={group} className="mb-3 last:mb-0">
                                             {/* Group header */}
-                                            <div className="text-[10px] ui text-white/30 uppercase tracking-widest mb-2 px-1">
+                                            <div className="text-[10px] ui text-[rgb(var(--color-fg))]/30 uppercase tracking-widest mb-2 px-1">
                                                 {GROUP_LABELS[group]}
                                             </div>
                                             {/* 3-column grid */}
@@ -84,12 +84,12 @@ export const QuestionTypePicker = memo(function QuestionTypePicker({ current, on
                                                         onClick={() => { onChange(t.id); setOpen(false); }}
                                                         className={`flex flex-col items-center gap-1 py-2 px-1 rounded-xl transition-colors ${t.id === current
                                                             ? 'bg-[var(--color-gold)]/15 border border-[var(--color-gold)]/40'
-                                                            : 'border border-transparent active:bg-white/5'
+                                                            : 'border border-transparent active:bg-[var(--color-surface)]'
                                                             }`}
                                                         whileTap={{ scale: 0.92 }}
                                                     >
                                                         <div className="h-8 flex items-center justify-center">
-                                                            <span className={`chalk ${t.id === current ? 'text-[var(--color-gold)]' : 'text-white/70'} ${iconSizeClass(t.icon)} leading-none`}>
+                                                            <span className={`chalk ${t.id === current ? 'text-[var(--color-gold)]' : 'text-[rgb(var(--color-fg))]/70'} ${iconSizeClass(t.icon)} leading-none`}>
                                                                 {t.icon.includes('\n') ? (
                                                                     <span className="inline-grid grid-cols-2 gap-x-1 text-base leading-tight font-bold">{
                                                                         t.icon.replace('\n', '').split('').map((ch, i) => (
@@ -99,7 +99,7 @@ export const QuestionTypePicker = memo(function QuestionTypePicker({ current, on
                                                                 ) : t.icon}
                                                             </span>
                                                         </div>
-                                                        <span className={`text-[10px] ui ${t.id === current ? 'text-[var(--color-gold)]/80' : 'text-white/40'}`}>
+                                                        <span className={`text-[10px] ui ${t.id === current ? 'text-[var(--color-gold)]/80' : 'text-[rgb(var(--color-fg))]/40'}`}>
                                                             {t.label}
                                                         </span>
                                                     </motion.button>

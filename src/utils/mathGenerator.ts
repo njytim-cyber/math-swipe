@@ -2,7 +2,7 @@ import type { QuestionType } from './questionTypes';
 export type { QuestionType } from './questionTypes';
 
 export interface Problem {
-    id: number;
+    id: string;
     expression: string;      // Plain text OR LaTeX string
     latex?: string;           // If set, render with KaTeX instead of plain text
     answer: number;
@@ -15,14 +15,30 @@ export interface Problem {
 const BASIC_TYPES: QuestionType[] = ['add', 'subtract', 'multiply', 'divide'];
 const ALL_INDIVIDUAL: QuestionType[] = ['add', 'subtract', 'multiply', 'divide', 'square', 'sqrt', 'fraction', 'decimal', 'percent', 'linear'];
 
+/** Optional RNG function — defaults to Math.random */
+type RngFn = () => number;
+let _rng: RngFn = Math.random;
+
 /**
  * Generate a problem based on type and difficulty.
  * hardMode expands all ranges significantly.
+ * rng: optional seeded RNG — avoids monkey-patching Math.random.
  */
-export function generateProblem(difficulty: number, type: QuestionType = 'multiply', hardMode = false): Problem {
+export function generateProblem(difficulty: number, type: QuestionType = 'multiply', hardMode = false, rng?: RngFn): Problem {
+    // Stash custom rng for use by all helper functions
+    const prevRng = _rng;
+    if (rng) _rng = rng;
+    try {
+        return _generateProblem(difficulty, type, hardMode);
+    } finally {
+        _rng = prevRng;
+    }
+}
+
+function _generateProblem(difficulty: number, type: QuestionType, hardMode: boolean): Problem {
     // Mixed/special modes delegate to a random sub-type
-    if (type === 'mix-basic' || type === 'daily' || type === 'challenge') return generateProblem(difficulty, pickRandom(BASIC_TYPES), hardMode);
-    if (type === 'mix-all') return generateProblem(difficulty, pickRandom(ALL_INDIVIDUAL), hardMode);
+    if (type === 'mix-basic' || type === 'daily' || type === 'challenge') return _generateProblem(difficulty, pickRandom(BASIC_TYPES), hardMode);
+    if (type === 'mix-all') return _generateProblem(difficulty, pickRandom(ALL_INDIVIDUAL), hardMode);
 
     switch (type) {
         case 'add': return genAdd(difficulty, hardMode);
@@ -118,8 +134,25 @@ function genFraction(d: number, hard: boolean): Problem {
     const resultNum = isAdd ? (n1 * d2 + n2 * d1) : (n1 * d2 - n2 * d1);
     const resultDen = d1 * d2;
 
-    // If subtraction gives negative or zero, re-roll
+    // If subtraction gives negative or zero, re-roll (with guard)
     if (resultNum <= 0) {
+        if (d <= 2 || hard) {
+            // At easy levels or hard mode, just flip to addition
+            const safeNum = n1 * d2 + n2 * d1;
+            const safeG = gcd(safeNum, resultDen);
+            const safeAnsNum = safeNum / safeG;
+            const safeAnsDen = resultDen / safeG;
+            const safeAnswer = safeAnsNum / safeAnsDen;
+            const safeLtx = `\\dfrac{${n1}}{${d1}} + \\dfrac{${n2}}{${d2}}`;
+            const safeExpr = `${n1}/${d1} + ${n2}/${d2}`;
+            const correct = safeAnsNum === safeAnsDen ? safeAnsNum : safeAnswer;
+            const distractors = fractionDistractors(safeAnsNum, safeAnsDen);
+            const correctIndex = randInt(0, 2);
+            const options = [...distractors];
+            options.splice(correctIndex, 0, correct);
+            const optionLabels = options.map(v => fracLabel(v));
+            return { id: uid(), expression: safeExpr, latex: safeLtx, answer: correct, options, optionLabels, correctIndex };
+        }
         return genFraction(d, hard);
     }
 
@@ -140,22 +173,10 @@ function genFraction(d: number, hard: boolean): Problem {
     const options = [...distractors];
     options.splice(correctIndex, 0, correct);
 
-    // Labels for display
-    const optionLabels = options.map(v => {
-        if (Number.isInteger(v)) return `${v}`;
-        // Find closest fraction representation
-        for (let den = 2; den <= 20; den++) {
-            const num = Math.round(v * den);
-            if (Math.abs(num / den - v) < 0.001) {
-                const g2 = gcd(Math.abs(num), den);
-                return `${num / g2}/${den / g2}`;
-            }
-        }
-        return v.toFixed(2);
-    });
+    const optionLabels = options.map(v => fracLabel(v));
 
     return {
-        id: Date.now() + Math.random(),
+        id: uid(),
         expression, latex, answer: correct, options, optionLabels, correctIndex,
     };
 }
@@ -303,11 +324,11 @@ function pack(
     const correctIndex = randInt(0, 2);
     const options: number[] = [...distractors];
     options.splice(correctIndex, 0, answer);
-    return { id: Date.now() + Math.random(), expression, answer, options, correctIndex, ...(latex ? { latex } : {}) };
+    return { id: uid(), expression, answer, options, correctIndex, ...(latex ? { latex } : {}) };
 }
 
 function randInt(min: number, max: number): number {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+    return Math.floor(_rng() * (max - min + 1)) + min;
 }
 
 function randDecimal(range: [number, number]): number {
@@ -315,9 +336,28 @@ function randDecimal(range: [number, number]): number {
 }
 
 function pickRandom<T>(arr: T[]): T {
-    return arr[Math.floor(Math.random() * arr.length)];
+    return arr[Math.floor(_rng() * arr.length)];
 }
 
 function gcd(a: number, b: number): number {
     return b === 0 ? a : gcd(b, a % b);
+}
+
+function uid(): string {
+    return typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+/** Pretty-print a decimal as a fraction label */
+function fracLabel(v: number): string {
+    if (Number.isInteger(v)) return `${v}`;
+    for (let den = 2; den <= 20; den++) {
+        const num = Math.round(v * den);
+        if (Math.abs(num / den - v) < 0.001) {
+            const g2 = gcd(Math.abs(num), den);
+            return `${num / g2}/${den / g2}`;
+        }
+    }
+    return v.toFixed(2);
 }

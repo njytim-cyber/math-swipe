@@ -12,6 +12,7 @@ const BUFFER_SIZE = 8;
 const AUTO_ADVANCE_MS = 150;
 const FAIL_PAUSE_MS = 400;
 const TIMED_MODE_MS = 10_000;
+const MAX_HISTORY = 50;
 
 interface GameState {
     score: number;
@@ -45,6 +46,17 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
     const prevHard = useRef(hardMode);
 
     const dailyRef = useRef<{ dateLabel: string } | null>(null);
+    const pendingTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+    /** Schedule a timeout that gets auto-cleared on unmount */
+    const safeTimeout = useCallback((fn: () => void, ms: number) => {
+        const id = setTimeout(() => {
+            pendingTimers.current = pendingTimers.current.filter(t => t !== id);
+            fn();
+        }, ms);
+        pendingTimers.current.push(id);
+        return id;
+    }, []);
 
     // ── Timed mode ──
     const [timerProgress, setTimerProgress] = useState(0); // 0 → 1
@@ -157,7 +169,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
                 bestStreak: Math.max(prev.bestStreak, newStreak),
                 totalCorrect: prev.totalCorrect + 1,
                 totalAnswered: prev.totalAnswered + 1,
-                answerHistory: [...prev.answerHistory, true],
+                answerHistory: [...prev.answerHistory, true].slice(-MAX_HISTORY),
                 score: prev.score + 10 + Math.floor(newStreak / 5) * 5 + (isFast ? 2 : 0),
                 flash: 'correct',
                 chalkState: newStreak >= 10 ? 'streak' : 'success',
@@ -167,10 +179,10 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
             scheduleChalkReset(newStreak >= 10 ? 2000 : 800);
 
             // Auto-clear milestone after CSS animation
-            if (milestoneEmoji) setTimeout(() => setGs(p => ({ ...p, milestone: '' })), 1300);
-            if (isFast) setTimeout(() => setGs(p => ({ ...p, speedBonus: false })), 900);
+            if (milestoneEmoji) safeTimeout(() => setGs(p => ({ ...p, milestone: '' })), 1300);
+            if (isFast) safeTimeout(() => setGs(p => ({ ...p, speedBonus: false })), 900);
 
-            setTimeout(() => {
+            safeTimeout(() => {
                 setGs(prev => ({ ...prev, flash: 'none' }));
                 advanceProblem();
             }, AUTO_ADVANCE_MS);
@@ -186,7 +198,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
                     frozen: true,
                 }));
                 scheduleChalkReset(FAIL_PAUSE_MS);
-                setTimeout(() => {
+                safeTimeout(() => {
                     setGs(prev => ({ ...prev, flash: 'none', frozen: false }));
                 }, FAIL_PAUSE_MS);
             } else {
@@ -195,7 +207,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
                     ...prev,
                     streak: 0,
                     totalAnswered: prev.totalAnswered + 1,
-                    answerHistory: [...prev.answerHistory, false],
+                    answerHistory: [...prev.answerHistory, false].slice(-MAX_HISTORY),
                     flash: 'wrong',
                     chalkState: 'fail',
                     frozen: true,
@@ -208,7 +220,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
                 }, FAIL_PAUSE_MS);
             }
         }
-    }, [gs.frozen, gs.streak, gs.totalAnswered, problems, recordAnswer, scheduleChalkReset, advanceProblem]);
+    }, [gs.frozen, gs.streak, gs.totalAnswered, problems, recordAnswer, scheduleChalkReset, advanceProblem, safeTimeout]);
 
     // ── Timed mode tick + auto-skip ──
     useEffect(() => {
@@ -230,13 +242,13 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
                     ...prev,
                     streak: 0,
                     totalAnswered: prev.totalAnswered + 1,
-                    answerHistory: [...prev.answerHistory, false],
+                    answerHistory: [...prev.answerHistory, false].slice(-MAX_HISTORY),
                     flash: 'wrong',
                     chalkState: 'fail',
                     frozen: true,
                 }));
                 scheduleChalkReset(FAIL_PAUSE_MS);
-                setTimeout(() => {
+                safeTimeout(() => {
                     setGs(prev => ({ ...prev, flash: 'none', frozen: false }));
                     advanceProblem();
                 }, FAIL_PAUSE_MS);
@@ -251,6 +263,15 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
     }, [timedMode, problems[0]?.id, gs.frozen]);
 
     const dailyComplete = (questionType === 'daily' || questionType === 'challenge') && gs.totalAnswered > 0 && problems.length === 0;
+
+    // ── Cleanup all timers on unmount (#4, #11) ──
+    useEffect(() => {
+        return () => {
+            if (chalkTimerRef.current) clearTimeout(chalkTimerRef.current);
+            pendingTimers.current.forEach(t => clearTimeout(t));
+            pendingTimers.current = [];
+        };
+    }, []);
 
     return {
         problems,

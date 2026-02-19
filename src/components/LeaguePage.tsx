@@ -34,7 +34,7 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak }: Props
                 animate={{ opacity: 1, y: 0 }}
             >
                 <h2 className="text-3xl chalk text-[var(--color-gold)] mb-1">League</h2>
-                <p className="text-xs ui text-white/30">Weekly leaderboard</p>
+                <p className="text-xs ui text-[rgb(var(--color-fg))]/30">Weekly leaderboard</p>
             </motion.div>
 
             {/* Leaderboard */}
@@ -52,16 +52,16 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak }: Props
                     >
                         {/* Rank */}
                         <div className={`w-7 text-center ui font-bold text-lg ${entry.rank === 1 ? 'text-[var(--color-gold)]' :
-                            entry.rank === 2 ? 'text-white/60' :
+                            entry.rank === 2 ? 'text-[rgb(var(--color-fg))]/60' :
                                 entry.rank === 3 ? 'text-[var(--color-streak-fire)]' :
-                                    'text-white/30'
+                                    'text-[rgb(var(--color-fg))]/30'
                             }`}>
                             {entry.rank <= 3 ? entry.emoji : entry.rank}
                         </div>
 
                         {/* Name */}
                         <div className="flex-1 min-w-0">
-                            <div className={`text-sm ui font-semibold truncate ${entry.isYou ? 'text-[var(--color-gold)]' : 'text-white/70'
+                            <div className={`text-sm ui font-semibold truncate ${entry.isYou ? 'text-[var(--color-gold)]' : 'text-[rgb(var(--color-fg))]/70'
                                 }`}>
                                 {entry.name}
                             </div>
@@ -69,11 +69,11 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak }: Props
 
                         {/* XP */}
                         <div className="text-right">
-                            <div className={`text-sm ui font-semibold ${entry.isYou ? 'text-[var(--color-gold)]' : 'text-white/50'
+                            <div className={`text-sm ui font-semibold ${entry.isYou ? 'text-[var(--color-gold)]' : 'text-[rgb(var(--color-fg))]/50'
                                 }`}>
                                 {entry.xp.toLocaleString()}
                             </div>
-                            <div className="text-[9px] ui text-white/20">XP</div>
+                            <div className="text-[9px] ui text-[rgb(var(--color-fg))]/20">XP</div>
                         </div>
 
                         {/* Streak */}

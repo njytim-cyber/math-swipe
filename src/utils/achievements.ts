@@ -67,7 +67,12 @@ export const ACHIEVEMENTS: Achievement[] = [
         id: 'all-rounder',
         name: 'All-Rounder',
         desc: 'Solve 10+ of every type',
-        check: s => Object.values(s.byType).every(t => t.solved >= 10),
+        check: s => {
+            const META: string[] = ['daily', 'challenge', 'mix-basic', 'mix-all'];
+            return Object.entries(s.byType)
+                .filter(([k]) => !META.includes(k))
+                .every(([, t]) => t.solved >= 10);
+        },
     },
 ];
 
