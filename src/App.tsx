@@ -74,10 +74,19 @@ function App() {
     }
   }, [score]);
 
-  // ── Auto-show summary when daily challenge finishes ──
-  useEffect(() => {
-    if (dailyComplete) setShowSummary(true);
-  }, [dailyComplete]);
+  // ── Session summary ──
+  const [showSummary, setShowSummary] = useState(false);
+  const sessionAccuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
+
+  // ── Auto-show summary when daily challenge finishes (adjust state during render) ──
+  const [prevDailyComplete, setPrevDailyComplete] = useState(false);
+  if (dailyComplete && !prevDailyComplete) {
+    setPrevDailyComplete(true);
+    setShowSummary(true);
+  }
+  if (!dailyComplete && prevDailyComplete) {
+    setPrevDailyComplete(false);
+  }
 
   // Track previous tab for session recording (handled in handleTabChange)
   const prevTab = useRef<Tab>('game');
@@ -87,14 +96,16 @@ function App() {
 
   // ── Achievements ──
   const [unlocked, setUnlocked] = useState(() => loadUnlocked());
+  const unlockedRef = useRef(unlocked);
+  useEffect(() => { unlockedRef.current = unlocked; }, [unlocked]);
   const [unlockToast, setUnlockToast] = useState('');
 
   // Check achievements whenever navigating away from game (i.e. stats recorded)
   useEffect(() => {
     const snap = { ...stats, bestStreak: Math.max(stats.bestStreak, bestStreak) };
-    const fresh = checkAchievements(snap, unlocked);
+    const fresh = checkAchievements(snap, unlockedRef.current);
     if (fresh.length > 0) {
-      const next = new Set(unlocked);
+      const next = new Set(unlockedRef.current);
       fresh.forEach(id => next.add(id));
       setUnlocked(next);
       saveUnlocked(next);
@@ -107,20 +118,19 @@ function App() {
     }
   }, [stats, bestStreak]);
 
-  // ── Personal best detection ──
+  // ── Personal best detection (adjust state during render) ──
   const [showPB, setShowPB] = useState(false);
-  const prevBestRef = useRef(stats.bestStreak);
+  const [prevBest, setPrevBest] = useState(stats.bestStreak);
+  if (bestStreak > prevBest && bestStreak > 0) {
+    setPrevBest(bestStreak);
+    setShowPB(true);
+  }
+  // Auto-hide PB toast
   useEffect(() => {
-    if (bestStreak > prevBestRef.current && bestStreak > 0) {
-      setShowPB(true);
-      setTimeout(() => setShowPB(false), 2000);
-      prevBestRef.current = bestStreak;
-    }
-  }, [bestStreak]);
-
-  // ── Session summary ──
-  const [showSummary, setShowSummary] = useState(false);
-  const sessionAccuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
+    if (!showPB) return;
+    const t = setTimeout(() => setShowPB(false), 2000);
+    return () => clearTimeout(t);
+  }, [showPB]);
 
   const handleTabChange = useCallback((tab: Tab) => {
     if (prevTab.current === 'game' && tab !== 'game' && totalAnswered > 0) {

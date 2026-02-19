@@ -72,7 +72,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
             initial[0].startTime = Date.now();
             setProblems(initial);
         }
-    }, [level, questionType]);
+    }, [level, questionType, challengeId, hardMode]);
 
     // ── Regenerate on question type change ──
     useEffect(() => {
@@ -96,7 +96,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
             fresh[0].startTime = Date.now();
             setProblems(fresh);
         }
-    }, [questionType, hardMode, level]);
+    }, [questionType, hardMode, level, challengeId]);
 
     // ── Keep buffer full (not for daily/challenge — fixed set) ──
     useEffect(() => {
@@ -104,7 +104,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
         if (problems.length > 0 && problems.length < BUFFER_SIZE) {
             setProblems(prev => [...prev, generateProblem(level, questionType, hardMode)]);
         }
-    }, [problems.length, level, questionType]);
+    }, [problems.length, level, questionType, hardMode]);
 
     // ── Advance to next problem ──
     const advanceProblem = useCallback(() => {
@@ -208,7 +208,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
                 }, FAIL_PAUSE_MS);
             }
         }
-    }, [gs.frozen, gs.streak, problems, recordAnswer, scheduleChalkReset, advanceProblem]);
+    }, [gs.frozen, gs.streak, gs.totalAnswered, problems, recordAnswer, scheduleChalkReset, advanceProblem]);
 
     // ── Timed mode tick + auto-skip ──
     useEffect(() => {

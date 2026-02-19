@@ -10,7 +10,6 @@ export const ScoreCounter = memo(function ScoreCounter({ value }: { value: numbe
     const spring = useSpring(0, { stiffness: 100, damping: 18 });
     const [display, setDisplay] = useState(0);
     const prevValue = useRef(0);
-    const justBumped = value > prevValue.current;
 
     useEffect(() => {
         prevValue.current = value;
@@ -25,7 +24,8 @@ export const ScoreCounter = memo(function ScoreCounter({ value }: { value: numbe
     return (
         <motion.div
             className="chalk text-[var(--color-gold)] text-7xl leading-none tabular-nums"
-            animate={justBumped ? { scale: [1, 1.2, 1] } : {}}
+            key={value}
+            animate={{ scale: [1, 1.2, 1] }}
             transition={{ duration: 0.3 }}
         >
             {value === 0 ? (

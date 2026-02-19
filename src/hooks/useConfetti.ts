@@ -20,6 +20,34 @@ export function useConfetti() {
     const particles = useRef<Particle[]>([]);
     const animRef = useRef<number>(0);
 
+    const tick = useCallback(function tickFn() {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        particles.current = particles.current.filter(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.3;
+            p.life -= 0.02;
+            if (p.life <= 0) return false;
+            ctx.globalAlpha = p.life;
+            ctx.fillStyle = p.color;
+            ctx.fillRect(p.x, p.y, p.size, p.size * 0.6);
+            return true;
+        });
+        ctx.globalAlpha = 1;
+
+        if (particles.current.length > 0) {
+            animRef.current = requestAnimationFrame(tickFn);
+        } else {
+            animRef.current = 0;
+        }
+    }, []);
+
     const fire = useCallback(() => {
         if (!canvasRef.current) return;
         const canvas = canvasRef.current;
@@ -47,35 +75,7 @@ export function useConfetti() {
 
         // Start animation loop if not running
         if (!animRef.current) tick();
-    }, []);
-
-    const tick = useCallback(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        particles.current = particles.current.filter(p => {
-            p.x += p.vx;
-            p.y += p.vy;
-            p.vy += 0.3;
-            p.life -= 0.02;
-            if (p.life <= 0) return false;
-            ctx.globalAlpha = p.life;
-            ctx.fillStyle = p.color;
-            ctx.fillRect(p.x, p.y, p.size, p.size * 0.6);
-            return true;
-        });
-        ctx.globalAlpha = 1;
-
-        if (particles.current.length > 0) {
-            animRef.current = requestAnimationFrame(tick);
-        } else {
-            animRef.current = 0;
-        }
-    }, []);
+    }, [tick]);
 
     useEffect(() => {
         return () => {

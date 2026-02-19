@@ -107,6 +107,18 @@ export const ProblemView = memo(function ProblemView({ problem, frozen, highligh
         ([xv, yv]: number[]) => Math.min(Math.sqrt(xv * xv + yv * yv) / 120, 0.6)
     );
     const trailBg = useMotionTemplate`rgba(255,255,255,${trailOpacity})`;
+    // Trail dot transforms — must be called at top level, not inside .map()
+    const trailX1 = useTransform(x, v => -v * 0.3);
+    const trailY1 = useTransform(y, v => -v * 0.3);
+    const trailX2 = useTransform(x, v => -v * 0.6);
+    const trailY2 = useTransform(y, v => -v * 0.6);
+    const trailX3 = useTransform(x, v => -v * 0.9);
+    const trailY3 = useTransform(y, v => -v * 0.9);
+    const trailDots = [
+        { x: trailX1, y: trailY1 },
+        { x: trailX2, y: trailY2 },
+        { x: trailX3, y: trailY3 },
+    ];
 
     const handleDragEnd = (_: unknown, info: PanInfo) => {
         if (frozen) return;
@@ -131,15 +143,15 @@ export const ProblemView = memo(function ProblemView({ problem, frozen, highligh
                 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0"
                 style={{ opacity: trailOpacity }}
             >
-                {[0.3, 0.6, 0.9].map(s => (
+                {trailDots.map((dot, i) => (
                     <motion.div
-                        key={s}
+                        key={i}
                         className="absolute rounded-full"
                         style={{
                             width: 6, height: 6,
                             background: trailBg,
-                            x: useTransform(x, v => -v * s),
-                            y: useTransform(y, v => -v * s),
+                            x: dot.x,
+                            y: dot.y,
                         }}
                     />
                 ))}

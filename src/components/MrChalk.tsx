@@ -1,10 +1,10 @@
 import { memo, useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type TargetAndTransition } from 'framer-motion';
 import type { ChalkState } from '../hooks/useGameLoop';
 import type { QuestionType } from '../utils/questionTypes';
 import { pickChalkMessage } from '../utils/chalkMessages';
 
-const ANIMS: Record<ChalkState, object> = {
+const ANIMS: Record<ChalkState, TargetAndTransition> = {
     idle: { y: [0, -6, 0], rotate: [0, 2, -2, 0], transition: { repeat: Infinity, duration: 2.5, ease: 'easeInOut' as const } },
     success: { scale: [1, 1.25, 1], y: [0, -14, 0], transition: { duration: 0.45 } },
     fail: { x: [-6, 6, -6, 6, 0], transition: { duration: 0.4 } },
@@ -119,27 +119,38 @@ export const MrChalk = memo(function MrChalk({ state, costume, streak = 0, total
     const [message, setMessage] = useState('');
     const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-    const ctx = { state, streak, totalAnswered, questionType, hardMode, timedMode };
-
+    const ctxRef = useRef({ state, streak, totalAnswered, questionType, hardMode, timedMode });
     useEffect(() => {
-        setMessage(pickChalkMessage(ctx));
+        ctxRef.current = { state, streak, totalAnswered, questionType, hardMode, timedMode };
+    });
+
+    // Adjust state during render when deps change (React-recommended pattern)
+    const depsKey = `${state}-${streak}-${totalAnswered}-${questionType}-${hardMode}-${timedMode}`;
+    const [prevDepsKey, setPrevDepsKey] = useState('');
+    if (depsKey !== prevDepsKey) {
+        setPrevDepsKey(depsKey);
+        setMessage(pickChalkMessage({ state, streak, totalAnswered, questionType, hardMode, timedMode }));
+    }
+
+    // Auto-clear message after timeout (effect only for async timer)
+    useEffect(() => {
+        if (!message) return;
         if (timerRef.current) clearTimeout(timerRef.current);
         timerRef.current = setTimeout(() => setMessage(''), state === 'idle' ? 4000 : 2500);
         return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [state]);
+    }, [message, state]);
 
+    // Periodic idle messages (async callback reads ref — allowed)
     useEffect(() => {
         if (state !== 'idle') return;
-        const interval = setInterval(() => setMessage(pickChalkMessage({ ...ctx, state: 'idle' })), 5000);
+        const interval = setInterval(() => setMessage(pickChalkMessage({ ...ctxRef.current, state: 'idle' })), 5000);
         return () => clearInterval(interval);
-
     }, [state]);
 
     return (
         <motion.div
             className={`absolute bottom-6 right-3 pointer-events-none z-30 ${state === 'streak' ? 'on-fire' : ''}`}
-            animate={ANIMS[state] as any}
+            animate={ANIMS[state]}
         >
             <AnimatePresence mode="wait">
                 {message && (
