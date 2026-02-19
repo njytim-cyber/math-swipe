@@ -145,9 +145,8 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
         const selectedValue = current.options[indexMap[direction]];
         const correct = selectedValue === current.answer;
 
-        recordAnswer(tts, correct);
-
         if (correct) {
+            recordAnswer(tts, correct);
             const newStreak = gs.streak + 1;
             const isFast = tts < 1200;
             const milestoneEmoji = MILESTONES[newStreak] || '';
@@ -176,21 +175,38 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
                 advanceProblem();
             }, AUTO_ADVANCE_MS);
         } else {
-            setGs(prev => ({
-                ...prev,
-                streak: 0,
-                totalAnswered: prev.totalAnswered + 1,
-                answerHistory: [...prev.answerHistory, false],
-                flash: 'wrong',
-                chalkState: 'fail',
-                frozen: true,
-            }));
-            scheduleChalkReset(FAIL_PAUSE_MS);
+            // During tutorial (first question) — don't count as wrong, just shake and let them retry
+            const isTutorial = gs.totalAnswered === 0;
 
-            setTimeout(() => {
-                setGs(prev => ({ ...prev, flash: 'none', frozen: false }));
-                advanceProblem();
-            }, FAIL_PAUSE_MS);
+            if (isTutorial) {
+                setGs(prev => ({
+                    ...prev,
+                    flash: 'wrong',
+                    chalkState: 'fail',
+                    frozen: true,
+                }));
+                scheduleChalkReset(FAIL_PAUSE_MS);
+                setTimeout(() => {
+                    setGs(prev => ({ ...prev, flash: 'none', frozen: false }));
+                }, FAIL_PAUSE_MS);
+            } else {
+                recordAnswer(tts, false);
+                setGs(prev => ({
+                    ...prev,
+                    streak: 0,
+                    totalAnswered: prev.totalAnswered + 1,
+                    answerHistory: [...prev.answerHistory, false],
+                    flash: 'wrong',
+                    chalkState: 'fail',
+                    frozen: true,
+                }));
+                scheduleChalkReset(FAIL_PAUSE_MS);
+
+                setTimeout(() => {
+                    setGs(prev => ({ ...prev, flash: 'none', frozen: false }));
+                    advanceProblem();
+                }, FAIL_PAUSE_MS);
+            }
         }
     }, [gs.frozen, gs.streak, problems, recordAnswer, scheduleChalkReset, advanceProblem]);
 

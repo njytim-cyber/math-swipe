@@ -46,22 +46,22 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak }: Props
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.04 }}
                         className={`flex items-center gap-3 py-3 px-3 rounded-xl mb-1 ${entry.isYou
-                                ? 'bg-[var(--color-gold)]/10 border border-[var(--color-gold)]/20'
-                                : ''
+                            ? 'bg-[var(--color-gold)]/10 border border-[var(--color-gold)]/20'
+                            : ''
                             }`}
                     >
                         {/* Rank */}
-                        <div className={`w-7 text-center chalk text-lg ${entry.rank === 1 ? 'text-[var(--color-gold)]' :
-                                entry.rank === 2 ? 'text-white/60' :
-                                    entry.rank === 3 ? 'text-[var(--color-streak-fire)]' :
-                                        'text-white/30'
+                        <div className={`w-7 text-center ui font-bold text-lg ${entry.rank === 1 ? 'text-[var(--color-gold)]' :
+                            entry.rank === 2 ? 'text-white/60' :
+                                entry.rank === 3 ? 'text-[var(--color-streak-fire)]' :
+                                    'text-white/30'
                             }`}>
                             {entry.rank <= 3 ? entry.emoji : entry.rank}
                         </div>
 
                         {/* Name */}
                         <div className="flex-1 min-w-0">
-                            <div className={`text-sm chalk truncate ${entry.isYou ? 'text-[var(--color-gold)]' : 'text-white/70'
+                            <div className={`text-sm ui font-semibold truncate ${entry.isYou ? 'text-[var(--color-gold)]' : 'text-white/70'
                                 }`}>
                                 {entry.name}
                             </div>
@@ -69,7 +69,7 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak }: Props
 
                         {/* XP */}
                         <div className="text-right">
-                            <div className={`text-sm chalk ${entry.isYou ? 'text-[var(--color-gold)]' : 'text-white/50'
+                            <div className={`text-sm ui font-semibold ${entry.isYou ? 'text-[var(--color-gold)]' : 'text-white/50'
                                 }`}>
                                 {entry.xp.toLocaleString()}
                             </div>
@@ -78,7 +78,7 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak }: Props
 
                         {/* Streak */}
                         <div className="text-right w-10">
-                            <div className="text-xs chalk text-[var(--color-streak-fire)]">
+                            <div className="text-xs ui font-semibold text-[var(--color-streak-fire)]">
                                 {entry.streak > 0 ? `${entry.streak}🔥` : '—'}
                             </div>
                         </div>

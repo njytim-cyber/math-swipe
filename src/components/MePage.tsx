@@ -189,7 +189,18 @@ export const MePage = memo(function MePage({ stats, accuracy, sessionScore, sess
             </motion.p>
 
             <button
-                onClick={onReset}
+                onClick={() => {
+                    const prompts = [
+                        `You've earned ${stats.totalXP} XP! Are you sure you want to start fresh? 🥺`,
+                        `Mr. Chalk will miss your ${stats.bestStreak}-streak record! Reset anyway? 🤔`,
+                        `${stats.totalSolved} problems solved and counting… wipe it all? 😱`,
+                        'A fresh start can be beautiful! Ready to begin again? 🌱',
+                        'Your math journey so far has been amazing! Really reset? ✨',
+                        'Even superheroes get a fresh origin story! Reset? 🦸',
+                    ];
+                    const msg = prompts[Math.floor(Math.random() * prompts.length)];
+                    if (window.confirm(msg)) onReset();
+                }}
                 className="text-[11px] ui text-white/20 mt-4 hover:text-white/35 transition-colors"
             >
                 reset stats
