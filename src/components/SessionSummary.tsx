@@ -12,11 +12,14 @@ interface Props {
     questionType: string;
     visible: boolean;
     onDismiss: () => void;
+    hardMode?: boolean;
+    timedMode?: boolean;
 }
 
 function buildShareText(
     xp: number, streak: number, accuracy: number,
     history: boolean[], questionType: string,
+    hardMode?: boolean, timedMode?: boolean,
 ): string {
     const emojis = history.map(ok => ok ? '🟩' : '🟥');
     const emojiRows: string[] = [];
@@ -25,9 +28,10 @@ function buildShareText(
     }
 
     const typeLabel = questionType.startsWith('mix-') ? 'Mix' : questionType.charAt(0).toUpperCase() + questionType.slice(1);
+    const modeTag = hardMode && timedMode ? ' 💀⏱️ ULTIMATE' : hardMode ? ' 💀 HARD' : timedMode ? ' ⏱️ TIMED' : '';
     const headline = accuracy === 100
-        ? `🧮 Math Swipe — PERFECT! 💯`
-        : `🧮 Math Swipe — ${typeLabel}`;
+        ? `🧮 Math Swipe — PERFECT! 💯${modeTag}`
+        : `🧮 Math Swipe — ${typeLabel}${modeTag}`;
 
     // Generate a challenge link so the recipient can play the same set
     const challengeUrl = `${window.location.origin}?c=${createChallengeId()}`;
@@ -44,6 +48,7 @@ function buildShareText(
 
 export const SessionSummary = memo(function SessionSummary({
     solved, bestStreak: streak, accuracy, xpEarned, answerHistory, questionType, visible, onDismiss,
+    hardMode, timedMode,
 }: Props) {
     const [copied, setCopied] = useState(false);
 
@@ -65,7 +70,7 @@ export const SessionSummary = memo(function SessionSummary({
     }, [visible, xpEarned, xpSpring]);
 
     const handleShare = async () => {
-        const text = buildShareText(xpEarned, streak, accuracy, answerHistory, questionType);
+        const text = buildShareText(xpEarned, streak, accuracy, answerHistory, questionType, hardMode, timedMode);
 
         try {
             if (navigator.share) {
@@ -125,7 +130,12 @@ export const SessionSummary = memo(function SessionSummary({
                             </>
                         ) : (
                             <>
-                                <div className="text-2xl mb-4">📝</div>
+                                <div className="text-2xl mb-2">📝</div>
+                                {(hardMode || timedMode) && (
+                                    <div className="text-xs ui text-[rgb(var(--color-fg))]/40 mb-1">
+                                        {hardMode && timedMode ? '💀⏱️ ULTIMATE MODE' : hardMode ? '💀 HARD MODE' : '⏱️ TIMED MODE'}
+                                    </div>
+                                )}
                                 <h3 className="text-xl chalk text-[var(--color-gold)] mb-4">Session Complete</h3>
                             </>
                         )}

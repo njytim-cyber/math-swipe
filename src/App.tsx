@@ -11,15 +11,19 @@ const MePage = lazy(() => import('./components/MePage').then(m => ({ default: m.
 import { useGameLoop } from './hooks/useGameLoop';
 import { useStats } from './hooks/useStats';
 import type { QuestionType } from './utils/questionTypes';
-import { ACHIEVEMENTS, loadUnlocked, saveUnlocked, checkAchievements } from './utils/achievements';
+import { EVERY_ACHIEVEMENT, loadUnlocked, saveUnlocked, checkAchievements, restoreUnlockedFromCloud } from './utils/achievements';
 import { SessionSummary } from './components/SessionSummary';
 import { CHALK_THEMES, applyTheme, type ChalkTheme } from './utils/chalkThemes';
 import { applyMode } from './hooks/useThemeMode';
 import { useLocalState } from './hooks/useLocalState';
+import { useFirebaseAuth } from './hooks/useFirebaseAuth';
 
 type Tab = 'game' | 'league' | 'me';
 
 function App() {
+  const { user, loading: authLoading, setDisplayName, linkGoogle } = useFirebaseAuth();
+  const uid = user?.uid ?? null;
+
   const [activeTab, setActiveTab] = useState<Tab>('game');
   const [hardMode, setHardMode] = useState(false);
   const [timedMode, setTimedMode] = useState(false);
@@ -56,7 +60,7 @@ function App() {
     dailyComplete,
   } = useGameLoop(questionType, hardMode, challengeId, timedMode);
 
-  const { stats, accuracy, recordSession, resetStats } = useStats();
+  const { stats, accuracy, recordSession, resetStats } = useStats(uid);
 
   const currentProblem = problems[0];
   const isFirstQuestion = totalAnswered === 0;
@@ -102,6 +106,17 @@ function App() {
   useEffect(() => { unlockedRef.current = unlocked; }, [unlocked]);
   const [unlockToast, setUnlockToast] = useState('');
 
+  // Restore achievements from Firestore on auth
+  useEffect(() => {
+    if (!uid) return;
+    restoreUnlockedFromCloud(uid).then(restored => {
+      if (restored) {
+        setUnlocked(restored);
+        unlockedRef.current = restored;
+      }
+    });
+  }, [uid]);
+
   // Check achievements whenever navigating away from game (i.e. stats recorded)
   useEffect(() => {
     const snap = { ...stats, bestStreak: Math.max(stats.bestStreak, bestStreak) };
@@ -110,9 +125,9 @@ function App() {
       const next = new Set(unlockedRef.current);
       fresh.forEach(id => next.add(id));
       setUnlocked(next);
-      saveUnlocked(next);
+      saveUnlocked(next, uid);
       // Show toast for first new unlock
-      const badge = ACHIEVEMENTS.find(a => a.id === fresh[0]);
+      const badge = EVERY_ACHIEVEMENT.find(a => a.id === fresh[0]);
       if (badge) {
         setUnlockToast(badge.name);
         const t = setTimeout(() => setUnlockToast(''), 2500);
@@ -137,17 +152,17 @@ function App() {
 
   const handleTabChange = useCallback((tab: Tab) => {
     if (prevTab.current === 'game' && tab !== 'game' && totalAnswered > 0) {
-      recordSession(score, totalCorrect, totalAnswered, bestStreak, questionType);
+      recordSession(score, totalCorrect, totalAnswered, bestStreak, questionType, hardMode, timedMode);
       setShowSummary(true);
     }
     setActiveTab(tab);
-  }, [score, totalCorrect, totalAnswered, bestStreak, questionType, recordSession]);
+  }, [score, totalCorrect, totalAnswered, bestStreak, questionType, recordSession, hardMode, timedMode]);
 
   // ── Costumes ──
-  const [activeCostume, handleCostumeChange] = useLocalState('math-swipe-costume', '');
+  const [activeCostume, handleCostumeChange] = useLocalState('math-swipe-costume', '', uid);
 
   // ── Chalk themes ──
-  const [activeThemeId, setActiveThemeId] = useLocalState('math-swipe-chalk-theme', 'classic');
+  const [activeThemeId, setActiveThemeId] = useLocalState('math-swipe-chalk-theme', 'classic', uid);
   useEffect(() => {
     const t = CHALK_THEMES.find(th => th.id === activeThemeId);
     if (t) applyTheme(t.color);
@@ -155,11 +170,28 @@ function App() {
   const handleThemeChange = useCallback((t: ChalkTheme) => setActiveThemeId(t.id), [setActiveThemeId]);
 
   // ── Theme mode (dark/light) ──
-  const [themeMode, setThemeMode] = useLocalState('math-swipe-theme', 'dark');
+  const [themeMode, setThemeMode] = useLocalState('math-swipe-theme', 'dark', uid);
   useEffect(() => { applyMode(themeMode as 'dark' | 'light'); }, [themeMode]);
   const toggleThemeMode = useCallback(() => {
     setThemeMode(themeMode === 'dark' ? 'light' : 'dark');
   }, [themeMode, setThemeMode]);
+
+  // Show loading screen while Firebase auth initializes
+  if (authLoading) {
+    return (
+      <BlackboardLayout>
+        <div className="flex-1 flex items-center justify-center">
+          <motion.div
+            className="text-lg chalk text-[var(--color-chalk)]/50"
+            animate={{ opacity: [0.3, 1, 0.3] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          >
+            Loading...
+          </motion.div>
+        </div>
+      </BlackboardLayout>
+    );
+  }
 
   return (
     <>
@@ -274,15 +306,15 @@ function App() {
             </AnimatePresence>
 
             {/* ── Main Problem Area ── */}
-            <AnimatePresence mode="popLayout">
+            <AnimatePresence mode="wait">
               {currentProblem && (
                 <motion.div
                   key={currentProblem.id}
                   className="flex-1 flex flex-col"
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -60 }}
-                  transition={{ duration: 0.2, ease: 'easeOut' }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15, ease: 'easeOut' }}
                 >
                   <ProblemView
                     problem={currentProblem}
@@ -349,7 +381,7 @@ function App() {
           </>
         )}
 
-        {activeTab === 'league' && <Suspense fallback={null}><LeaguePage userXP={stats.totalXP} userStreak={stats.bestStreak} /></Suspense>}
+        {activeTab === 'league' && <Suspense fallback={null}><LeaguePage userXP={stats.totalXP} userStreak={stats.bestStreak} uid={uid} displayName={user?.displayName ?? 'You'} /></Suspense>}
 
         {activeTab === 'me' && (
           <Suspense fallback={null}><MePage
@@ -363,6 +395,10 @@ function App() {
             onCostumeChange={handleCostumeChange}
             activeTheme={activeThemeId}
             onThemeChange={handleThemeChange}
+            displayName={user?.displayName ?? ''}
+            onDisplayNameChange={setDisplayName}
+            isAnonymous={user?.isAnonymous ?? true}
+            onLinkGoogle={linkGoogle}
           /></Suspense>
         )}
 
@@ -380,6 +416,8 @@ function App() {
           questionType={questionType}
           visible={showSummary}
           onDismiss={() => setShowSummary(false)}
+          hardMode={hardMode}
+          timedMode={timedMode}
         />
 
         {/* ── Achievement unlock toast ── */}

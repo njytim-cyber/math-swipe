@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can read/write their own document
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Leaderboard: any authenticated user can read any user doc's public fields
+    // (we query the users collection directly for the leaderboard)
+    match /users/{uid} {
+      allow read: if request.auth != null;
+    }
+  }
+}
