@@ -1,35 +1,8 @@
 import { memo, useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { ChalkState } from '../hooks/useGameLoop';
-
-const MESSAGES: Record<ChalkState, string[]> = {
-    idle: [
-        'You got this! 💪', 'Take your time 🌟', 'I believe in you!',
-        'Math is beautiful ✨', 'Focus mode: ON 🎯', 'Ready when you are!',
-        'Why was 6 afraid of 7? 🤔', 'Let\'s gooo! 🚀',
-    ],
-    success: [
-        'AMAZING! 🎉', 'You\'re a genius! 🧠', 'Nailed it! ✅',
-        'Too easy for you! 😎', 'Brilliant work! ⭐', 'Unstoppable! 🔥',
-        'That was fast! ⚡', 'Big brain energy! 🧠✨', 'Proud of you! 🥹',
-    ],
-    fail: [
-        'Almost! Try again 💙', 'You\'ll get it! 🌈', 'Mistakes = learning! 📚',
-        'Don\'t give up! 💪', 'So close! 🤏', 'Next one is yours! 🎯',
-    ],
-    streak: [
-        'ON FIRE! 🔥🔥🔥', 'LEGENDARY! 👑', 'Can\'t be stopped! 🚀',
-        'Math machine! ⚙️', 'Is this even hard? 😏', 'Streeeeak! 🎸',
-        'You\'re CRACKED! 💥', 'Hall of fame material! 🏆',
-    ],
-};
-
-function pickRandom(arr: string[], lastRef: React.MutableRefObject<string>): string {
-    const filtered = arr.filter(m => m !== lastRef.current);
-    const pick = filtered[Math.floor(Math.random() * filtered.length)] || arr[0];
-    lastRef.current = pick;
-    return pick;
-}
+import type { QuestionType } from '../utils/questionTypes';
+import { pickChalkMessage } from '../utils/chalkMessages';
 
 const ANIMS: Record<ChalkState, object> = {
     idle: { y: [0, -6, 0], rotate: [0, 2, -2, 0], transition: { repeat: Infinity, duration: 2.5, ease: 'easeInOut' as const } },
@@ -134,22 +107,33 @@ const COSTUMES: Record<string, React.ReactNode> = {
     ),
 };
 
-export const MrChalk = memo(function MrChalk({ state, costume }: { state: ChalkState; costume?: string }) {
+export const MrChalk = memo(function MrChalk({ state, costume, streak = 0, totalAnswered = 0, questionType = 'multiply', hardMode = false, timedMode = false }: {
+    state: ChalkState;
+    costume?: string;
+    streak?: number;
+    totalAnswered?: number;
+    questionType?: QuestionType;
+    hardMode?: boolean;
+    timedMode?: boolean;
+}) {
     const [message, setMessage] = useState('');
-    const lastMsg = useRef('');
     const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
+    const ctx = { state, streak, totalAnswered, questionType, hardMode, timedMode };
+
     useEffect(() => {
-        setMessage(pickRandom(MESSAGES[state], lastMsg));
+        setMessage(pickChalkMessage(ctx));
         if (timerRef.current) clearTimeout(timerRef.current);
         timerRef.current = setTimeout(() => setMessage(''), state === 'idle' ? 4000 : 2500);
         return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [state]);
 
     useEffect(() => {
         if (state !== 'idle') return;
-        const interval = setInterval(() => setMessage(pickRandom(MESSAGES.idle, lastMsg)), 5000);
+        const interval = setInterval(() => setMessage(pickChalkMessage({ ...ctx, state: 'idle' })), 5000);
         return () => clearInterval(interval);
+
     }, [state]);
 
     return (

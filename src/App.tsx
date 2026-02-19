@@ -287,7 +287,7 @@ function App() {
 
             {/* ── Mr. Chalk PiP ── */}
             <div className="landscape-hide">
-              <MrChalk state={chalkState} costume={activeCostume} />
+              <MrChalk state={chalkState} costume={activeCostume} streak={streak} totalAnswered={totalAnswered} questionType={questionType} hardMode={hardMode} timedMode={timedMode} />
             </div>
 
             {/* ── Feedback flash overlay ── */}
