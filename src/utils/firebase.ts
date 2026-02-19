@@ -3,12 +3,12 @@ import { getAuth } from 'firebase/auth';
 import { initializeFirestore, persistentLocalCache, persistentSingleTabManager } from 'firebase/firestore';
 
 const firebaseConfig = {
-    apiKey: 'AIzaSyAc3X0hdVSQC01ZQ8ty3k8H3IwsThAXhN4',
-    authDomain: 'scribble-math-prod.firebaseapp.com',
-    projectId: 'scribble-math-prod',
-    storageBucket: 'scribble-math-prod.firebasestorage.app',
-    messagingSenderId: '60445191230',
-    appId: '1:60445191230:web:c00230ef05f6bdd903356f',
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 const app = initializeApp(firebaseConfig);
