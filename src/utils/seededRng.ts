@@ -12,9 +12,8 @@ export function createSeededRng(seed: number) {
     };
 }
 
-/** Generate a seed from a date string like "2026-02-19" */
-export function dateSeed(date: Date = new Date()): number {
-    const str = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+/** DJB2-style hash for any string */
+function hashString(str: string): number {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
         hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
@@ -22,11 +21,12 @@ export function dateSeed(date: Date = new Date()): number {
     return hash;
 }
 
+/** Generate a seed from a date string like "2026-02-19" */
+export function dateSeed(date: Date = new Date()): number {
+    return hashString(`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`);
+}
+
 /** Generate a seed from an arbitrary string (e.g., challenge ID) */
 export function stringSeed(str: string): number {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
-    }
-    return hash;
+    return hashString(str);
 }

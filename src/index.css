@@ -25,17 +25,18 @@
 /* ── Light mode overrides ── */
 [data-theme="light"] {
   --color-board: #f5f0e8;
-  --color-chalk: #2c2c2c;
-  --color-fg: 40 40 40;
-  /* dark text for light mode */
-  --color-overlay: rgba(255, 255, 255, 0.92);
-  --color-overlay-dim: rgba(0, 0, 0, 0.30);
-  --color-surface: rgba(0, 0, 0, 0.06);
-  --color-locked: rgba(0, 0, 0, 0.10);
+  --color-chalk: #000000;
+  --color-fg: 0 0 0;
+  /* pure black — needed because most text uses /40 – /60 opacity */
+  --color-overlay: rgba(255, 255, 255, 0.95);
+  --color-overlay-dim: rgba(0, 0, 0, 0.40);
+  --color-surface: rgba(255, 255, 255, 0.80);
+  /* white cards on cream background */
+  --color-locked: rgba(0, 0, 0, 0.08);
   --color-correct: #16a34a;
   --color-wrong: #dc2626;
-  --color-gold: #d97706;
-  --color-streak-fire: #ea580c;
+  --color-gold: #b45309;
+  --color-streak-fire: #c2410c;
 }
 
 /* ── Base ── */
@@ -82,9 +83,9 @@
 
 [data-theme="light"] .blackboard-bg {
   background-image:
-    radial-gradient(ellipse at 15% 40%, rgba(200, 180, 150, 0.12) 0%, transparent 60%),
-    radial-gradient(ellipse at 85% 25%, rgba(180, 160, 140, 0.08) 0%, transparent 55%),
-    radial-gradient(ellipse at 50% 80%, rgba(160, 140, 120, 0.06) 0%, transparent 50%);
+    radial-gradient(ellipse at 15% 40%, rgba(200, 180, 150, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse at 85% 25%, rgba(180, 160, 140, 0.06) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 80%, rgba(160, 140, 120, 0.04) 0%, transparent 50%);
 }
 
 /* ── Vignette overlay ── */
@@ -93,7 +94,26 @@
 }
 
 [data-theme="light"] .vignette-overlay {
-  background: radial-gradient(ellipse at 50% 50%, transparent 50%, rgba(0, 0, 0, 0.06) 100%);
+  background: radial-gradient(ellipse at 50% 50%, transparent 60%, rgba(0, 0, 0, 0.04) 100%);
+}
+
+/* ── Light mode global contrast boosts ── */
+[data-theme="light"] button svg {
+  opacity: 0.85 !important;
+}
+
+[data-theme="light"] .chalk {
+  -webkit-text-stroke: 0.6px currentColor;
+}
+
+[data-theme="light"] .ui {
+  font-weight: 600;
+}
+
+/* Answer circles — white card with soft shadow */
+[data-theme="light"] .rounded-full[class*="border-"] {
+  border-color: rgba(0, 0, 0, 0.25) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
 }
 
 /* ── Chalk text — minimal, no filters ── */

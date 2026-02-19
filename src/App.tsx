@@ -13,8 +13,9 @@ import { useStats } from './hooks/useStats';
 import type { QuestionType } from './utils/questionTypes';
 import { ACHIEVEMENTS, loadUnlocked, saveUnlocked, checkAchievements } from './utils/achievements';
 import { SessionSummary } from './components/SessionSummary';
-import { CHALK_THEMES, loadTheme, saveTheme, applyTheme, type ChalkTheme } from './utils/chalkThemes';
-import { loadMode, saveMode, applyMode, type ThemeMode } from './hooks/useThemeMode';
+import { CHALK_THEMES, applyTheme, type ChalkTheme } from './utils/chalkThemes';
+import { applyMode } from './hooks/useThemeMode';
+import { useLocalState } from './hooks/useLocalState';
 
 type Tab = 'game' | 'league' | 'me';
 
@@ -143,37 +144,22 @@ function App() {
   }, [score, totalCorrect, totalAnswered, bestStreak, questionType, recordSession]);
 
   // ── Costumes ──
-  const [activeCostume, setActiveCostume] = useState(() => localStorage.getItem('math-swipe-costume') || '');
-  const handleCostumeChange = useCallback((id: string) => {
-    setActiveCostume(id);
-    localStorage.setItem('math-swipe-costume', id);
-  }, []);
+  const [activeCostume, handleCostumeChange] = useLocalState('math-swipe-costume', '');
 
   // ── Chalk themes ──
-  const [activeThemeId, setActiveThemeId] = useState(() => loadTheme());
+  const [activeThemeId, setActiveThemeId] = useLocalState('math-swipe-chalk-theme', 'classic');
   useEffect(() => {
     const t = CHALK_THEMES.find(th => th.id === activeThemeId);
     if (t) applyTheme(t.color);
   }, [activeThemeId]);
-  const handleThemeChange = useCallback((t: ChalkTheme) => {
-    setActiveThemeId(t.id);
-    saveTheme(t.id);
-  }, []);
+  const handleThemeChange = useCallback((t: ChalkTheme) => setActiveThemeId(t.id), [setActiveThemeId]);
 
   // ── Theme mode (dark/light) ──
-  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
-    const m = loadMode();
-    applyMode(m);
-    return m;
-  });
+  const [themeMode, setThemeMode] = useLocalState('math-swipe-theme', 'dark');
+  useEffect(() => { applyMode(themeMode as 'dark' | 'light'); }, [themeMode]);
   const toggleThemeMode = useCallback(() => {
-    setThemeMode(prev => {
-      const next = prev === 'dark' ? 'light' : 'dark';
-      saveMode(next);
-      applyMode(next);
-      return next;
-    });
-  }, []);
+    setThemeMode(themeMode === 'dark' ? 'light' : 'dark');
+  }, [themeMode, setThemeMode]);
 
   return (
     <>
@@ -194,6 +180,31 @@ function App() {
       </div>
 
       <BlackboardLayout>
+        {/* ── Top-right theme toggle (visible on all tabs) ── */}
+        <button
+          onClick={toggleThemeMode}
+          className="fixed top-[calc(env(safe-area-inset-top,12px)+12px)] right-4 z-50 w-9 h-9 flex items-center justify-center text-[rgb(var(--color-fg))]/60 active:text-[var(--color-gold)] transition-colors"
+          aria-label="Toggle theme"
+        >
+          {themeMode === 'dark' ? (
+            <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="5" />
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          )}
+        </button>
+
         {activeTab === 'game' && (
           <>
             {/* ── Score (centered, pushed down from edge) ── */}
@@ -300,8 +311,6 @@ function App() {
               timedMode={timedMode}
               onTimedModeToggle={toggleTimedMode}
               timerProgress={timerProgress}
-              themeMode={themeMode}
-              onThemeModeToggle={toggleThemeMode}
             />
 
             {/* ── Mr. Chalk PiP ── */}

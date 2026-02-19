@@ -122,16 +122,16 @@ export const AchievementBadge = memo(function AchievementBadge({ achievementId, 
     if (!Icon) return null;
 
     return (
-        <div className={`flex flex-col items-center gap-1 w-16 ${unlocked ? '' : 'opacity-40'}`}>
+        <div className={`flex flex-col items-center gap-1 w-16 ${unlocked ? '' : 'opacity-60'}`}>
             <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center ${equipped
                 ? 'border-[var(--color-gold)] bg-[var(--color-gold)]/5'
                 : unlocked
                     ? 'border-[rgb(var(--color-fg))]/20 bg-[var(--color-surface)]'
-                    : 'border-[rgb(var(--color-fg))]/8 bg-transparent'
+                    : 'border-[rgb(var(--color-fg))]/15 bg-transparent'
                 }`}>
                 <Icon size={36} unlocked={unlocked} />
             </div>
-            <span className={`text-[10px] ui font-medium text-center leading-tight ${unlocked ? 'text-[rgb(var(--color-fg))]/60' : 'text-[rgb(var(--color-fg))]/25'
+            <span className={`text-[10px] ui font-medium text-center leading-tight ${unlocked ? 'text-[rgb(var(--color-fg))]/60' : 'text-[rgb(var(--color-fg))]/50'
                 }`}>
                 {name}
             </span>

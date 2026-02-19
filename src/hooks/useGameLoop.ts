@@ -35,6 +35,19 @@ const INITIAL_STATE: GameState = {
     milestone: '', speedBonus: false,
 };
 
+/** Shared wrong-answer state transform (avoids 3x duplication) */
+function wrongAnswerState(prev: GameState): GameState {
+    return {
+        ...prev,
+        streak: 0,
+        totalAnswered: prev.totalAnswered + 1,
+        answerHistory: [...prev.answerHistory, false].slice(-MAX_HISTORY),
+        flash: 'wrong',
+        chalkState: 'fail',
+        frozen: true,
+    };
+}
+
 export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = false, challengeId: string | null = null, timedMode = false) {
     const { level, recordAnswer } = useDifficulty();
     const [problems, setProblems] = useState<Problem[]>([]);
@@ -203,18 +216,10 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
                 }, FAIL_PAUSE_MS);
             } else {
                 recordAnswer(tts, false);
-                setGs(prev => ({
-                    ...prev,
-                    streak: 0,
-                    totalAnswered: prev.totalAnswered + 1,
-                    answerHistory: [...prev.answerHistory, false].slice(-MAX_HISTORY),
-                    flash: 'wrong',
-                    chalkState: 'fail',
-                    frozen: true,
-                }));
+                setGs(wrongAnswerState);
                 scheduleChalkReset(FAIL_PAUSE_MS);
 
-                setTimeout(() => {
+                safeTimeout(() => {
                     setGs(prev => ({ ...prev, flash: 'none', frozen: false }));
                     advanceProblem();
                 }, FAIL_PAUSE_MS);
@@ -238,15 +243,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
             setTimerProgress(p);
             if (p >= 1) {
                 // Time's up — skip and break streak
-                setGs(prev => ({
-                    ...prev,
-                    streak: 0,
-                    totalAnswered: prev.totalAnswered + 1,
-                    answerHistory: [...prev.answerHistory, false].slice(-MAX_HISTORY),
-                    flash: 'wrong',
-                    chalkState: 'fail',
-                    frozen: true,
-                }));
+                setGs(wrongAnswerState);
                 scheduleChalkReset(FAIL_PAUSE_MS);
                 safeTimeout(() => {
                     setGs(prev => ({ ...prev, flash: 'none', frozen: false }));

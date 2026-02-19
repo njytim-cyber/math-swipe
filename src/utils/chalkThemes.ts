@@ -3,7 +3,7 @@
 export interface ChalkTheme {
     id: string;
     name: string;
-    color: string;      // CSS color value for --color-chalk
+    color: string;      // CSS color value for dark-mode chalk
     minLevel: number;   // Level required to unlock (1-5)
 }
 
@@ -16,16 +16,17 @@ export const CHALK_THEMES: ChalkTheme[] = [
     { id: 'sunset', name: 'Sunset', color: 'rgba(255, 160, 122, 0.85)', minLevel: 3 },
 ];
 
-const STORAGE_KEY = 'math-swipe-chalk-theme';
-
-export function loadTheme(): string {
-    return localStorage.getItem(STORAGE_KEY) || 'classic';
-}
-
-export function saveTheme(id: string) {
-    localStorage.setItem(STORAGE_KEY, id);
-}
-
+/**
+ * Apply chalk theme color.
+ * In dark mode the chalk-theme color is used directly.
+ * In light mode we force a dark value so text is readable.
+ */
 export function applyTheme(color: string) {
-    document.documentElement.style.setProperty('--color-chalk', color);
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    document.documentElement.style.setProperty(
+        '--color-chalk',
+        isLight ? '#000000' : color,
+    );
+    // Stash the theme color so mode-toggle can re-derive
+    document.documentElement.style.setProperty('--chalk-theme-color', color);
 }

@@ -13,11 +13,18 @@ export function saveMode(mode: ThemeMode) {
 }
 
 export function applyMode(mode: ThemeMode) {
+    const root = document.documentElement;
     if (mode === 'light') {
-        document.documentElement.setAttribute('data-theme', 'light');
+        root.setAttribute('data-theme', 'light');
     } else {
-        document.documentElement.removeAttribute('data-theme');
+        root.removeAttribute('data-theme');
     }
+    // Re-derive --color-chalk from the stashed chalk-theme color
+    const themeColor = root.style.getPropertyValue('--chalk-theme-color') || 'rgba(230, 230, 230, 0.85)';
+    root.style.setProperty(
+        '--color-chalk',
+        mode === 'light' ? '#000000' : themeColor,
+    );
     // Update PWA theme-color to match
     const meta = document.getElementById('meta-theme-color');
     if (meta) meta.setAttribute('content', mode === 'light' ? '#f5f0e8' : '#1b1b1b');

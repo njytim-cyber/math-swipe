@@ -72,7 +72,7 @@ function genSubtract(d: number, hard: boolean): Problem {
 function genMultiply(d: number, hard: boolean): Problem {
     const [minA, maxA, minB, maxB] = hard ? [2, 32, 2, 32] : mulRange(d);
     const a = randInt(minA, maxA), b = randInt(minB, maxB);
-    const flip = Math.random() > 0.5;
+    const flip = _rng() > 0.5;
     const expr = flip ? `${b} × ${a}` : `${a} × ${b}`;
     const latex = flip ? `${b} \\times ${a}` : `${a} \\times ${b}`;
     return pack(expr, a * b, (ans) => mulDistractors(a, b, ans), latex);

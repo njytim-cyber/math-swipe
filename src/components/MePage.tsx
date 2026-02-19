@@ -145,8 +145,8 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                                     }`}>
                                     {ts.solved === 0 ? '—' : `${pct}%`}
                                 </div>
-                                <div className="text-[10px] ui text-[rgb(var(--color-fg))]/40">
-                                    {ts.solved === 0 ? '' : ts.solved}
+                                <div className="text-[10px] ui text-[rgb(var(--color-fg))]/30">
+                                    {ts.solved === 0 ? '—' : `${ts.solved} solved`}
                                 </div>
                             </div>
                         );
