@@ -8,8 +8,20 @@ import { BottomNav } from './components/BottomNav';
 import { ActionButtons } from './components/ActionButtons';
 import type { AgeBand } from './utils/questionTypes';
 import { defaultTypeForBand, typesForBand, AGE_BANDS, BAND_LABELS } from './utils/questionTypes';
-const LeaguePage = lazy(() => import('./components/LeaguePage').then(m => ({ default: m.LeaguePage })));
-const MePage = lazy(() => import('./components/MePage').then(m => ({ default: m.MePage })));
+/** Retry a dynamic import once by reloading the page (handles stale deploy cache on Cloudflare Pages) */
+function lazyRetry<T extends Record<string, unknown>>(factory: () => Promise<T>): Promise<T> {
+  return factory().catch(() => {
+    const key = 'chunk-reload';
+    if (!sessionStorage.getItem(key)) {
+      sessionStorage.setItem(key, '1');
+      window.location.reload();
+    }
+    return factory(); // fallback — will throw if still broken
+  });
+}
+
+const LeaguePage = lazy(() => lazyRetry(() => import('./components/LeaguePage')).then(m => ({ default: m.LeaguePage })));
+const MePage = lazy(() => lazyRetry(() => import('./components/MePage')).then(m => ({ default: m.MePage })));
 import { useGameLoop } from './hooks/useGameLoop';
 import { useStats } from './hooks/useStats';
 import type { QuestionType } from './utils/questionTypes';

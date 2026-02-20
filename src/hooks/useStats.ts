@@ -68,7 +68,6 @@ const EMPTY_STATS: Stats = {
         skip: { ...EMPTY_TYPE },
         round: { ...EMPTY_TYPE },
         orderops: { ...EMPTY_TYPE },
-        placevalue: { ...EMPTY_TYPE },
         exponent: { ...EMPTY_TYPE },
         negatives: { ...EMPTY_TYPE },
         gcflcm: { ...EMPTY_TYPE },

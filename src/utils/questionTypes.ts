@@ -2,7 +2,7 @@ export type QuestionType =
     | 'add' | 'subtract' | 'multiply' | 'divide' | 'square' | 'sqrt'
     | 'fraction' | 'decimal' | 'percent' | 'linear'
     | 'add1' | 'sub1' | 'bonds' | 'doubles' | 'compare' | 'skip'
-    | 'round' | 'orderops' | 'placevalue'
+    | 'round' | 'orderops'
     | 'exponent' | 'negatives' | 'gcflcm' | 'ratio'
     | 'mix-basic' | 'mix-all'
     | 'daily' | 'challenge';
@@ -63,7 +63,7 @@ export const QUESTION_TYPES: ReadonlyArray<QuestionTypeEntry> = [
     // Core (3-5)
     { id: 'round', icon: '≈', label: 'Rounding', group: 'core' },
     { id: 'orderops', icon: '🔢', label: 'PEMDAS', group: 'core' },
-    { id: 'placevalue', icon: '🏠', label: 'Place Val', group: 'core' },
+
     // Advanced
     { id: 'square', icon: 'x²', label: 'Square', group: 'advanced' },
     { id: 'sqrt', icon: '√', label: 'Root', group: 'advanced' },

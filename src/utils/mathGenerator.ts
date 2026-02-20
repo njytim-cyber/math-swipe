@@ -19,7 +19,7 @@ export interface Problem {
 
 const BASIC_TYPES: QuestionType[] = ['add', 'subtract', 'multiply', 'divide'];
 export const YOUNG_TYPES: QuestionType[] = ['add1', 'sub1', 'bonds', 'doubles', 'compare', 'skip'];
-const CORE_TYPES: QuestionType[] = ['round', 'orderops', 'placevalue'];
+const CORE_TYPES: QuestionType[] = ['round', 'orderops'];
 const ALL_INDIVIDUAL: QuestionType[] = [
     ...BASIC_TYPES, 'square', 'sqrt', 'exponent', 'negatives', 'linear', 'gcflcm', 'ratio',
     'fraction', 'decimal', 'percent', ...YOUNG_TYPES, ...CORE_TYPES,
@@ -69,7 +69,7 @@ function _generateProblem(difficulty: number, type: QuestionType, hardMode: bool
         case 'skip': return genSkip();
         case 'round': return genRound();
         case 'orderops': return genOrderOps();
-        case 'placevalue': return genPlaceValue();
+
         case 'exponent': return genExponent(difficulty, hardMode);
         case 'negatives': return genNegatives(difficulty, hardMode);
         case 'gcflcm': return genGcfLcm();
@@ -214,22 +214,8 @@ function genOrderOps(): Problem {
     return pack(expression, answer, nearDistractors, latex);
 }
 
-function genPlaceValue(): Problem {
-    const n = randInt(100, 9999);
-    const places = pickRandom(['ones', 'tens', 'hundreds'] as const);
-    const str = String(n);
-    let answer: number;
-    if (places === 'ones') answer = parseInt(str[str.length - 1]);
-    else if (places === 'tens') answer = parseInt(str[str.length - 2]);
-    else answer = parseInt(str[str.length - 3]);
-    return pack(`${places} digit of ${n.toLocaleString()}?`, answer, (ans) => {
-        // Distractors: other unique digits from the number
-        const digits = [...new Set(str.split('').map(Number))].filter(d => d !== ans);
-        if (digits.length >= 2) return [digits[0], digits[1]];
-        if (digits.length === 1) return [digits[0], (ans + 3) % 10];
-        return [(ans + 2) % 10, (ans + 5) % 10];
-    });
-}
+
+
 
 // ── Advanced 6+ Generators ──────────────────────────────
 
