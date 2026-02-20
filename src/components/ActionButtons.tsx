@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { QuestionTypePicker } from './QuestionTypePicker';
 import type { QuestionType } from '../utils/mathGenerator';
-import { AGE_BANDS, BAND_LABELS, type AgeBand } from '../utils/questionTypes';
+import type { AgeBand } from '../utils/questionTypes';
 
 interface Props {
     questionType: QuestionType;
@@ -13,7 +13,6 @@ interface Props {
     onTimedModeToggle: () => void;
     timerProgress: number; // 0 → 1
     ageBand: AgeBand;
-    onBandChange: (band: AgeBand) => void;
 }
 
 /** Circular countdown ring drawn as an SVG arc */
@@ -51,7 +50,7 @@ function TimerRing({ progress, active }: { progress: number; active: boolean }) 
 export const ActionButtons = memo(function ActionButtons({
     questionType, onTypeChange, hardMode, onHardModeToggle,
     timedMode, onTimedModeToggle, timerProgress,
-    ageBand, onBandChange,
+    ageBand,
 }: Props) {
     const handleShare = async () => {
         const shareData = {
@@ -70,14 +69,9 @@ export const ActionButtons = memo(function ActionButtons({
         }
     };
 
-    const cycleBand = () => {
-        const idx = AGE_BANDS.indexOf(ageBand);
-        onBandChange(AGE_BANDS[(idx + 1) % AGE_BANDS.length]);
-    };
-
     return (
-        <div className="absolute right-3 top-[38%] -translate-y-1/2 flex flex-col gap-5 z-20">
-            {/* Share — TikTok-style thick arrow */}
+        <div className="absolute right-3 top-[25%] -translate-y-1/2 flex flex-col gap-4 z-20">
+            {/* Share */}
             <motion.button
                 onClick={handleShare}
                 className="w-11 h-11 flex items-center justify-center text-[rgb(var(--color-fg))]/50 active:text-[var(--color-gold)]"
@@ -90,17 +84,6 @@ export const ActionButtons = memo(function ActionButtons({
                     <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
                     <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
                 </svg>
-            </motion.button>
-
-            {/* Age band toggle */}
-            <motion.button
-                onClick={cycleBand}
-                className="w-11 h-11 flex flex-col items-center justify-center"
-                whileTap={{ scale: 0.88 }}
-                title={`Age band: ${BAND_LABELS[ageBand].label}`}
-            >
-                <span className="text-xl">{BAND_LABELS[ageBand].emoji}</span>
-                <span className="text-[9px] ui text-[rgb(var(--color-fg))]/40 -mt-0.5">{BAND_LABELS[ageBand].label}</span>
             </motion.button>
 
             {/* Question type */}
@@ -132,13 +115,9 @@ export const ActionButtons = memo(function ActionButtons({
                         ease: 'easeInOut',
                     } : {}}
                 >
-                    {/* Stopwatch body */}
                     <circle cx="12" cy="14" r="7" />
-                    {/* Top button */}
                     <line x1="12" y1="3" x2="12" y2="7" />
-                    {/* Top bar */}
                     <line x1="9" y1="3" x2="15" y2="3" />
-                    {/* Minute hand */}
                     <line x1="12" y1="14" x2="12" y2="10" />
                 </motion.svg>
             </motion.button>

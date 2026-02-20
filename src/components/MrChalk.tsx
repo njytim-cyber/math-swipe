@@ -157,7 +157,7 @@ export const MrChalk = memo(function MrChalk({ state, costume, streak = 0, total
 
     return (
         <motion.div
-            className={`absolute bottom-6 right-3 pointer-events-none z-30 ${state === 'streak' ? 'on-fire' : ''}`}
+            className={`absolute bottom-4 right-2 pointer-events-none z-30 ${state === 'streak' ? 'on-fire' : ''}`}
             animate={ANIMS[state]}
         >
             <AnimatePresence mode="wait">
@@ -168,7 +168,7 @@ export const MrChalk = memo(function MrChalk({ state, costume, streak = 0, total
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -6, scale: 0.8 }}
                         transition={{ duration: 0.25 }}
-                        className="absolute bottom-full mb-2 right-0 w-max max-w-[260px] text-right bg-[var(--color-surface)] border border-[rgb(var(--color-fg))]/15 rounded-xl px-3 py-1.5 text-[13px] ui text-[rgb(var(--color-fg))]/80 leading-snug"
+                        className="absolute bottom-full mb-2 right-0 w-max max-w-[200px] text-right bg-[var(--color-surface)] border border-[rgb(var(--color-fg))]/15 rounded-xl px-3 py-1.5 text-[12px] ui text-[rgb(var(--color-fg))]/80 leading-snug"
                     >
                         {message}
                         <div className="absolute -bottom-1.5 right-4 w-3 h-3 bg-[var(--color-surface)] border-b border-r border-[rgb(var(--color-fg))]/15 rotate-45" />
@@ -176,7 +176,7 @@ export const MrChalk = memo(function MrChalk({ state, costume, streak = 0, total
                 )}
             </AnimatePresence>
 
-            <svg viewBox="0 0 100 160" className="w-[88px] h-[140px]" style={{ color: 'var(--color-chalk)' }}>
+            <svg viewBox="0 0 100 160" className="w-[72px] h-[115px]" style={{ color: 'var(--color-chalk)' }}>
                 <circle cx="50" cy="38" r="26" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.8" />
                 {FACES[state] || FACES.idle}
                 <Body />

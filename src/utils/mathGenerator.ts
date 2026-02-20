@@ -148,21 +148,14 @@ function genDoubles(): Problem {
 }
 
 function genCompare(): Problem {
-    const a = randInt(1, 20), b = randInt(1, 20);
-    // Which is bigger? (or equal)
-    const answer = a > b ? a : b;
-    const expression = a === b ? `${a} = ${b} ?` : `Bigger: ${a} or ${b}?`;
-    if (a === b) {
-        // Re-roll to avoid equal
-        return genCompare();
-    }
+    let a = randInt(1, 20), b = randInt(1, 20);
+    if (a === b) b = a + randInt(1, 5); // avoid equal
+    const answer = Math.max(a, b);
     const smaller = Math.min(a, b);
-    return pack(expression, answer, () => {
+    return pack(`Bigger: ${a} or ${b}?`, answer, () => {
         const d1 = smaller;
-        // third distractor: a nearby number not in the pair
         let d2 = answer + randInt(1, 3);
-        if (d2 === a || d2 === b) d2 = answer - randInt(1, 3);
-        if (d2 < 0) d2 = answer + 4;
+        if (d2 === d1) d2 = answer + 4;
         return [d1, d2];
     });
 }
@@ -230,10 +223,11 @@ function genPlaceValue(): Problem {
     else if (places === 'tens') answer = parseInt(str[str.length - 2]);
     else answer = parseInt(str[str.length - 3]);
     return pack(`${places} digit of ${n.toLocaleString()}?`, answer, (ans) => {
-        // Distractors: other digits from the number
-        const digits = str.split('').map(Number).filter(d => d !== ans);
+        // Distractors: other unique digits from the number
+        const digits = [...new Set(str.split('').map(Number))].filter(d => d !== ans);
         if (digits.length >= 2) return [digits[0], digits[1]];
-        return [ans + 1, ans === 0 ? 2 : ans - 1];
+        if (digits.length === 1) return [digits[0], (ans + 3) % 10];
+        return [(ans + 2) % 10, (ans + 5) % 10];
     });
 }
 
@@ -281,9 +275,9 @@ function gcd(a: number, b: number): number {
 
 function genGcfLcm(): Problem {
     const useGcf = _rng() > 0.5;
-    // Pick numbers with a non-trivial GCF
     const factor = randInt(2, 6);
-    const m1 = randInt(2, 6), m2 = randInt(2, 6);
+    let m1 = randInt(2, 6), m2 = randInt(2, 6);
+    if (m1 === m2) m2 = m1 === 6 ? 2 : m1 + 1; // ensure distinct multipliers
     const a = factor * m1, b = factor * m2;
     if (useGcf) {
         const answer = gcd(a, b);
@@ -298,12 +292,20 @@ function genRatio(): Problem {
     const g = randInt(2, 6);
     const a = randInt(1, 5) * g;
     const b = randInt(1, 5) * g;
-    const sa = a / gcd(a, b);
-    // "Simplify a : b" → answer is the first term of simplified ratio
-    // Pack the first term as numerical answer, show ratio as options labels
-    return pack(`Simplify ${a} : ${b}`, sa, (ans) => {
-        return [ans + 1, ans === 1 ? ans + 2 : ans - 1];
-    });
+    const d = gcd(a, b);
+    const sa = a / d, sb = b / d;
+    // Randomly ask for first or second term of simplified ratio
+    if (_rng() > 0.5) {
+        // a : b = ? : sb
+        return pack(`${a} : ${b} = ? : ${sb}`, sa, (ans) => {
+            return [ans + 1, ans === 1 ? ans + 2 : ans - 1];
+        });
+    } else {
+        // a : b = sa : ?
+        return pack(`${a} : ${b} = ${sa} : ?`, sb, (ans) => {
+            return [ans + 1, ans === 1 ? ans + 2 : ans - 1];
+        });
+    }
 }
 
 // ── New Generators ──────────────────────────────────────

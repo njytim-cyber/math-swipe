@@ -45,7 +45,7 @@ const tabs: { id: Tab; label: string; icon: ReactNode }[] = [
 
 export const BottomNav = memo(function BottomNav({ active, onChange }: Props) {
     return (
-        <nav className="landscape-nav flex items-center justify-around px-2 pb-[env(safe-area-inset-bottom,8px)] pt-2 z-40 relative">
+        <nav className="landscape-nav flex items-center justify-around px-2 pb-[env(safe-area-inset-bottom,4px)] pt-1 z-40 relative">
             {/* Subtle top border */}
             <div className="absolute top-0 left-4 right-4 h-px bg-[rgb(var(--color-fg))]/10" />
 
