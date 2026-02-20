@@ -9,6 +9,7 @@ const ANIMS: Record<ChalkState, TargetAndTransition> = {
     success: { scale: [1, 1.25, 1], y: [0, -14, 0], transition: { duration: 0.45 } },
     fail: { x: [-6, 6, -6, 6, 0], transition: { duration: 0.4 } },
     streak: { y: [0, -8, 0], scale: [1, 1.1, 1], rotate: [0, -3, 3, 0], transition: { repeat: Infinity, duration: 0.7, ease: 'easeInOut' as const } },
+    comeback: { scale: [1, 1.2, 1], y: [0, -10, 0], transition: { duration: 0.5 } },
 };
 
 // Static SVG parts extracted to avoid re-creating on every render
@@ -68,7 +69,14 @@ const FACES: Record<ChalkState, React.ReactNode> = {
             <rect x="54" y="30" width="16" height="8" rx="3" fill="currentColor" opacity="0.9" />
             <line x1="46" y1="34" x2="54" y2="34" stroke="currentColor" strokeWidth="1.5" />
             <path d="M 42 50 Q 50 55 58 50" stroke="currentColor" strokeWidth="2" fill="none" />
-            <text x="68" y="16" fontSize="20">🔥</text>
+        </>
+    ),
+    comeback: (
+        <>
+            <circle cx="40" cy="34" r="2.5" fill="currentColor" opacity="0.8" />
+            <circle cx="60" cy="34" r="2.5" fill="currentColor" opacity="0.8" />
+            <path d="M 38 48 Q 50 58 62 48" stroke="currentColor" strokeWidth="2.5" fill="none" />
+            <text x="72" y="30" fontSize="18">💪</text>
         </>
     ),
 };
@@ -170,11 +178,15 @@ export const MrChalk = memo(function MrChalk({ state, costume, streak = 0, total
 
             <svg viewBox="0 0 100 160" className="w-[88px] h-[140px]" style={{ color: 'var(--color-chalk)' }}>
                 <circle cx="50" cy="38" r="26" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.8" />
-                {FACES[state]}
+                {FACES[state] || FACES.idle}
                 <Body />
                 {state === 'success' ? <ArmsUp /> : <ArmsDown />}
                 {costume && COSTUMES[costume]}
             </svg>
+            {/* Fire emoji outside SVG for proper transparency on all platforms */}
+            {state === 'streak' && (
+                <span className="absolute -top-1 right-0 text-xl pointer-events-none">🔥</span>
+            )}
         </motion.div>
     );
 });

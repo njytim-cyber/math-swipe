@@ -1,15 +1,15 @@
-import { memo, useState } from 'react';
+import { memo, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { QuestionType } from '../utils/questionTypes';
-import { QUESTION_TYPES, GROUP_LABELS, type QuestionGroup } from '../utils/questionTypes';
+import type { QuestionType, AgeBand } from '../utils/questionTypes';
+import { typesForBand, GROUP_LABELS, type QuestionGroup } from '../utils/questionTypes';
 
 /** Size class for each icon — keeps the grid visually balanced */
 function iconSizeClass(icon: string): string {
     // Single-char math operators render large
     if ('+ − × ÷ √ %'.split(' ').includes(icon)) return 'text-3xl';
     // Emoji
-    if (icon === '📅' || icon === '🌀') return 'text-2xl';
+    if (icon === '📅' || icon === '🌀' || icon === '🔗') return 'text-2xl';
     // Multi-char grid (Basic Mix) — keep compact
     if (icon.includes('\n')) return '';
     // Everything else (x², x=, .5, ⅓) — medium
@@ -19,13 +19,16 @@ function iconSizeClass(icon: string): string {
 interface Props {
     current: QuestionType;
     onChange: (type: QuestionType) => void;
+    ageBand: AgeBand;
 }
 
-const GROUPS: QuestionGroup[] = ['daily', 'whole', 'parts', 'advanced', 'mixed'];
+const ALL_GROUPS: QuestionGroup[] = ['daily', 'young', 'whole', 'parts', 'advanced', 'mixed'];
 
-export const QuestionTypePicker = memo(function QuestionTypePicker({ current, onChange }: Props) {
+export const QuestionTypePicker = memo(function QuestionTypePicker({ current, onChange, ageBand }: Props) {
     const [open, setOpen] = useState(false);
-    const currentEntry = QUESTION_TYPES.find(t => t.id === current);
+    const bandTypes = useMemo(() => typesForBand(ageBand), [ageBand]);
+    const groups = useMemo(() => ALL_GROUPS.filter(g => bandTypes.some(t => t.group === g)), [bandTypes]);
+    const currentEntry = bandTypes.find(t => t.id === current);
     const currentIcon = currentEntry?.icon || '×';
 
     return (
@@ -68,8 +71,8 @@ export const QuestionTypePicker = memo(function QuestionTypePicker({ current, on
                                 exit={{ opacity: 0, scale: 0.85 }}
                                 transition={{ duration: 0.15 }}
                             >
-                                {GROUPS.map(group => {
-                                    const items = QUESTION_TYPES.filter(t => t.group === group);
+                                {groups.map(group => {
+                                    const items = bandTypes.filter(t => t.group === group);
                                     return (
                                         <div key={group} className="mb-3 last:mb-0">
                                             {/* Group header */}

@@ -1,7 +1,7 @@
 import { memo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { useStats } from '../hooks/useStats';
-import { QUESTION_TYPES } from '../utils/questionTypes';
+import { typesForBand, type AgeBand } from '../utils/questionTypes';
 import { ACHIEVEMENTS, HARD_MODE_ACHIEVEMENTS, TIMED_MODE_ACHIEVEMENTS, ULTIMATE_ACHIEVEMENTS, EVERY_ACHIEVEMENT } from '../utils/achievements';
 import { AchievementBadge } from './AchievementBadge';
 import { CHALK_THEMES, type ChalkTheme } from '../utils/chalkThemes';
@@ -21,6 +21,7 @@ interface Props {
     onDisplayNameChange: (name: string) => Promise<void>;
     isAnonymous: boolean;
     onLinkGoogle: () => Promise<void>;
+    ageBand: AgeBand;
 }
 
 /** Ranks with progressive XP thresholds (gets harder to level up) */
@@ -54,7 +55,7 @@ function getRank(xp: number) {
     return { rank, nextRank, progress };
 }
 
-export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked, activeCostume, onCostumeChange, activeTheme, onThemeChange, displayName, onDisplayNameChange, isAnonymous, onLinkGoogle }: Props) {
+export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked, activeCostume, onCostumeChange, activeTheme, onThemeChange, displayName, onDisplayNameChange, isAnonymous, onLinkGoogle, ageBand }: Props) {
     const [showRanks, setShowRanks] = useState(false);
     const [resetConfirm, setResetConfirm] = useState<string | null>(null);
     const [editingName, setEditingName] = useState(false);
@@ -180,7 +181,7 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                     by type
                 </div>
                 <div className="grid grid-cols-5 gap-2 justify-items-center">
-                    {QUESTION_TYPES.filter(t => !t.id.startsWith('mix-') && t.id !== 'daily' && t.id !== 'challenge').map(t => {
+                    {typesForBand(ageBand).filter(t => !t.id.startsWith('mix-') && t.id !== 'daily' && t.id !== 'challenge').map(t => {
                         const ts = stats.byType[t.id] ?? { solved: 0, correct: 0 };
                         const pct = ts.solved > 0 ? Math.round((ts.correct / ts.solved) * 100) : 0;
                         return (

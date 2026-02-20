@@ -10,10 +10,16 @@ export interface Problem {
     optionLabels?: string[];  // Optional display labels (e.g. fractions)
     correctIndex: number;     // which index in options[] is the answer
     startTime?: number;
+    /** Optional visual type — e.g. 'bond' shows an SVG number bond diagram */
+    visual?: 'bond';
+    /** Bond metadata when visual === 'bond' */
+    bondTotal?: number;
+    bondPart?: number;
 }
 
 const BASIC_TYPES: QuestionType[] = ['add', 'subtract', 'multiply', 'divide'];
-const ALL_INDIVIDUAL: QuestionType[] = ['add', 'subtract', 'multiply', 'divide', 'square', 'sqrt', 'fraction', 'decimal', 'percent', 'linear'];
+export const YOUNG_TYPES: QuestionType[] = ['add1', 'sub1', 'bonds'];
+const ALL_INDIVIDUAL: QuestionType[] = ['add', 'subtract', 'multiply', 'divide', 'square', 'sqrt', 'fraction', 'decimal', 'percent', 'linear', 'add1', 'sub1', 'bonds'];
 
 /** Optional RNG function — defaults to Math.random */
 type RngFn = () => number;
@@ -51,6 +57,9 @@ function _generateProblem(difficulty: number, type: QuestionType, hardMode: bool
         case 'decimal': return genDecimal(difficulty, hardMode);
         case 'percent': return genPercent(difficulty, hardMode);
         case 'linear': return genLinear(difficulty, hardMode);
+        case 'add1': return genAdd1();
+        case 'sub1': return genSub1();
+        case 'bonds': return genBonds();
     }
 }
 
@@ -95,6 +104,28 @@ function genSqrt(d: number, hard: boolean): Problem {
     const max = hard ? 32 : (d <= 2 ? 9 : d <= 4 ? 12 : 15);
     const n = randInt(2, max);
     return pack(`√${n * n}`, n, nearDistractors, `\\sqrt{${n * n}}`);
+}
+
+// ── Young K-2 Generators ────────────────────────────────
+
+function genAdd1(): Problem {
+    const a = randInt(1, 9), b = randInt(1, 9);
+    return pack(`${a} + ${b}`, a + b, smallDistractors, `${a} + ${b}`);
+}
+
+function genSub1(): Problem {
+    let a = randInt(2, 9), b = randInt(1, 9);
+    if (a < b) [a, b] = [b, a];
+    return pack(`${a} − ${b}`, a - b, smallDistractors, `${a} - ${b}`);
+}
+
+function genBonds(): Problem {
+    const targets = [5, 10, 20];
+    const total = pickRandom(targets);
+    const part = randInt(1, total - 1);
+    const answer = total - part;
+    const p = pack(`${part} + ? = ${total}`, answer, smallDistractors);
+    return { ...p, visual: 'bond' as const, bondTotal: total, bondPart: part };
 }
 
 // ── New Generators ──────────────────────────────────────
@@ -251,6 +282,21 @@ function nearDistractors(answer: number): [number, number] {
         const offset = randInt(1, Math.max(3, Math.floor(Math.abs(answer) * 0.15)));
         const d = answer + (Math.random() > 0.5 ? offset : -offset);
         if (!used.has(d)) { used.add(d); result.push(d); }
+    }
+    while (result.length < 2) { result.push(answer + result.length + 1); }
+    return [result[0], result[1]];
+}
+
+/** Distractors for small K-2 numbers — offset ±1..3, always ≥ 0 */
+function smallDistractors(answer: number): [number, number] {
+    const used = new Set<number>([answer]);
+    const result: number[] = [];
+    let safety = 0;
+    while (result.length < 2 && safety < 50) {
+        safety++;
+        const offset = randInt(1, 3);
+        const d = answer + (_rng() > 0.5 ? offset : -offset);
+        if (d >= 0 && !used.has(d)) { used.add(d); result.push(d); }
     }
     while (result.length < 2) { result.push(answer + result.length + 1); }
     return [result[0], result[1]];

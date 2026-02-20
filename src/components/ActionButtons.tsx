@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { QuestionTypePicker } from './QuestionTypePicker';
 import type { QuestionType } from '../utils/mathGenerator';
+import { AGE_BANDS, BAND_LABELS, type AgeBand } from '../utils/questionTypes';
 
 interface Props {
     questionType: QuestionType;
@@ -11,6 +12,8 @@ interface Props {
     timedMode: boolean;
     onTimedModeToggle: () => void;
     timerProgress: number; // 0 → 1
+    ageBand: AgeBand;
+    onBandChange: (band: AgeBand) => void;
 }
 
 /** Circular countdown ring drawn as an SVG arc */
@@ -48,6 +51,7 @@ function TimerRing({ progress, active }: { progress: number; active: boolean }) 
 export const ActionButtons = memo(function ActionButtons({
     questionType, onTypeChange, hardMode, onHardModeToggle,
     timedMode, onTimedModeToggle, timerProgress,
+    ageBand, onBandChange,
 }: Props) {
     const handleShare = async () => {
         const shareData = {
@@ -64,6 +68,11 @@ export const ActionButtons = memo(function ActionButtons({
         } catch {
             // User cancelled share
         }
+    };
+
+    const cycleBand = () => {
+        const idx = AGE_BANDS.indexOf(ageBand);
+        onBandChange(AGE_BANDS[(idx + 1) % AGE_BANDS.length]);
     };
 
     return (
@@ -83,8 +92,19 @@ export const ActionButtons = memo(function ActionButtons({
                 </svg>
             </motion.button>
 
+            {/* Age band toggle */}
+            <motion.button
+                onClick={cycleBand}
+                className="w-11 h-11 flex flex-col items-center justify-center"
+                whileTap={{ scale: 0.88 }}
+                title={`Age band: ${BAND_LABELS[ageBand].label}`}
+            >
+                <span className="text-xl">{BAND_LABELS[ageBand].emoji}</span>
+                <span className="text-[9px] ui text-[rgb(var(--color-fg))]/40 -mt-0.5">{BAND_LABELS[ageBand].label}</span>
+            </motion.button>
+
             {/* Question type */}
-            <QuestionTypePicker current={questionType} onChange={onTypeChange} />
+            <QuestionTypePicker current={questionType} onChange={onTypeChange} ageBand={ageBand} />
 
             {/* Stopwatch / timed mode */}
             <motion.button

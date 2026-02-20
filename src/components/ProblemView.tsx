@@ -182,6 +182,23 @@ export const ProblemView = memo(function ProblemView({ problem, frozen, highligh
                     />
                 ))}
             </motion.div>
+            {/* Number bond visual */}
+            {problem.visual === 'bond' && problem.bondTotal != null && problem.bondPart != null && (
+                <svg viewBox="0 0 160 120" className="w-44 h-28 mb-4" style={{ color: 'var(--color-chalk)' }}>
+                    {/* Lines connecting circles */}
+                    <line x1="80" y1="32" x2="40" y2="84" stroke="currentColor" strokeWidth="2" opacity="0.5" />
+                    <line x1="80" y1="32" x2="120" y2="84" stroke="currentColor" strokeWidth="2" opacity="0.5" />
+                    {/* Top circle — total */}
+                    <circle cx="80" cy="24" r="22" stroke="currentColor" strokeWidth="2" fill="none" />
+                    <text x="80" y="31" textAnchor="middle" fill="currentColor" fontSize="20" fontFamily="inherit" className="chalk">{problem.bondTotal}</text>
+                    {/* Bottom-left circle — known part */}
+                    <circle cx="40" cy="94" r="22" stroke="currentColor" strokeWidth="2" fill="none" />
+                    <text x="40" y="101" textAnchor="middle" fill="currentColor" fontSize="20" fontFamily="inherit" className="chalk">{problem.bondPart}</text>
+                    {/* Bottom-right circle — unknown (?) */}
+                    <circle cx="120" cy="94" r="22" stroke="var(--color-gold)" strokeWidth="2.5" fill="none" strokeDasharray="6 3" />
+                    <text x="120" y="101" textAnchor="middle" fill="var(--color-gold)" fontSize="22" fontFamily="inherit" className="chalk">?</text>
+                </svg>
+            )}
             {/* Problem expression */}
             <motion.div className="text-center mb-12" animate={pulseAnim}>
                 <div className={`landscape-question chalk leading-tight tracking-wider text-[var(--color-chalk)] whitespace-nowrap ${problem.expression.length > 10 ? 'text-4xl' : 'text-6xl'}`}>

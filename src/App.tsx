@@ -6,6 +6,8 @@ import { MrChalk } from './components/MrChalk';
 import { ScoreCounter } from './components/ScoreCounter';
 import { BottomNav } from './components/BottomNav';
 import { ActionButtons } from './components/ActionButtons';
+import type { AgeBand } from './utils/questionTypes';
+import { defaultTypeForBand, typesForBand } from './utils/questionTypes';
 const LeaguePage = lazy(() => import('./components/LeaguePage').then(m => ({ default: m.LeaguePage })));
 const MePage = lazy(() => import('./components/MePage').then(m => ({ default: m.MePage })));
 import { useGameLoop } from './hooks/useGameLoop';
@@ -82,7 +84,9 @@ function App() {
 
   // ── Session summary ──
   const [showSummary, setShowSummary] = useState(false);
-  const sessionAccuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
+  const sessionAccuracy = answerHistory.length > 0
+    ? Math.round(answerHistory.filter(Boolean).length / answerHistory.length * 100)
+    : 0;
 
   // ── Auto-show summary when daily challenge finishes (adjust state during render) ──
   const [prevDailyComplete, setPrevDailyComplete] = useState(false);
@@ -175,6 +179,16 @@ function App() {
   const toggleThemeMode = useCallback(() => {
     setThemeMode(themeMode === 'dark' ? 'light' : 'dark');
   }, [themeMode, setThemeMode]);
+  // ── Age Band ──
+  const [ageBand, setAgeBand] = useLocalState('math-swipe-age-band', '35' as AgeBand, uid) as [AgeBand, (v: AgeBand) => void];
+  const handleBandChange = useCallback((band: AgeBand) => {
+    setAgeBand(band);
+    // Reset to the band's default type if current type isn't in the new band
+    const available = typesForBand(band);
+    if (!available.some(t => t.id === questionType)) {
+      setQuestionType(defaultTypeForBand(band));
+    }
+  }, [questionType, setAgeBand, setQuestionType]);
 
   // Show loading screen while Firebase auth initializes
   if (authLoading) {
@@ -317,26 +331,28 @@ function App() {
             </AnimatePresence>
 
             {/* ── Main Problem Area ── */}
-            <AnimatePresence mode="wait">
-              {currentProblem && (
-                <motion.div
-                  key={currentProblem.id}
-                  className="flex-1 flex flex-col"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15, ease: 'easeOut' }}
-                >
-                  <ProblemView
-                    problem={currentProblem}
-                    frozen={frozen}
-                    highlightCorrect={isFirstQuestion}
-                    showHints={totalCorrect < 4}
-                    onSwipe={handleSwipe}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <div className="flex-1 flex flex-col">
+              <AnimatePresence mode="wait">
+                {currentProblem && (
+                  <motion.div
+                    key={currentProblem.id}
+                    className="flex-1 flex flex-col"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15, ease: 'easeOut' }}
+                  >
+                    <ProblemView
+                      problem={currentProblem}
+                      frozen={frozen}
+                      highlightCorrect={isFirstQuestion}
+                      showHints={totalCorrect < 4}
+                      onSwipe={handleSwipe}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             {/* ── TikTok-style action buttons ── */}
             <ActionButtons
@@ -347,6 +363,8 @@ function App() {
               timedMode={timedMode}
               onTimedModeToggle={toggleTimedMode}
               timerProgress={timerProgress}
+              ageBand={ageBand}
+              onBandChange={handleBandChange}
             />
 
             {/* ── Mr. Chalk PiP ── */}
@@ -410,6 +428,7 @@ function App() {
             onDisplayNameChange={setDisplayName}
             isAnonymous={user?.isAnonymous ?? true}
             onLinkGoogle={linkGoogle}
+            ageBand={ageBand}
           /></Suspense>
         )}
 
