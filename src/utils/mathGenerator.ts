@@ -18,8 +18,12 @@ export interface Problem {
 }
 
 const BASIC_TYPES: QuestionType[] = ['add', 'subtract', 'multiply', 'divide'];
-export const YOUNG_TYPES: QuestionType[] = ['add1', 'sub1', 'bonds'];
-const ALL_INDIVIDUAL: QuestionType[] = ['add', 'subtract', 'multiply', 'divide', 'square', 'sqrt', 'fraction', 'decimal', 'percent', 'linear', 'add1', 'sub1', 'bonds'];
+export const YOUNG_TYPES: QuestionType[] = ['add1', 'sub1', 'bonds', 'doubles', 'compare', 'skip'];
+const CORE_TYPES: QuestionType[] = ['round', 'orderops', 'placevalue'];
+const ALL_INDIVIDUAL: QuestionType[] = [
+    ...BASIC_TYPES, 'square', 'sqrt', 'exponent', 'negatives', 'linear', 'gcflcm', 'ratio',
+    'fraction', 'decimal', 'percent', ...YOUNG_TYPES, ...CORE_TYPES,
+];
 
 /** Optional RNG function — defaults to Math.random */
 type RngFn = () => number;
@@ -60,6 +64,16 @@ function _generateProblem(difficulty: number, type: QuestionType, hardMode: bool
         case 'add1': return genAdd1();
         case 'sub1': return genSub1();
         case 'bonds': return genBonds();
+        case 'doubles': return genDoubles();
+        case 'compare': return genCompare();
+        case 'skip': return genSkip();
+        case 'round': return genRound();
+        case 'orderops': return genOrderOps();
+        case 'placevalue': return genPlaceValue();
+        case 'exponent': return genExponent(difficulty, hardMode);
+        case 'negatives': return genNegatives(difficulty, hardMode);
+        case 'gcflcm': return genGcfLcm();
+        case 'ratio': return genRatio();
     }
 }
 
@@ -126,6 +140,170 @@ function genBonds(): Problem {
     const answer = total - part;
     const p = pack(`${part} + ? = ${total}`, answer, smallDistractors);
     return { ...p, visual: 'bond' as const, bondTotal: total, bondPart: part };
+}
+
+function genDoubles(): Problem {
+    const n = randInt(1, 10);
+    return pack(`${n} + ${n}`, n * 2, smallDistractors, `${n} + ${n}`);
+}
+
+function genCompare(): Problem {
+    const a = randInt(1, 20), b = randInt(1, 20);
+    // Which is bigger? (or equal)
+    const answer = a > b ? a : b;
+    const expression = a === b ? `${a} = ${b} ?` : `Bigger: ${a} or ${b}?`;
+    if (a === b) {
+        // Re-roll to avoid equal
+        return genCompare();
+    }
+    const smaller = Math.min(a, b);
+    return pack(expression, answer, () => {
+        const d1 = smaller;
+        // third distractor: a nearby number not in the pair
+        let d2 = answer + randInt(1, 3);
+        if (d2 === a || d2 === b) d2 = answer - randInt(1, 3);
+        if (d2 < 0) d2 = answer + 4;
+        return [d1, d2];
+    });
+}
+
+function genSkip(): Problem {
+    const steps = pickRandom([2, 5, 10]);
+    const start = randInt(0, 5) * steps;
+    const seq = [start, start + steps, start + 2 * steps];
+    const answer = start + 3 * steps;
+    return pack(`${seq.join(', ')}, ?`, answer, (ans) => {
+        return [ans + steps, ans - steps > 0 ? ans - steps : ans + 2 * steps];
+    });
+}
+
+// ── Core 3-5 Generators ─────────────────────────────────
+
+function genRound(): Problem {
+    const places = pickRandom([10, 100]);
+    const n = places === 10 ? randInt(11, 99) : randInt(101, 999);
+    const answer = Math.round(n / places) * places;
+    return pack(`Round ${n} to nearest ${places}`, answer, (ans) => {
+        // Common mistake distractors: round wrong direction
+        const d1 = ans === Math.floor(n / places) * places
+            ? Math.ceil(n / places) * places
+            : Math.floor(n / places) * places;
+        const d2 = ans + places;
+        return [d1, d2];
+    });
+}
+
+function genOrderOps(): Problem {
+    // Generate problems like: a + b × c  or  a × b - c
+    const variant = randInt(0, 2);
+    let expression: string, answer: number, latex: string;
+    if (variant === 0) {
+        // a + b × c
+        const a = randInt(1, 9), b = randInt(2, 6), c = randInt(2, 6);
+        answer = a + b * c;
+        expression = `${a} + ${b} × ${c}`;
+        latex = `${a} + ${b} \\times ${c}`;
+    } else if (variant === 1) {
+        // a × b + c
+        const a = randInt(2, 6), b = randInt(2, 6), c = randInt(1, 9);
+        answer = a * b + c;
+        expression = `${a} × ${b} + ${c}`;
+        latex = `${a} \\times ${b} + ${c}`;
+    } else {
+        // a × b − c
+        const a = randInt(2, 6), b = randInt(2, 6);
+        const c = randInt(1, a * b - 1);
+        answer = a * b - c;
+        expression = `${a} × ${b} − ${c}`;
+        latex = `${a} \\times ${b} - ${c}`;
+    }
+    // Common wrong answer: left-to-right evaluation (the classic trap)
+    return pack(expression, answer, nearDistractors, latex);
+}
+
+function genPlaceValue(): Problem {
+    const n = randInt(100, 9999);
+    const places = pickRandom(['ones', 'tens', 'hundreds'] as const);
+    const str = String(n);
+    let answer: number;
+    if (places === 'ones') answer = parseInt(str[str.length - 1]);
+    else if (places === 'tens') answer = parseInt(str[str.length - 2]);
+    else answer = parseInt(str[str.length - 3]);
+    return pack(`${places} digit of ${n.toLocaleString()}?`, answer, (ans) => {
+        // Distractors: other digits from the number
+        const digits = str.split('').map(Number).filter(d => d !== ans);
+        if (digits.length >= 2) return [digits[0], digits[1]];
+        return [ans + 1, ans === 0 ? 2 : ans - 1];
+    });
+}
+
+// ── Advanced 6+ Generators ──────────────────────────────
+
+function genExponent(_d: number, hard: boolean): Problem {
+    const base = hard ? randInt(2, 10) : randInt(2, 5);
+    const exp = hard ? randInt(2, 5) : randInt(2, 4);
+    const answer = Math.pow(base, exp);
+    const superscripts: Record<number, string> = { 2: '²', 3: '³', 4: '⁴', 5: '⁵' };
+    return pack(`${base}${superscripts[exp] || '^' + exp}`, answer, nearDistractors, `${base}^{${exp}}`);
+}
+
+function genNegatives(_d: number, hard: boolean): Problem {
+    const range = hard ? 20 : 10;
+    const variant = randInt(0, 2);
+    let a: number, b: number, answer: number, expression: string, latex: string;
+    if (variant === 0) {
+        // negative + positive
+        a = -randInt(1, range); b = randInt(1, range);
+        answer = a + b;
+        expression = `(${a}) + ${b}`;
+        latex = `(${a}) + ${b}`;
+    } else if (variant === 1) {
+        // positive - negative (double negative)
+        a = randInt(1, range); b = randInt(1, range);
+        answer = a + b; // a - (-b) = a + b
+        expression = `${a} − (−${b})`;
+        latex = `${a} - (-${b})`;
+    } else {
+        // negative + negative
+        a = -randInt(1, range); b = -randInt(1, range);
+        answer = a + b;
+        expression = `(${a}) + (${b})`;
+        latex = `(${a}) + (${b})`;
+    }
+    return pack(expression, answer, nearDistractors, latex);
+}
+
+function gcd(a: number, b: number): number {
+    a = Math.abs(a); b = Math.abs(b);
+    while (b) { [a, b] = [b, a % b]; }
+    return a;
+}
+
+function genGcfLcm(): Problem {
+    const useGcf = _rng() > 0.5;
+    // Pick numbers with a non-trivial GCF
+    const factor = randInt(2, 6);
+    const m1 = randInt(2, 6), m2 = randInt(2, 6);
+    const a = factor * m1, b = factor * m2;
+    if (useGcf) {
+        const answer = gcd(a, b);
+        return pack(`GCF(${a}, ${b})`, answer, nearDistractors, `\\gcd(${a}, ${b})`);
+    } else {
+        const answer = (a * b) / gcd(a, b);
+        return pack(`LCM(${a}, ${b})`, answer, nearDistractors, `\\text{lcm}(${a}, ${b})`);
+    }
+}
+
+function genRatio(): Problem {
+    const g = randInt(2, 6);
+    const a = randInt(1, 5) * g;
+    const b = randInt(1, 5) * g;
+    const sa = a / gcd(a, b);
+    // "Simplify a : b" → answer is the first term of simplified ratio
+    // Pack the first term as numerical answer, show ratio as options labels
+    return pack(`Simplify ${a} : ${b}`, sa, (ans) => {
+        return [ans + 1, ans === 1 ? ans + 2 : ans - 1];
+    });
 }
 
 // ── New Generators ──────────────────────────────────────
@@ -385,9 +563,6 @@ function pickRandom<T>(arr: T[]): T {
     return arr[Math.floor(_rng() * arr.length)];
 }
 
-function gcd(a: number, b: number): number {
-    return b === 0 ? a : gcd(b, a % b);
-}
 
 function uid(): string {
     return typeof crypto !== 'undefined' && crypto.randomUUID

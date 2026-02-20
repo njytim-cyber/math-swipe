@@ -7,9 +7,9 @@ import { typesForBand, GROUP_LABELS, type QuestionGroup } from '../utils/questio
 /** Size class for each icon — keeps the grid visually balanced */
 function iconSizeClass(icon: string): string {
     // Single-char math operators render large
-    if ('+ − × ÷ √ %'.split(' ').includes(icon)) return 'text-3xl';
+    if ('+ − × ÷ √ % ≈ ±'.split(' ').includes(icon)) return 'text-3xl';
     // Emoji
-    if (icon === '📅' || icon === '🌀' || icon === '🔗') return 'text-2xl';
+    if (/^[\p{Emoji}\uFE0F]+$/u.test(icon) && !icon.includes('\n')) return 'text-2xl';
     // Multi-char grid (Basic Mix) — keep compact
     if (icon.includes('\n')) return '';
     // Everything else (x², x=, .5, ⅓) — medium
@@ -22,7 +22,7 @@ interface Props {
     ageBand: AgeBand;
 }
 
-const ALL_GROUPS: QuestionGroup[] = ['daily', 'young', 'whole', 'parts', 'advanced', 'mixed'];
+const ALL_GROUPS: QuestionGroup[] = ['daily', 'young', 'whole', 'core', 'parts', 'advanced', 'mixed'];
 
 export const QuestionTypePicker = memo(function QuestionTypePicker({ current, onChange, ageBand }: Props) {
     const [open, setOpen] = useState(false);

@@ -214,7 +214,7 @@ function App() {
         {/* ── Top-right theme toggle (visible on all tabs) ── */}
         <button
           onClick={toggleThemeMode}
-          className="fixed top-[calc(env(safe-area-inset-top,12px)+12px)] right-4 z-50 w-9 h-9 flex items-center justify-center text-[rgb(var(--color-fg))]/60 active:text-[var(--color-gold)] transition-colors"
+          className="absolute top-[calc(env(safe-area-inset-top,12px)+12px)] right-4 z-50 w-9 h-9 flex items-center justify-center text-[rgb(var(--color-fg))]/60 active:text-[var(--color-gold)] transition-colors"
           aria-label="Toggle theme"
         >
           {themeMode === 'light' ? (

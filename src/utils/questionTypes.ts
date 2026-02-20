@@ -1,11 +1,13 @@
 export type QuestionType =
     | 'add' | 'subtract' | 'multiply' | 'divide' | 'square' | 'sqrt'
     | 'fraction' | 'decimal' | 'percent' | 'linear'
-    | 'add1' | 'sub1' | 'bonds'
+    | 'add1' | 'sub1' | 'bonds' | 'doubles' | 'compare' | 'skip'
+    | 'round' | 'orderops' | 'placevalue'
+    | 'exponent' | 'negatives' | 'gcflcm' | 'ratio'
     | 'mix-basic' | 'mix-all'
     | 'daily' | 'challenge';
 
-export type QuestionGroup = 'daily' | 'young' | 'whole' | 'advanced' | 'parts' | 'mixed';
+export type QuestionGroup = 'daily' | 'young' | 'whole' | 'core' | 'advanced' | 'parts' | 'mixed';
 
 export type AgeBand = 'k2' | '35' | '6+';
 
@@ -21,6 +23,7 @@ export const GROUP_LABELS: Record<QuestionGroup, string> = {
     daily: '🗓️ Daily',
     young: '🐣 Young',
     whole: 'Whole',
+    core: '🧱 Core',
     advanced: 'Advanced',
     parts: 'Parts',
     mixed: 'Mixed',
@@ -29,8 +32,8 @@ export const GROUP_LABELS: Record<QuestionGroup, string> = {
 /** Which groups are visible per age band */
 const BAND_GROUPS: Record<AgeBand, Set<QuestionGroup>> = {
     'k2': new Set(['daily', 'young']),
-    '35': new Set(['daily', 'whole', 'mixed']),
-    '6+': new Set(['daily', 'whole', 'advanced', 'parts', 'mixed']),
+    '35': new Set(['daily', 'whole', 'core', 'mixed']),
+    '6+': new Set(['daily', 'whole', 'core', 'advanced', 'parts', 'mixed']),
 };
 
 export const BAND_LABELS: Record<AgeBand, { emoji: string; label: string }> = {
@@ -49,16 +52,27 @@ export const QUESTION_TYPES: ReadonlyArray<QuestionTypeEntry> = [
     { id: 'add1', icon: '+', label: '1-Digit +', group: 'young' },
     { id: 'sub1', icon: '−', label: '1-Digit −', group: 'young' },
     { id: 'bonds', icon: '🔗', label: 'Bonds', group: 'young' },
-    // Whole (formerly Basic)
+    { id: 'doubles', icon: '👯', label: 'Doubles', group: 'young' },
+    { id: 'compare', icon: '⚖️', label: 'Compare', group: 'young' },
+    { id: 'skip', icon: '🦘', label: 'Skip Count', group: 'young' },
+    // Whole
     { id: 'add', icon: '+', label: 'Add', group: 'whole' },
     { id: 'subtract', icon: '−', label: 'Subtract', group: 'whole' },
     { id: 'multiply', icon: '×', label: 'Multiply', group: 'whole' },
     { id: 'divide', icon: '÷', label: 'Divide', group: 'whole' },
-    // Advanced (formerly Powers, now includes Linear)
+    // Core (3-5)
+    { id: 'round', icon: '≈', label: 'Rounding', group: 'core' },
+    { id: 'orderops', icon: '🔢', label: 'PEMDAS', group: 'core' },
+    { id: 'placevalue', icon: '🏠', label: 'Place Val', group: 'core' },
+    // Advanced
     { id: 'square', icon: 'x²', label: 'Square', group: 'advanced' },
     { id: 'sqrt', icon: '√', label: 'Root', group: 'advanced' },
+    { id: 'exponent', icon: 'xⁿ', label: 'Exponent', group: 'advanced' },
+    { id: 'negatives', icon: '±', label: 'Negatives', group: 'advanced' },
     { id: 'linear', icon: 'x=', label: 'Linear', group: 'advanced' },
-    // Parts (formerly Advanced)
+    { id: 'gcflcm', icon: 'GCF', label: 'GCF/LCM', group: 'advanced' },
+    { id: 'ratio', icon: 'a:b', label: 'Ratios', group: 'advanced' },
+    // Parts
     { id: 'fraction', icon: '⅓', label: 'Fractions', group: 'parts' },
     { id: 'decimal', icon: '.5', label: 'Decimals', group: 'parts' },
     { id: 'percent', icon: '%', label: 'Percent', group: 'parts' },
