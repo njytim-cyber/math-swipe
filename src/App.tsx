@@ -152,11 +152,11 @@ function App() {
     }
   }, [stats, bestStreak]);
 
-  // ── Personal best detection (adjust state during render) ──
+  // ── Personal best detection — fire once when session streak first exceeds all-time best ──
   const [showPB, setShowPB] = useState(false);
-  const [prevBest, setPrevBest] = useState(stats.bestStreak);
-  if (bestStreak > prevBest && bestStreak > 0) {
-    setPrevBest(bestStreak);
+  const [pbShown, setPbShown] = useState(false);
+  if (!pbShown && bestStreak > stats.bestStreak && bestStreak > 0) {
+    setPbShown(true);
     setShowPB(true);
   }
   // Auto-hide PB toast
