@@ -157,7 +157,7 @@ export const ProblemView = memo(function ProblemView({ problem, frozen, highligh
 
     return (
         <motion.div
-            className="landscape-answers flex-1 flex flex-col items-center justify-center px-4 pb-24 relative z-10 gpu-layer"
+            className="landscape-answers flex-1 flex flex-col items-center justify-center px-4 pt-16 pb-24 relative z-10 gpu-layer"
             style={{ x, y }}
             drag={!frozen}
             dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}

@@ -272,7 +272,7 @@ function App() {
         {activeTab === 'game' && (
           <div key={totalAnswered} className={flash === 'wrong' ? 'wrong-shake' : flash === 'correct' ? 'answer-bounce' : ''}>
             {/* ── Score (centered, pushed down from edge) ── */}
-            <div className="landscape-score flex flex-col items-center pt-[calc(env(safe-area-inset-top,16px)+40px)] z-30">
+            <div className="landscape-score flex flex-col items-center pt-[calc(env(safe-area-inset-top,16px)+40px)] pb-6 z-30">
               {/* Challenge header */}
               {questionType === 'challenge' && (
                 <div className="text-xs ui text-[var(--color-gold)] mb-2 flex items-center gap-2">
