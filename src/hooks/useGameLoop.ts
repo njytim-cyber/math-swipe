@@ -59,6 +59,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
     const startedRef = useRef(false);
     const prevType = useRef(questionType);
     const prevHard = useRef(hardMode);
+    const frozenRef = useRef(false); // Mirror of gs.frozen for stale-closure safety
 
     const dailyRef = useRef<{ dateLabel: string } | null>(null);
     const pendingTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -157,14 +158,21 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
 
     // ── Handle answer ──
     const handleSwipe = useCallback((direction: 'left' | 'right' | 'up' | 'down') => {
-        if (gs.frozen || problems.length === 0) return;
+        if (frozenRef.current || problems.length === 0) return;
 
         const current = problems[0];
+        if (!current) return; // Extra null guard
         const tts = Date.now() - (current.startTime || Date.now());
 
         if (direction === 'up') {
-            setGs(prev => ({ ...prev, streak: 0, chalkState: 'idle' }));
-            advanceProblem();
+            // Freeze briefly on skip to prevent double-skip
+            frozenRef.current = true;
+            setGs(prev => ({ ...prev, streak: 0, chalkState: 'idle', frozen: true }));
+            safeTimeout(() => {
+                setGs(prev => ({ ...prev, frozen: false }));
+                frozenRef.current = false;
+                advanceProblem();
+            }, 100);
             return;
         }
 
@@ -193,6 +201,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
                 wrongStreak: 0,
                 frozen: true, // Freeze immediately to prevent queued multi-taps
             }));
+            frozenRef.current = true;
             scheduleChalkReset(newStreak >= 10 ? 2000 : 800);
 
             // Auto-clear milestone after CSS animation
@@ -201,6 +210,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
 
             safeTimeout(() => {
                 setGs(prev => ({ ...prev, flash: 'none', frozen: false }));
+                frozenRef.current = false;
                 advanceProblem();
             }, AUTO_ADVANCE_MS);
         } else {
@@ -214,9 +224,11 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
                     chalkState: 'fail',
                     frozen: true,
                 }));
+                frozenRef.current = true;
                 scheduleChalkReset(FAIL_PAUSE_MS);
                 safeTimeout(() => {
                     setGs(prev => ({ ...prev, flash: 'none', frozen: false }));
+                    frozenRef.current = false;
                 }, FAIL_PAUSE_MS);
             } else {
                 recordAnswer(tts, false);
@@ -225,11 +237,12 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
 
                 safeTimeout(() => {
                     setGs(prev => ({ ...prev, flash: 'none', frozen: false }));
+                    frozenRef.current = false;
                     advanceProblem();
                 }, FAIL_PAUSE_MS);
             }
         }
-    }, [gs.frozen, gs.streak, gs.totalAnswered, problems, recordAnswer, scheduleChalkReset, advanceProblem, safeTimeout]);
+    }, [gs.streak, gs.totalAnswered, problems, recordAnswer, scheduleChalkReset, advanceProblem, safeTimeout]);
 
     // ── Timed mode tick + auto-skip ──
     useEffect(() => {

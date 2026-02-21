@@ -30,19 +30,32 @@ export function TrickPractice({ trick, onClose }: Props) {
     });
 
     const [flash, setFlash] = useState<'' | 'correct' | 'wrong'>('');
+    const [frozen, setFrozen] = useState(false);
 
     const current = questions[progress];
+    const MAX_QUESTIONS = TOTAL_QUESTIONS + 10; // Cap runaway wrong-answer extensions
 
     const handleAnswer = (ans: number) => {
+        if (frozen || !current) return; // Guard against multi-tap and null current
         if (ans === current.answer) {
+            setFrozen(true);
             setFlash('correct');
-            setTimeout(() => setFlash(''), 300);
-            setProgress(p => p + 1);
+            setTimeout(() => {
+                setFlash('');
+                setFrozen(false);
+                setProgress(p => p + 1);
+            }, 300);
         } else {
+            setFrozen(true);
             setFlash('wrong');
-            setTimeout(() => setFlash(''), 400);
-            // On wrong answer, push a new question to the end so they STILL have to get 5 right
-            setQuestions(q => [...q, trick.generatePractice()]);
+            setTimeout(() => {
+                setFlash('');
+                setFrozen(false);
+            }, 400);
+            // On wrong answer, push a new question (capped to prevent infinite growth)
+            if (questions.length < MAX_QUESTIONS) {
+                setQuestions(q => [...q, trick.generatePractice()]);
+            }
         }
     };
 
