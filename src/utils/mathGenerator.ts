@@ -445,13 +445,21 @@ function nearDistractors(answer: number): [number, number] {
     const used = new Set<number>([answer]);
     const result: number[] = [];
     let safety = 0;
-    while (result.length < 2 && safety < 50) {
+    while (result.length < 2 && safety < 100) {
         safety++;
-        const offset = randInt(1, Math.max(3, Math.floor(Math.abs(answer) * 0.15)));
+        const offset = Math.max(1, randInt(1, Math.max(3, Math.floor(Math.abs(answer) * 0.15))));
         const d = answer + (Math.random() > 0.5 ? offset : -offset);
         if (!used.has(d)) { used.add(d); result.push(d); }
     }
-    while (result.length < 2) { result.push(answer + result.length + 1); }
+    // Deep fallback
+    let fallback = answer + 1;
+    while (result.length < 2) {
+        if (!used.has(fallback)) {
+            used.add(fallback);
+            result.push(fallback);
+        }
+        fallback++;
+    }
     return [result[0], result[1]];
 }
 
@@ -500,7 +508,16 @@ function decimalDistractors(answer: number): [number, number] {
         const d = Math.round((answer + offset * randInt(1, 3)) * 10) / 10;
         if (d > 0 && !used.has(d)) { used.add(d); result.push(d); }
     }
-    while (result.length < 2) { result.push(Math.round((answer + result.length + 0.5) * 10) / 10); }
+    // Deep fallback
+    let fallbackOffset = 1;
+    while (result.length < 2) {
+        const fallback = Math.round((answer + fallbackOffset * 0.5) * 10) / 10;
+        if (!used.has(fallback)) {
+            used.add(fallback);
+            result.push(fallback);
+        }
+        fallbackOffset++;
+    }
     return [result[0], result[1]];
 }
 
@@ -535,8 +552,20 @@ function pack(
     latex?: string,
 ): Problem {
     const distractors = distractorFn(answer);
+    let d1 = distractors[0];
+    let d2 = distractors[1];
+
+    // Final safety constraint: ensure absolute uniqueness of answers
+    const used = new Set([answer]);
+    if (used.has(d1)) d1 += 1;
+    used.add(d1);
+    while (used.has(d2)) {
+        d2 += 1;
+    }
+    used.add(d2);
+
     const correctIndex = randInt(0, 2);
-    const options: number[] = [...distractors];
+    const options = [d1, d2];
     options.splice(correctIndex, 0, answer);
     return { id: uid(), expression, answer, options, correctIndex, ...(latex ? { latex } : {}) };
 }

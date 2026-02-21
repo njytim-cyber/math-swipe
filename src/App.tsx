@@ -23,6 +23,7 @@ function lazyRetry<T extends Record<string, unknown>>(factory: () => Promise<T>)
 
 const LeaguePage = lazy(() => lazyRetry(() => import('./components/LeaguePage')).then(m => ({ default: m.LeaguePage })));
 const MePage = lazy(() => lazyRetry(() => import('./components/MePage')).then(m => ({ default: m.MePage })));
+const TricksPage = lazy(() => lazyRetry(() => import('./components/TricksPage')).then(m => ({ default: m.TricksPage })));
 import { useGameLoop } from './hooks/useGameLoop';
 import { useStats } from './hooks/useStats';
 import type { QuestionType } from './utils/questionTypes';
@@ -35,13 +36,28 @@ import { useFirebaseAuth } from './hooks/useFirebaseAuth';
 import { collection, query, where, onSnapshot, doc, updateDoc, orderBy, limit } from 'firebase/firestore';
 import { db } from './utils/firebase';
 
-type Tab = 'game' | 'league' | 'me';
+type Tab = 'game' | 'league' | 'me' | 'magic';
+
+function LoadingFallback() {
+  return (
+    <div className="flex-1 flex items-center justify-center">
+      <motion.div
+        className="text-lg chalk text-[var(--color-chalk)]/50"
+        animate={{ opacity: [0.3, 1, 0.3] }}
+        transition={{ duration: 1.5, repeat: Infinity }}
+      >
+        Loading...
+      </motion.div>
+    </div>
+  );
+}
 
 function App() {
   const { user, loading: authLoading, setDisplayName, linkGoogle } = useFirebaseAuth();
   const uid = user?.uid ?? null;
 
   const [activeTab, setActiveTab] = useState<Tab>('game');
+  const [isMagicLessonActive, setIsMagicLessonActive] = useState(false);
   const [hardMode, setHardMode] = useState(false);
   const [timedMode, setTimedMode] = useState(false);
 
@@ -180,7 +196,7 @@ function App() {
         return () => clearTimeout(t);
       }
     }
-  }, [stats, bestStreak]);
+  }, [stats, bestStreak, uid]);
 
   // ── Personal best detection — fire once when session streak first exceeds all-time best ──
   const [showPB, setShowPB] = useState(false);
@@ -485,10 +501,10 @@ function App() {
           </div>
         )}
 
-        {activeTab === 'league' && <Suspense fallback={null}><LeaguePage userXP={stats.totalXP} userStreak={stats.bestStreak} uid={uid} displayName={user?.displayName ?? 'You'} activeThemeId={activeThemeId as string} activeCostume={activeCostume as string} /></Suspense>}
+        {activeTab === 'league' && <Suspense fallback={<LoadingFallback />}><LeaguePage userXP={stats.totalXP} userStreak={stats.bestStreak} uid={uid} displayName={user?.displayName ?? 'You'} activeThemeId={activeThemeId as string} activeCostume={activeCostume as string} /></Suspense>}
 
         {activeTab === 'me' && (
-          <Suspense fallback={null}><MePage
+          <Suspense fallback={<LoadingFallback />}><MePage
             stats={stats}
             accuracy={accuracy}
             sessionScore={score}
@@ -509,8 +525,14 @@ function App() {
           /></Suspense>
         )}
 
+        {activeTab === 'magic' && (
+          <Suspense fallback={<LoadingFallback />}><TricksPage onLessonActive={setIsMagicLessonActive} /></Suspense>
+        )}
+
         {/* ── Bottom Navigation ── */}
-        <BottomNav active={activeTab} onChange={handleTabChange} />
+        {!isMagicLessonActive && (
+          <BottomNav active={activeTab} onChange={handleTabChange} />
+        )}
 
         {/* ── Session Summary ── */}
         <SessionSummary

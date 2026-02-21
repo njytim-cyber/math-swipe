@@ -1,7 +1,7 @@
 import { type ReactNode, memo } from 'react';
 import { motion } from 'framer-motion';
 
-type Tab = 'game' | 'league' | 'me';
+type Tab = 'game' | 'league' | 'me' | 'magic';
 
 interface Props {
     active: Tab;
@@ -23,11 +23,20 @@ const tabs: { id: Tab; label: string; icon: ReactNode }[] = [
         label: 'League',
         icon: (
             <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M6 9H4a1 1 0 0 0-1 1v2a4 4 0 0 0 4 4h1" />
-                <path d="M18 9h2a1 1 0 0 1 1 1v2a4 4 0 0 1-4 4h-1" />
+                <path d="M6 9H4a1 0 0 0-1 1v2a4 4 0 0 0 4 4h1" />
+                <path d="M18 9h2a1 0 0 1 1 1v2a4 4 0 0 1-4 4h-1" />
                 <path d="M8 4h8v6a4 4 0 0 1-8 0V4z" />
                 <path d="M10 18v2h4v-2" />
                 <path d="M7 22h10" />
+            </svg>
+        ),
+    },
+    {
+        id: 'magic',
+        label: 'Magic',
+        icon: (
+            <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M12 2l3 6 6 3-6 3-3 6-3-6-6-3 6-3z" />
             </svg>
         ),
     },

@@ -87,9 +87,12 @@ export const ACHIEVEMENTS: Achievement[] = [
         desc: 'Solve 10+ of every type',
         check: s => {
             const META: string[] = ['daily', 'challenge', 'mix-basic', 'mix-all'];
-            return Object.entries(s.byType)
-                .filter(([k]) => !META.includes(k))
-                .every(([, t]) => t.solved >= 10);
+            const validEntries = Object.entries(s.byType).filter(([k]) => !META.includes(k));
+
+            // If they haven't even played out 10 distinct modes, they can't be an all rounder
+            if (validEntries.length < 10) return false;
+
+            return validEntries.every(([, t]) => t.solved >= 10);
         },
     },
 ];
