@@ -74,7 +74,7 @@ export const ActionButtons = memo(function ActionButtons({
             {/* Share */}
             <motion.button
                 onClick={handleShare}
-                className="w-11 h-11 flex items-center justify-center text-[rgb(var(--color-fg))]/50 active:text-[var(--color-gold)]"
+                className="w-11 h-11 flex items-center justify-center text-[rgb(var(--color-fg))]/70 active:text-[var(--color-gold)]"
                 whileTap={{ scale: 0.88 }}
             >
                 <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -94,7 +94,7 @@ export const ActionButtons = memo(function ActionButtons({
                 onClick={onTimedModeToggle}
                 className={`w-11 h-11 relative flex items-center justify-center ${timedMode
                     ? 'text-[var(--color-gold)]'
-                    : 'text-[rgb(var(--color-fg))]/50'
+                    : 'text-[rgb(var(--color-fg))]/70'
                     }`}
                 whileTap={{ scale: 0.88 }}
             >
@@ -127,7 +127,7 @@ export const ActionButtons = memo(function ActionButtons({
                 onClick={onHardModeToggle}
                 className={`w-11 h-11 flex flex-col items-center justify-center text-xl ${hardMode
                     ? 'opacity-100'
-                    : 'opacity-35'
+                    : 'opacity-50'
                     }`}
                 whileTap={{ scale: 0.88 }}
                 animate={hardMode ? {

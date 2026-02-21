@@ -1,13 +1,21 @@
 import { memo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { collection, query, orderBy, limit, onSnapshot, where } from 'firebase/firestore';
+import { collection, query, orderBy, limit, onSnapshot, where, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../utils/firebase';
+import { CHALK_THEMES } from '../utils/chalkThemes';
+import { COSTUMES } from './MrChalk';
+
+// Make COSTUMES accessible: We will import it from MrChalk, so we must export COSTUMES in MrChalk.
+// Assuming we'll export COSTUMES from MrChalk in a subsequent change.
 
 interface LeaderboardEntry {
     uid: string;
     displayName: string;
     totalXP: number;
     bestStreak: number;
+    activeThemeId?: string;
+    activeCostume?: string;
+    rank?: number;
 }
 
 interface Props {
@@ -15,11 +23,41 @@ interface Props {
     userStreak: number;
     uid: string | null;
     displayName: string;
+    activeThemeId: string;
+    activeCostume: string;
 }
 
-export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, displayName }: Props) {
+export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, displayName, activeThemeId, activeCostume }: Props) {
     const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedPlayer, setSelectedPlayer] = useState<LeaderboardEntry | null>(null);
+
+    const [pingCooldown, setPingCooldown] = useState(false);
+
+    const handleAction = async (action: 'race' | 'ping') => {
+        if (!selectedPlayer) return;
+        if (action === 'race') {
+            // Trigger Ghost Race via challenge param
+            window.location.search = `?c=ghost-${selectedPlayer.uid}`;
+        } else if (action === 'ping') {
+            if (pingCooldown) return;
+            setPingCooldown(true);
+            try {
+                await addDoc(collection(db, 'pings'), {
+                    targetUid: selectedPlayer.uid,
+                    senderUid: uid || 'anonymous',
+                    senderName: displayName || 'Someone',
+                    createdAt: serverTimestamp(),
+                    read: false
+                });
+                alert(`Ping sent to ${selectedPlayer.displayName}!`);
+            } catch (err) {
+                console.error("Failed to send ping", err);
+            }
+            setSelectedPlayer(null);
+            setTimeout(() => setPingCooldown(false), 5000); // 5s cooldown
+        }
+    };
 
     useEffect(() => {
         const q = query(
@@ -35,6 +73,8 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, di
                 displayName: doc.data().displayName || 'Anonymous',
                 totalXP: doc.data().totalXP || 0,
                 bestStreak: doc.data().bestStreak || 0,
+                activeThemeId: doc.data().activeThemeId || 'classic',
+                activeCostume: doc.data().activeCostume || '',
             }));
             setEntries(data);
             setLoading(false);
@@ -56,11 +96,15 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, di
                 displayName: displayName || 'You',
                 totalXP: userXP,
                 bestStreak: userStreak,
+                activeThemeId,
+                activeCostume,
             });
         } else if (userInList) {
             // Update with latest local stats (may be newer than Firestore snapshot)
             userInList.totalXP = Math.max(userInList.totalXP, userXP);
             userInList.bestStreak = Math.max(userInList.bestStreak, userStreak);
+            userInList.activeThemeId = activeThemeId;
+            userInList.activeCostume = activeCostume;
         }
         return list
             .sort((a, b) => b.totalXP - a.totalXP)
@@ -127,13 +171,20 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, di
                                     {entry.rank === 1 ? '👑' : entry.rank === 2 ? '⚡' : entry.rank === 3 ? '🔥' : entry.rank}
                                 </div>
 
-                                {/* Name */}
-                                <div className="flex-1 min-w-0">
-                                    <div className={`text-sm ui font-semibold truncate ${entry.isYou ? 'text-[var(--color-gold)]' : 'text-[rgb(var(--color-fg))]/70'
-                                        }`}>
+                                {/* Name & Cosmetic */}
+                                <div className="flex-1 min-w-0 flex items-center gap-1.5" onClick={() => !entry.isYou && setSelectedPlayer(entry)}>
+                                    <div
+                                        className={`text-sm ui font-semibold truncate ${entry.isYou ? '' : 'text-[rgb(var(--color-fg))]/70'}`}
+                                        style={entry.activeThemeId ? { color: CHALK_THEMES.find(t => t.id === entry.activeThemeId)?.color } : undefined}
+                                    >
                                         {entry.displayName}
-                                        {entry.isYou && <span className="ml-1 text-xs opacity-50">(you)</span>}
+                                        {entry.isYou && <span className="ml-1 text-xs opacity-50" style={{ color: 'rgb(var(--color-fg))' }}>(you)</span>}
                                     </div>
+                                    {entry.activeCostume && COSTUMES[entry.activeCostume] && (
+                                        <svg viewBox="0 0 100 160" className="w-[14px] h-[22px] flex-shrink-0" style={{ color: CHALK_THEMES.find(t => t.id === entry.activeThemeId)?.color || 'var(--color-chalk)' }}>
+                                            {COSTUMES[entry.activeCostume]}
+                                        </svg>
+                                    )}
                                 </div>
 
                                 {/* XP */}
@@ -154,6 +205,63 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, di
                             </motion.div>
                         ))}
                     </motion.div>
+                )}
+            </AnimatePresence>
+            {/* Action Sheet Modal */}
+            <AnimatePresence>
+                {selectedPlayer && (
+                    <>
+                        {/* Backdrop */}
+                        <motion.div
+                            className="fixed inset-0 bg-[var(--color-overlay)] z-40 backdrop-blur-sm"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setSelectedPlayer(null)}
+                        />
+                        {/* Drawer */}
+                        <motion.div
+                            className="fixed bottom-0 left-0 right-0 bg-[var(--color-surface)] border-t border-[var(--color-gold)]/20 rounded-t-3xl p-6 z-50 pb-[calc(env(safe-area-inset-bottom,20px)+20px)]"
+                            initial={{ y: '100%' }}
+                            animate={{ y: 0 }}
+                            exit={{ y: '100%' }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                        >
+                            <div className="flex items-center gap-3 mb-6">
+                                {selectedPlayer.activeCostume && COSTUMES[selectedPlayer.activeCostume] ? (
+                                    <svg viewBox="0 0 100 160" className="w-[28px] h-[44px]" style={{ color: CHALK_THEMES.find(t => t.id === selectedPlayer.activeThemeId)?.color || 'var(--color-chalk)' }}>
+                                        {COSTUMES[selectedPlayer.activeCostume]}
+                                    </svg>
+                                ) : (
+                                    <div className="w-[28px] h-[44px] flex items-center justify-center text-xl">👤</div>
+                                )}
+                                <div>
+                                    <h3
+                                        className="text-lg ui font-bold"
+                                        style={{ color: CHALK_THEMES.find(t => t.id === selectedPlayer.activeThemeId)?.color || 'rgb(var(--color-fg))' }}
+                                    >
+                                        {selectedPlayer.displayName}
+                                    </h3>
+                                    <p className="text-xs ui text-[rgb(var(--color-fg))]/40">Rank #{selectedPlayer.rank} • {selectedPlayer.totalXP.toLocaleString()} XP</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <button
+                                    onClick={() => handleAction('race')}
+                                    className="w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold ui text-[var(--color-surface)] bg-[var(--color-gold)] active:opacity-80 transition-opacity"
+                                >
+                                    <span>⚔️</span> Ghost Race
+                                </button>
+                                <button
+                                    onClick={() => handleAction('ping')}
+                                    className="w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold ui border border-[var(--color-gold)]/30 text-[var(--color-gold)] active:bg-[var(--color-gold)]/10 transition-colors"
+                                >
+                                    <span>👋</span> Ping Player
+                                </button>
+                            </div>
+                        </motion.div>
+                    </>
                 )}
             </AnimatePresence>
         </div>

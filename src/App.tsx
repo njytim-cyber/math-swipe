@@ -31,6 +31,8 @@ import { CHALK_THEMES, applyTheme, type ChalkTheme } from './utils/chalkThemes';
 import { applyMode } from './hooks/useThemeMode';
 import { useLocalState } from './hooks/useLocalState';
 import { useFirebaseAuth } from './hooks/useFirebaseAuth';
+import { collection, query, where, onSnapshot, doc, updateDoc, orderBy, limit } from 'firebase/firestore';
+import { db } from './utils/firebase';
 
 type Tab = 'game' | 'league' | 'me';
 
@@ -74,7 +76,7 @@ function App() {
     dailyComplete,
   } = useGameLoop(questionType, hardMode, challengeId, timedMode);
 
-  const { stats, accuracy, recordSession, resetStats } = useStats(uid);
+  const { stats, accuracy, recordSession, resetStats, updateCosmetics } = useStats(uid);
 
   const currentProblem = problems[0];
   const isFirstQuestion = totalAnswered === 0;
@@ -109,6 +111,33 @@ function App() {
   if (!dailyComplete && prevDailyComplete) {
     setPrevDailyComplete(false);
   }
+
+  // ── Ping Listener (Async Taunts) ──
+  const [pingMessage, setPingMessage] = useState<string | null>(null);
+  useEffect(() => {
+    if (!uid) return;
+    const q = query(
+      collection(db, 'pings'),
+      where('targetUid', '==', uid),
+      where('read', '==', false),
+      orderBy('createdAt', 'desc'),
+      limit(1)
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      if (!snap.empty) {
+        const pingDoc = snap.docs[0];
+        const data = pingDoc.data();
+        setPingMessage(`${data.senderName} challenged you! ⚔️`);
+
+        // Mark as read so it doesn't pop again
+        updateDoc(doc(db, 'pings', pingDoc.id), { read: true }).catch(console.error);
+
+        // Clear after 6 seconds
+        setTimeout(() => setPingMessage(null), 6000);
+      }
+    });
+    return unsub;
+  }, [uid]);
 
   // Track previous tab for session recording (handled in handleTabChange)
   const prevTab = useRef<Tab>('game');
@@ -183,6 +212,13 @@ function App() {
     const t = CHALK_THEMES.find(th => th.id === activeThemeId);
     if (t) applyTheme(t.color);
   }, [activeThemeId]);
+
+  // Persist cosmetics to Firebase payload
+  useEffect(() => {
+    if (!uid) return;
+    updateCosmetics(activeThemeId as string, activeCostume as string);
+  }, [uid, activeThemeId, activeCostume, updateCosmetics]);
+
   const handleThemeChange = useCallback((t: ChalkTheme) => setActiveThemeId(t.id), [setActiveThemeId]);
 
   // ── Theme mode (dark/light) ──
@@ -394,7 +430,7 @@ function App() {
 
             {/* ── Mr. Chalk PiP ── */}
             <div className="landscape-hide">
-              <MrChalk state={chalkState} costume={activeCostume} streak={streak} totalAnswered={totalAnswered} questionType={questionType} hardMode={hardMode} timedMode={timedMode} />
+              <MrChalk state={chalkState} costume={activeCostume} streak={streak} totalAnswered={totalAnswered} questionType={questionType} hardMode={hardMode} timedMode={timedMode} pingMessage={pingMessage} />
             </div>
 
             {/* ── Feedback flash overlay ── */}
@@ -435,7 +471,7 @@ function App() {
           </div>
         )}
 
-        {activeTab === 'league' && <Suspense fallback={null}><LeaguePage userXP={stats.totalXP} userStreak={stats.bestStreak} uid={uid} displayName={user?.displayName ?? 'You'} /></Suspense>}
+        {activeTab === 'league' && <Suspense fallback={null}><LeaguePage userXP={stats.totalXP} userStreak={stats.bestStreak} uid={uid} displayName={user?.displayName ?? 'You'} activeThemeId={activeThemeId as string} activeCostume={activeCostume as string} /></Suspense>}
 
         {activeTab === 'me' && (
           <Suspense fallback={null}><MePage

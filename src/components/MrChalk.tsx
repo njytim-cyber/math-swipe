@@ -81,7 +81,7 @@ const FACES: Record<ChalkState, React.ReactNode> = {
     ),
 };
 /** Costume accessories — extra SVG elements drawn on Mr. Chalk */
-const COSTUMES: Record<string, React.ReactNode> = {
+export const COSTUMES: Record<string, React.ReactNode> = {
     'streak-5': ( // Fire aura
         <g opacity="0.5">
             <ellipse cx="50" cy="55" rx="32" ry="45" stroke="currentColor" strokeWidth="1" fill="none" strokeDasharray="4 3" />
@@ -115,7 +115,7 @@ const COSTUMES: Record<string, React.ReactNode> = {
     ),
 };
 
-export const MrChalk = memo(function MrChalk({ state, costume, streak = 0, totalAnswered = 0, questionType = 'multiply', hardMode = false, timedMode = false }: {
+export const MrChalk = memo(function MrChalk({ state, costume, streak = 0, totalAnswered = 0, questionType = 'multiply', hardMode = false, timedMode = false, pingMessage = null }: {
     state: ChalkState;
     costume?: string;
     streak?: number;
@@ -123,6 +123,7 @@ export const MrChalk = memo(function MrChalk({ state, costume, streak = 0, total
     questionType?: QuestionType;
     hardMode?: boolean;
     timedMode?: boolean;
+    pingMessage?: string | null;
 }) {
     const [message, setMessage] = useState('');
     const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -133,20 +134,22 @@ export const MrChalk = memo(function MrChalk({ state, costume, streak = 0, total
     });
 
     // Adjust state during render when deps change (React-recommended pattern)
+    // ONLY do this if there's NO ping message, as ping takes priority
     const depsKey = `${state}-${streak}-${totalAnswered}-${questionType}-${hardMode}-${timedMode}`;
     const [prevDepsKey, setPrevDepsKey] = useState('');
     if (depsKey !== prevDepsKey) {
         setPrevDepsKey(depsKey);
+        // We always calculate the raw message, even if hidden by ping, so it's ready when ping clears
         setMessage(pickChalkMessage({ state, streak, totalAnswered, questionType, hardMode, timedMode }));
     }
 
     // Auto-clear message after timeout (effect only for async timer)
     useEffect(() => {
-        if (!message) return;
+        if (!message || pingMessage !== null) return;
         if (timerRef.current) clearTimeout(timerRef.current);
         timerRef.current = setTimeout(() => setMessage(''), state === 'idle' ? 4000 : 2500);
         return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-    }, [message, state]);
+    }, [message, state, pingMessage]);
 
     // Periodic idle messages (async callback reads ref — allowed)
     useEffect(() => {
@@ -155,15 +158,18 @@ export const MrChalk = memo(function MrChalk({ state, costume, streak = 0, total
         return () => clearInterval(interval);
     }, [state]);
 
+    const displayState = pingMessage ? 'comeback' : state;
+    const currentMessage = pingMessage || message;
+
     return (
         <motion.div
-            className={`absolute bottom-4 right-2 pointer-events-none z-30 ${state === 'streak' ? 'on-fire' : ''}`}
-            animate={ANIMS[state]}
+            className={`absolute bottom-4 right-2 pointer-events-none z-30 ${displayState === 'streak' ? 'on-fire' : ''}`}
+            animate={ANIMS[displayState]}
         >
             <AnimatePresence mode="wait">
-                {message && (
+                {currentMessage && (
                     <motion.div
-                        key={message}
+                        key={currentMessage}
                         initial={{ opacity: 0, y: 8, scale: 0.8 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -6, scale: 0.8 }}
@@ -178,13 +184,13 @@ export const MrChalk = memo(function MrChalk({ state, costume, streak = 0, total
 
             <svg viewBox="0 0 100 160" className="w-[72px] h-[115px]" style={{ color: 'var(--color-chalk)' }}>
                 <circle cx="50" cy="38" r="26" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.8" />
-                {FACES[state] || FACES.idle}
+                {FACES[displayState] || FACES.idle}
                 <Body />
-                {state === 'success' ? <ArmsUp /> : <ArmsDown />}
+                {displayState === 'success' ? <ArmsUp /> : <ArmsDown />}
                 {costume && COSTUMES[costume]}
             </svg>
             {/* Fire emoji outside SVG for proper transparency on all platforms */}
-            {state === 'streak' && (
+            {displayState === 'streak' && (
                 <span className="absolute -top-1 right-0 text-xl pointer-events-none">🔥</span>
             )}
         </motion.div>

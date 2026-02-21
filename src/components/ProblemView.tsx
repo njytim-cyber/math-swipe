@@ -60,7 +60,7 @@ const AnswerOption = memo(function AnswerOption({
     showHint?: boolean;
 }) {
     const scale = useTransform(glow, [0, 0.3, 1], [1, 1.05, 1.35]);
-    const opacity = useTransform(glow, [0, 1], [0.8, 1]);
+    const opacity = useTransform(glow, [0, 1], [0.95, 1]);
     // Gold border + text intensity driven by drag distance
     const borderAlpha = useTransform(glow, [0, 0.3, 1], [0, 0.3, 1]);
     const borderColor = useMotionTemplate`rgba(251,191,36,${borderAlpha})`;
@@ -76,7 +76,7 @@ const AnswerOption = memo(function AnswerOption({
             {/* Direction chevron — glows gold if highlighted, hidden after first swipes */}
             {showHint !== false && (
                 <motion.div
-                    className={`text-xl tracking-widest font-bold ui ${highlighted ? 'text-[var(--color-gold)]' : 'text-[rgb(var(--color-fg))]/60'}`}
+                    className={`text-xl tracking-widest font-bold ui ${highlighted ? 'text-[var(--color-gold)]' : 'text-[rgb(var(--color-fg))]/80'}`}
                     animate={highlighted ? { opacity: [0.5, 1, 0.5] } : {}}
                     transition={highlighted ? { duration: 1, repeat: Infinity } : {}}
                 >
@@ -87,7 +87,7 @@ const AnswerOption = memo(function AnswerOption({
             <motion.div
                 className={`w-[80px] h-[80px] rounded-full border-2 bg-[var(--color-surface)] flex items-center justify-center text-[28px] chalk active:scale-90 transition-transform ${correctFlash ? 'border-[var(--color-correct)] text-[var(--color-correct)]'
                     : highlighted ? 'border-[var(--color-gold)] text-[var(--color-gold)]'
-                        : 'border-[rgb(var(--color-fg))]/40 text-[var(--color-chalk)]'
+                        : 'border-[rgb(var(--color-fg))]/50 text-[var(--color-chalk)]'
                     }`}
                 style={!correctFlash && !highlighted ? { borderColor, boxShadow } : {}}
                 animate={correctFlash ? correctFlashAnim : highlighted ? glowAnim : {}}
@@ -230,7 +230,7 @@ export const ProblemView = memo(function ProblemView({ problem, frozen, highligh
 
             {/* Skip hint */}
             {showHints && (
-                <div className="mt-8 flex flex-col items-center text-[rgb(var(--color-fg))]/40">
+                <div className="mt-8 flex flex-col items-center text-[rgb(var(--color-fg))]/60">
                     <div className="text-xl font-bold tracking-wider ui">^</div>
                     <span className="text-xs ui mt-1 tracking-wider">skip</span>
                 </div>

@@ -35,6 +35,10 @@ export interface Stats {
     ultimateBestStreak: number;
     ultimateSessions: number;
     ultimatePerfects: number;
+
+    // Cosmetics for Leaderboard broadcast
+    activeThemeId?: string;
+    activeCostume?: string;
 }
 
 const STORAGE_KEY = 'math-swipe-stats';
@@ -125,6 +129,8 @@ async function saveStatsCloud(uid: string, s: Stats) {
             bestStreak: s.bestStreak,
             totalSolved: s.totalSolved,
             accuracy,
+            activeThemeId: s.activeThemeId || 'classic',
+            activeCostume: s.activeCostume || '',
             // Full stats blob
             stats: s,
             updatedAt: serverTimestamp(),
@@ -161,7 +167,9 @@ function mergeStats(local: Stats, cloud: Stats): Stats {
 export function useStats(uid: string | null) {
     const [stats, setStats] = useState<Stats>(loadStatsLocal);
     const uidRef = useRef(uid);
-    uidRef.current = uid;
+    useEffect(() => {
+        uidRef.current = uid;
+    }, [uid]);
 
     // Phase 2: On mount, try to restore from Firestore if localStorage is stale
     useEffect(() => {
@@ -183,6 +191,14 @@ export function useStats(uid: string | null) {
             saveStatsCloud(uidRef.current, stats);
         }
     }, [stats]);
+
+    const updateCosmetics = useCallback((activeThemeId: string, activeCostume: string) => {
+        setStats(prev => ({
+            ...prev,
+            activeThemeId,
+            activeCostume,
+        }));
+    }, []);
 
     const recordSession = useCallback((
         score: number, correct: number, answered: number,
@@ -246,5 +262,5 @@ export function useStats(uid: string | null) {
         ? Math.round((stats.totalCorrect / stats.totalSolved) * 100)
         : 0;
 
-    return { stats, accuracy, recordSession, resetStats };
+    return { stats, accuracy, recordSession, resetStats, updateCosmetics };
 }

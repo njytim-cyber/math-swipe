@@ -148,7 +148,8 @@ function genDoubles(): Problem {
 }
 
 function genCompare(): Problem {
-    let a = randInt(1, 20), b = randInt(1, 20);
+    const a = randInt(1, 20);
+    let b = randInt(1, 20);
     if (a === b) b = a + randInt(1, 5); // avoid equal
     const answer = Math.max(a, b);
     const smaller = Math.min(a, b);
@@ -262,7 +263,8 @@ function gcd(a: number, b: number): number {
 function genGcfLcm(): Problem {
     const useGcf = _rng() > 0.5;
     const factor = randInt(2, 6);
-    let m1 = randInt(2, 6), m2 = randInt(2, 6);
+    const m1 = randInt(2, 6);
+    let m2 = randInt(2, 6);
     if (m1 === m2) m2 = m1 === 6 ? 2 : m1 + 1; // ensure distinct multipliers
     const a = factor * m1, b = factor * m2;
     if (useGcf) {

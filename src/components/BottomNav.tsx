@@ -57,7 +57,7 @@ export const BottomNav = memo(function BottomNav({ active, onChange }: Props) {
                         onClick={() => onChange(tab.id)}
                         className={`flex flex-col items-center gap-0.5 py-1 px-4 rounded-lg transition-colors ${isActive
                             ? 'text-[var(--color-gold)]'
-                            : 'text-[rgb(var(--color-fg))]/40 active:text-[rgb(var(--color-fg))]/60'
+                            : 'text-[rgb(var(--color-fg))]/60 active:text-[rgb(var(--color-fg))]/80'
                             }`}
                         whileTap={{ scale: 0.92 }}
                     >
