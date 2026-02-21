@@ -27,7 +27,7 @@
 
 /* ── Light mode overrides ── */
 [data-theme="light"] {
-  --color-board: #f5f0e8;
+  --color-board: #f8f4ec;
   --color-chalk: #000000;
   --color-fg: 0 0 0;
   /* pure black — needed because most text uses /40 – /60 opacity */
@@ -38,7 +38,8 @@
   --color-locked: rgba(0, 0, 0, 0.08);
   --color-correct: #16a34a;
   --color-wrong: #dc2626;
-  --color-gold: #b45309;
+  --color-gold: #d97706;
+  /* Brighter Amber */
   --color-streak-fire: #c2410c;
 }
 
@@ -102,7 +103,8 @@
 
 /* ── Light mode global contrast boosts ── */
 [data-theme="light"] button svg {
-  opacity: 0.85 !important;
+  opacity: 1 !important;
+  stroke-width: 2.5px;
 }
 
 [data-theme="light"] .chalk {
@@ -110,14 +112,26 @@
 }
 
 [data-theme="light"] .ui {
-  font-weight: 600;
+  font-weight: 700;
 }
 
-/* Answer circles — white card with soft shadow */
-[data-theme="light"] .rounded-full[class*="border-"] {
-  border-color: rgba(0, 0, 0, 0.25) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
+/* Force higher contrast for UI text that was washed out by dark-mode structural opacities */
+[data-theme="light"] .text-\[rgb\(var\(--color-fg\)\)\]\/25,
+[data-theme="light"] .text-\[rgb\(var\(--color-fg\)\)\]\/30,
+[data-theme="light"] .text-\[rgb\(var\(--color-fg\)\)\]\/40 {
+  color: rgba(var(--color-fg), 0.65) !important;
 }
+
+[data-theme="light"] .text-\[rgb\(var\(--color-fg\)\)\]\/50,
+[data-theme="light"] .text-\[rgb\(var\(--color-fg\)\)\]\/60 {
+  color: rgba(var(--color-fg), 0.85) !important;
+}
+
+[data-theme="light"] .text-\[rgb\(var\(--color-fg\)\)\]\/80 {
+  color: rgba(var(--color-fg), 1) !important;
+}
+
+
 
 /* ── Chalk text — minimal, no filters ── */
 .chalk-text {

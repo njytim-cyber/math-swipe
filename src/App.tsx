@@ -212,7 +212,7 @@ function App() {
   const [activeThemeId, setActiveThemeId] = useLocalState('math-swipe-chalk-theme', 'classic', uid);
   useEffect(() => {
     const t = CHALK_THEMES.find(th => th.id === activeThemeId);
-    if (t) applyTheme(t.color);
+    if (t) applyTheme(t);
   }, [activeThemeId]);
 
   // Persist cosmetics to Firebase payload
