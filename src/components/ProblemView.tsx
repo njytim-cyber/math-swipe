@@ -1,5 +1,5 @@
 import { memo, useEffect } from 'react';
-import { motion, useMotionValue, useTransform, useMotionTemplate, type MotionValue } from 'framer-motion';
+import { motion, useMotionValue, useTransform, useMotionTemplate, animate, type MotionValue } from 'framer-motion';
 import type { PanInfo } from 'framer-motion';
 import type { Problem } from '../utils/mathGenerator';
 import { MathExpr } from './MathExpr';
@@ -121,33 +121,21 @@ export const ProblemView = memo(function ProblemView({ problem, frozen, highligh
     const downGlow = useTransform(y, [0, 50, 140], [0, 0.3, 1]);
     const glows = [leftGlow, downGlow, rightGlow];
 
-    // Swipe dust trail — driven by existing motion values, no extra animation
-    const trailOpacity = useTransform(
-        [x, y] as MotionValue[],
-        ([xv, yv]: number[]) => Math.min(Math.sqrt(xv * xv + yv * yv) / 120, 0.6)
-    );
-    const trailBg = useMotionTemplate`rgba(255,255,255,${trailOpacity})`;
-    // Trail dot transforms — must be called at top level, not inside .map()
-    const trailX1 = useTransform(x, v => -v * 0.3);
-    const trailY1 = useTransform(y, v => -v * 0.3);
-    const trailX2 = useTransform(x, v => -v * 0.6);
-    const trailY2 = useTransform(y, v => -v * 0.6);
-    const trailX3 = useTransform(x, v => -v * 0.9);
-    const trailY3 = useTransform(y, v => -v * 0.9);
-    const trailX4 = useTransform(x, v => -v * 0.45);
-    const trailY4 = useTransform(y, v => -v * 0.45 + 4);
-    const trailX5 = useTransform(x, v => -v * 0.75);
-    const trailY5 = useTransform(y, v => -v * 0.75 - 4);
-    const trailDots = [
-        { x: trailX1, y: trailY1, size: 5 },
-        { x: trailX4, y: trailY4, size: 3 },
-        { x: trailX2, y: trailY2, size: 6 },
-        { x: trailX5, y: trailY5, size: 3 },
-        { x: trailX3, y: trailY3, size: 4 },
-    ];
 
-    const handleDragEnd = (_: unknown, info: PanInfo) => {
+
+    const handlePan = (_: unknown, info: PanInfo) => {
+        if (!frozen) {
+            x.set(info.offset.x);
+            y.set(info.offset.y);
+        }
+    };
+
+    const handlePanEnd = (_: unknown, info: PanInfo) => {
         if (frozen) return;
+        // Snap the local touch point back to 0 so the answer glows recede naturally
+        animate(x, 0, { duration: 0.3, bounce: 0 });
+        animate(y, 0, { duration: 0.3, bounce: 0 });
+
         const t = 80;
         if (info.offset.y < -t || info.velocity.y < -400) onSwipe('up');
         else if (info.offset.y > t || info.velocity.y > 400) onSwipe('down');
@@ -157,31 +145,10 @@ export const ProblemView = memo(function ProblemView({ problem, frozen, highligh
 
     return (
         <motion.div
-            className="landscape-answers flex-1 flex flex-col items-center justify-center px-4 pt-16 pb-24 relative z-10 gpu-layer"
-            style={{ x, y }}
-            drag={!frozen}
-            dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-            dragElastic={0.5}
-            onDragEnd={handleDragEnd}
+            className="landscape-answers flex-1 flex flex-col items-center justify-center px-4 pt-16 pb-24 relative z-10 gpu-layer touch-none"
+            onPan={handlePan}
+            onPanEnd={handlePanEnd}
         >
-            {/* Swipe chalk dust trail */}
-            <motion.div
-                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0"
-                style={{ opacity: trailOpacity }}
-            >
-                {trailDots.map((dot, i) => (
-                    <motion.div
-                        key={i}
-                        className="absolute rounded-full"
-                        style={{
-                            width: dot.size, height: dot.size,
-                            background: trailBg,
-                            x: dot.x,
-                            y: dot.y,
-                        }}
-                    />
-                ))}
-            </motion.div>
             {/* Number bond visual */}
             {problem.visual === 'bond' && problem.bondTotal != null && problem.bondPart != null && (
                 <svg viewBox="0 0 160 120" className="w-44 h-28 mb-4" style={{ color: 'var(--color-chalk)' }}>
