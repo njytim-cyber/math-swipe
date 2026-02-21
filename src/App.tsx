@@ -379,8 +379,13 @@ function App() {
 
               {/* Daily streak */}
               {stats.dayStreak > 0 && (
-                <div className="mt-1 text-[10px] ui text-[rgb(var(--color-fg))]/25">
-                  🔥 Day {stats.dayStreak}
+                <div className="mt-1 flex items-center justify-center gap-1 text-[10px] ui text-[rgb(var(--color-fg))]/25">
+                  <span>🔥 Day {stats.dayStreak}</span>
+                  {(stats.streakShields || 0) > 0 && (
+                    <span className="text-[var(--color-gold)] opacity-80" title="Streak Freeze Active">
+                      {'🛡️'.repeat(stats.streakShields)}
+                    </span>
+                  )}
                 </div>
               )}
             </div>

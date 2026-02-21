@@ -1,5 +1,6 @@
-import { memo, useState, useEffect } from 'react';
+import { memo, useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useSpring, useMotionValueEvent } from 'framer-motion';
+import { toBlob } from 'html-to-image';
 import { createChallengeId } from '../utils/dailyChallenge';
 
 interface Props {
@@ -51,6 +52,8 @@ export const SessionSummary = memo(function SessionSummary({
     hardMode, timedMode,
 }: Props) {
     const [copied, setCopied] = useState(false);
+    const [isSharing, setIsSharing] = useState(false);
+    const cardRef = useRef<HTMLDivElement>(null);
 
     // Rolling count-up for XP
     const xpSpring = useSpring(0, { stiffness: 60, damping: 20 });
@@ -70,18 +73,45 @@ export const SessionSummary = memo(function SessionSummary({
     }, [visible, xpEarned, xpSpring]);
 
     const handleShare = async () => {
+        if (isSharing) return;
+        setIsSharing(true);
         const text = buildShareText(xpEarned, streak, accuracy, answerHistory, questionType, hardMode, timedMode);
 
         try {
-            if (navigator.share) {
-                await navigator.share({ text });
-            } else {
-                await navigator.clipboard.writeText(text);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
+            // Attempt Rich Media Image Generation
+            if (cardRef.current) {
+                const blob = await toBlob(cardRef.current, {
+                    cacheBust: true,
+                    type: 'image/png',
+                    pixelRatio: 2, // Retina resolution
+                });
+
+                if (blob) {
+                    const file = new File([blob], 'share-card.png', { type: 'image/png' });
+
+                    // Check if OS supports files in navigator.share
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            files: [file],
+                            text: text,
+                        });
+                        setIsSharing(false);
+                        return; // Success
+                    } else if (navigator.share) {
+                        // Fallback to text-only native share if files unsupported
+                        await navigator.share({ text });
+                        setIsSharing(false);
+                        return;
+                    }
+                }
             }
+
+            // Fallback for desktop / unsupported browsers
+            await navigator.clipboard.writeText(text);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
         } catch {
-            // User cancelled or share failed — try clipboard
+            // User cancelled share or other error, fallback to clipboard just in case
             try {
                 await navigator.clipboard.writeText(text);
                 setCopied(true);
@@ -89,6 +119,8 @@ export const SessionSummary = memo(function SessionSummary({
             } catch {
                 // Silent fail
             }
+        } finally {
+            setIsSharing(false);
         }
     };
 
@@ -110,6 +142,64 @@ export const SessionSummary = memo(function SessionSummary({
                         transition={{ duration: 0.25 }}
                         onClick={e => e.stopPropagation()}
                     >
+                        {/* Hidden Share Card for Image Generation */}
+                        <div className="absolute left-[-9999px] top-[-9999px]">
+                            <div
+                                ref={cardRef}
+                                className="w-[1080px] h-[1920px] flex flex-col items-center justify-center relative overflow-hidden chalkboard-bg p-16"
+                                style={{ background: '#1a1a24' /* fallback solid for html-to-image */ }}
+                            >
+                                <div className="absolute inset-0 opacity-10 blur-[80px] bg-gradient-to-br from-[#FF00FF] via-transparent to-[#00FFFF]" />
+
+                                <div className="z-10 text-center flex flex-col items-center w-full">
+                                    <h1 className="text-8xl chalk text-[var(--color-gold)] mb-8">Math Swipe</h1>
+                                    <div className="text-4xl ui text-white/50 mb-16 tracking-widest uppercase">
+                                        {hardMode && timedMode ? '💀⏱️ ULTIMATE' : hardMode ? '💀 HARD MODE' : timedMode ? '⏱️ TIMED MODE' : questionType.toUpperCase()}
+                                    </div>
+
+                                    <div className="text-[200px] mb-8">{accuracy === 100 ? '🏆' : '📝'}</div>
+                                    <div className="text-8xl chalk text-white mb-16">
+                                        {accuracy === 100 ? 'PERFECT SCORE' : 'SESSION COMPLETED'}
+                                    </div>
+
+                                    <div className="flex justify-between w-[80%] mb-16 px-8 py-12 border-2 border-white/20 rounded-[3rem] bg-black/20">
+                                        <div className="text-center">
+                                            <div className="text-9xl chalk text-white/80">{solved}</div>
+                                            <div className="text-3xl ui text-white/40 mt-4">SOLVED</div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="text-9xl chalk text-[var(--color-correct)]">{accuracy}%</div>
+                                            <div className="text-3xl ui text-white/40 mt-4">ACCURACY</div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="text-9xl chalk text-[var(--color-streak-fire)]">{streak}🔥</div>
+                                            <div className="text-3xl ui text-white/40 mt-4">STREAK</div>
+                                        </div>
+                                    </div>
+
+                                    {/* Answer history grid */}
+                                    {answerHistory.length > 0 && (
+                                        <div className="flex flex-wrap justify-center gap-[12px] mb-16 max-w-[800px] mx-auto">
+                                            {answerHistory.map((ok, i) => (
+                                                <div
+                                                    key={i}
+                                                    className={`w-[24px] h-[24px] rounded-md ${ok ? 'bg-[var(--color-correct)]' : 'bg-[var(--color-wrong)]'}`}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <div className="text-7xl chalk text-[var(--color-gold)] tabular-nums mb-32">
+                                        + {xpEarned} XP
+                                    </div>
+
+                                    <div className="text-4xl ui text-white/60 tracking-wider">
+                                        mathswipe.com
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Emoji rain — performance-based floating emojis */}
                         <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
                             {(() => {
@@ -202,10 +292,13 @@ export const SessionSummary = memo(function SessionSummary({
                         {/* Share button */}
                         <motion.button
                             onClick={handleShare}
-                            className="w-full py-2.5 rounded-xl bg-[var(--color-gold)]/20 border border-[var(--color-gold)]/30 text-sm ui text-[var(--color-gold)] mb-3 active:bg-[var(--color-gold)]/30 transition-colors"
-                            whileTap={{ scale: 0.95 }}
+                            disabled={isSharing}
+                            className={`w-full py-2.5 rounded-xl border text-sm ui mb-3 transition-colors ${isSharing ? 'bg-[var(--color-gold)]/10 border-[var(--color-gold)]/10 text-[var(--color-gold)]/50' :
+                                'bg-[var(--color-gold)]/20 border-[var(--color-gold)]/30 text-[var(--color-gold)] active:bg-[var(--color-gold)]/30'
+                                }`}
+                            whileTap={!isSharing ? { scale: 0.95 } : undefined}
                         >
-                            {copied ? '✅ Copied!' : '📤 Share Result'}
+                            {isSharing ? 'Synthesizing...' : copied ? '✅ Copied!' : '📤 Share Result'}
                         </motion.button>
 
                         <button

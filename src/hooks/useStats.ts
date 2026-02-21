@@ -15,6 +15,7 @@ export interface Stats {
     bestStreak: number;
     sessionsPlayed: number;
     dayStreak: number;
+    streakShields: number;
     lastPlayedDate: string; // YYYY-MM-DD
     byType: Record<QuestionType, TypeStat>;
     // Hard mode tracking
@@ -53,6 +54,7 @@ const EMPTY_STATS: Stats = {
     bestStreak: 0,
     sessionsPlayed: 0,
     dayStreak: 0,
+    streakShields: 0,
     lastPlayedDate: '',
     byType: {
         add: { ...EMPTY_TYPE },
@@ -133,6 +135,7 @@ async function saveStatsCloud(uid: string, s: Stats) {
             activeThemeId: s.activeThemeId || 'classic',
             activeCostume: s.activeCostume || '',
             activeTrailId: s.activeTrailId || '',
+            streakShields: s.streakShields || 0,
             // Full stats blob
             stats: s,
             updatedAt: serverTimestamp(),
@@ -212,11 +215,32 @@ export function useStats(uid: string | null) {
             const today = new Date();
             const todayStr = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
             let dayStreak = prev.dayStreak;
+            let streakShields = prev.streakShields || 0;
+
             if (prev.lastPlayedDate !== todayStr) {
                 const yest = new Date(today);
                 yest.setDate(yest.getDate() - 1);
                 const yesterdayStr = `${yest.getFullYear()}-${yest.getMonth() + 1}-${yest.getDate()}`;
-                dayStreak = prev.lastPlayedDate === yesterdayStr ? prev.dayStreak + 1 : 1;
+
+                if (prev.lastPlayedDate === yesterdayStr) {
+                    dayStreak = prev.dayStreak + 1;
+                    if (dayStreak % 7 === 0) {
+                        streakShields = Math.min(3, streakShields + 1);
+                    }
+                } else if (prev.lastPlayedDate !== '') {
+                    // Missed one or more days (and not very first session ever)
+                    if (streakShields > 0) {
+                        streakShields -= 1;
+                        dayStreak = prev.dayStreak + 1; // Shield consumed! Forgive and extend.
+                        if (dayStreak % 7 === 0) {
+                            streakShields = Math.min(3, streakShields + 1);
+                        }
+                    } else {
+                        dayStreak = 1; // Streak broken
+                    }
+                } else {
+                    dayStreak = 1; // First session ever
+                }
             }
             const isPerfect = answered > 0 && correct === answered;
             const isUltimate = hardMode && timedMode;
@@ -227,6 +251,7 @@ export function useStats(uid: string | null) {
                 bestStreak: Math.max(prev.bestStreak, bestStreak),
                 sessionsPlayed: prev.sessionsPlayed + 1,
                 dayStreak,
+                streakShields,
                 lastPlayedDate: todayStr,
                 byType: {
                     ...prev.byType,
