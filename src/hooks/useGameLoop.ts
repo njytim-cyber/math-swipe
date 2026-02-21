@@ -128,7 +128,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
     // ── Keep buffer full (not for daily/challenge — fixed set) ──
     useEffect(() => {
         if (questionType === 'daily' || questionType === 'challenge') return;
-        if (problems.length > 0 && problems.length < BUFFER_SIZE) {
+        if (problems.length < BUFFER_SIZE) {
             setProblems(prev => [...prev, generateProblem(level, questionType, hardMode)]);
         }
     }, [problems.length, level, questionType, hardMode]);
@@ -191,6 +191,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
                 milestone: milestoneEmoji,
                 speedBonus: isFast,
                 wrongStreak: 0,
+                frozen: true, // Freeze immediately to prevent queued multi-taps
             }));
             scheduleChalkReset(newStreak >= 10 ? 2000 : 800);
 
@@ -199,7 +200,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
             if (isFast) safeTimeout(() => setGs(p => ({ ...p, speedBonus: false })), 900);
 
             safeTimeout(() => {
-                setGs(prev => ({ ...prev, flash: 'none' }));
+                setGs(prev => ({ ...prev, flash: 'none', frozen: false }));
                 advanceProblem();
             }, AUTO_ADVANCE_MS);
         } else {
