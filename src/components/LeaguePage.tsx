@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { collection, query, orderBy, limit, onSnapshot, where, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { CHALK_THEMES } from '../utils/chalkThemes';
-import { COSTUMES } from './MrChalk';
+import { COSTUMES } from '../utils/costumes';
 
 // Make COSTUMES accessible: We will import it from MrChalk, so we must export COSTUMES in MrChalk.
 // Assuming we'll export COSTUMES from MrChalk in a subsequent change.

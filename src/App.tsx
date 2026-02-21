@@ -6,6 +6,7 @@ import { MrChalk } from './components/MrChalk';
 import { ScoreCounter } from './components/ScoreCounter';
 import { BottomNav } from './components/BottomNav';
 import { ActionButtons } from './components/ActionButtons';
+import { SwipeTrail } from './components/SwipeTrail';
 import type { AgeBand } from './utils/questionTypes';
 import { defaultTypeForBand, typesForBand, AGE_BANDS, BAND_LABELS } from './utils/questionTypes';
 /** Retry a dynamic import once by reloading the page (handles stale deploy cache on Cloudflare Pages) */
@@ -203,8 +204,9 @@ function App() {
     setActiveTab(tab);
   }, [score, totalCorrect, totalAnswered, bestStreak, questionType, recordSession, hardMode, timedMode]);
 
-  // ── Costumes ──
+  // ── Costumes & Trails ──
   const [activeCostume, handleCostumeChange] = useLocalState('math-swipe-costume', '', uid);
+  const [activeTrailId, handleTrailChange] = useLocalState('math-swipe-trail', '', uid);
 
   // ── Chalk themes ──
   const [activeThemeId, setActiveThemeId] = useLocalState('math-swipe-chalk-theme', 'classic', uid);
@@ -216,8 +218,8 @@ function App() {
   // Persist cosmetics to Firebase payload
   useEffect(() => {
     if (!uid) return;
-    updateCosmetics(activeThemeId as string, activeCostume as string);
-  }, [uid, activeThemeId, activeCostume, updateCosmetics]);
+    updateCosmetics(activeThemeId as string, activeCostume as string, activeTrailId as string);
+  }, [uid, activeThemeId, activeCostume, activeTrailId, updateCosmetics]);
 
   const handleThemeChange = useCallback((t: ChalkTheme) => setActiveThemeId(t.id), [setActiveThemeId]);
 
@@ -259,6 +261,13 @@ function App() {
     <>
 
       <BlackboardLayout>
+        {/* ── Global Canvas Overlay (Swipe Trail) ── */}
+        <SwipeTrail
+          streak={streak}
+          activeTrailId={activeTrailId as string}
+          baseColor={CHALK_THEMES.find(t => t.id === activeThemeId)?.color}
+        />
+
         {/* ── Top-right controls (band picker + theme toggle) ── */}
         <div className="absolute top-[calc(env(safe-area-inset-top,12px)+12px)] right-4 z-50 flex items-center gap-2">
           <button
@@ -485,6 +494,8 @@ function App() {
             onCostumeChange={handleCostumeChange}
             activeTheme={activeThemeId}
             onThemeChange={handleThemeChange}
+            activeTrailId={activeTrailId as string}
+            onTrailChange={handleTrailChange}
             displayName={user?.displayName ?? ''}
             onDisplayNameChange={setDisplayName}
             isAnonymous={user?.isAnonymous ?? true}

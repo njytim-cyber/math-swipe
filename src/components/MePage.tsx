@@ -5,6 +5,7 @@ import { typesForBand, type AgeBand } from '../utils/questionTypes';
 import { ACHIEVEMENTS, HARD_MODE_ACHIEVEMENTS, TIMED_MODE_ACHIEVEMENTS, ULTIMATE_ACHIEVEMENTS, EVERY_ACHIEVEMENT } from '../utils/achievements';
 import { AchievementBadge } from './AchievementBadge';
 import { CHALK_THEMES, type ChalkTheme } from '../utils/chalkThemes';
+import { SWIPE_TRAILS } from '../utils/trails';
 
 interface Props {
     stats: ReturnType<typeof useStats>['stats'];
@@ -17,6 +18,8 @@ interface Props {
     onCostumeChange: (id: string) => void;
     activeTheme: string;
     onThemeChange: (theme: ChalkTheme) => void;
+    activeTrailId?: string;
+    onTrailChange: (id: string) => void;
     displayName: string;
     onDisplayNameChange: (name: string) => Promise<void>;
     isAnonymous: boolean;
@@ -55,7 +58,7 @@ function getRank(xp: number) {
     return { rank, nextRank, progress };
 }
 
-export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked, activeCostume, onCostumeChange, activeTheme, onThemeChange, displayName, onDisplayNameChange, isAnonymous, onLinkGoogle, ageBand }: Props) {
+export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked, activeCostume, onCostumeChange, activeTheme, onThemeChange, activeTrailId, onTrailChange, displayName, onDisplayNameChange, isAnonymous, onLinkGoogle, ageBand }: Props) {
     const [showRanks, setShowRanks] = useState(false);
     const [resetConfirm, setResetConfirm] = useState<string | null>(null);
     const [editingName, setEditingName] = useState(false);
@@ -291,6 +294,43 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                                 {modeIcon && !isAvailable && (
                                     <span className="absolute -top-1 -right-1 text-[8px]">{modeIcon}</span>
                                 )}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Swipe Trails */}
+            <div className="w-full max-w-sm mt-6">
+                <div className="text-sm ui text-[rgb(var(--color-fg))]/50 uppercase tracking-widest text-center mb-3">
+                    SWIPE TRAIL
+                </div>
+                <div className="flex justify-center gap-2.5 flex-wrap">
+                    {SWIPE_TRAILS.map(t => {
+                        const rankIdx = RANKS.findIndex(r => r.name === rank.name);
+                        const isUnlocked =
+                            (!t.minLevel || rankIdx >= t.minLevel - 1) &&
+                            (!t.minStreak || stats.bestStreak >= t.minStreak) &&
+                            (!t.hardModeOnly || stats.hardModeSessions > 0) &&
+                            (!t.timedModeOnly || stats.timedModeSessions > 0) &&
+                            (!t.ultimateOnly || stats.ultimateSessions > 0);
+
+                        const isActive = (activeTrailId || 'chalk-dust') === t.id;
+
+                        return (
+                            <button
+                                key={t.id}
+                                onClick={() => isUnlocked && onTrailChange(t.id)}
+                                title={`${t.name}${!isUnlocked ? ' (Locked)' : ''}`}
+                                className={`w-12 h-12 flex items-center justify-center rounded-xl border-2 transition-all 
+                                    ${isActive ? 'border-[var(--color-gold)] bg-[var(--color-gold)]/10 scale-105' :
+                                        isUnlocked ? 'border-[rgb(var(--color-fg))]/20 hover:border-[rgb(var(--color-fg))]/40' :
+                                            'border-[rgb(var(--color-fg))]/5 opacity-30 cursor-not-allowed bg-[var(--color-surface)]'
+                                    }`}
+                            >
+                                <span className={`text-2xl ${isActive ? 'drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]' : ''}`}>
+                                    {t.emoji}
+                                </span>
                             </button>
                         );
                     })}

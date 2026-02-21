@@ -39,6 +39,7 @@ export interface Stats {
     // Cosmetics for Leaderboard broadcast
     activeThemeId?: string;
     activeCostume?: string;
+    activeTrailId?: string;
 }
 
 const STORAGE_KEY = 'math-swipe-stats';
@@ -126,11 +127,12 @@ async function saveStatsCloud(uid: string, s: Stats) {
         await setDoc(doc(db, 'users', uid), {
             // Top-level leaderboard-queryable fields
             totalXP: s.totalXP,
-            bestStreak: s.bestStreak,
+            bestStreak: Math.max(s.bestStreak || 0, s.hardModeBestStreak || 0, s.timedModeBestStreak || 0, s.ultimateBestStreak || 0),
             totalSolved: s.totalSolved,
             accuracy,
             activeThemeId: s.activeThemeId || 'classic',
             activeCostume: s.activeCostume || '',
+            activeTrailId: s.activeTrailId || '',
             // Full stats blob
             stats: s,
             updatedAt: serverTimestamp(),
@@ -192,11 +194,12 @@ export function useStats(uid: string | null) {
         }
     }, [stats]);
 
-    const updateCosmetics = useCallback((activeThemeId: string, activeCostume: string) => {
+    const updateCosmetics = useCallback((themeId: string, costumeId: string, trailId: string) => {
         setStats(prev => ({
             ...prev,
-            activeThemeId,
-            activeCostume,
+            activeThemeId: themeId,
+            activeCostume: costumeId,
+            activeTrailId: trailId,
         }));
     }, []);
 
