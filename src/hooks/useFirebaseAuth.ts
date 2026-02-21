@@ -84,12 +84,17 @@ export function useFirebaseAuth() {
     /** Update display name in Firestore */
     const setDisplayName = useCallback(async (name: string) => {
         if (!user) return;
-        const trimmed = name.trim().slice(0, 20);
-        if (!trimmed) return;
-        localStorage.setItem('math-swipe-displayName', trimmed);
-        setUser(prev => prev ? { ...prev, displayName: trimmed } : null);
+        // Sanitize: strip HTML, limit charset to printable, enforce max length
+        const sanitized = name
+            .replace(/<[^>]*>/g, '')           // Strip any HTML tags
+            .replace(/[^\w\s\-_.!]/g, '')      // Allow only word chars, spaces, hyphens, dots, underscores, bangs
+            .trim()
+            .slice(0, 20);
+        if (!sanitized) return;
+        localStorage.setItem('math-swipe-displayName', sanitized);
+        setUser(prev => prev ? { ...prev, displayName: sanitized } : null);
         try {
-            await setDoc(doc(db, 'users', user.uid), { displayName: trimmed, updatedAt: serverTimestamp() }, { merge: true });
+            await setDoc(doc(db, 'users', user.uid), { displayName: sanitized, updatedAt: serverTimestamp() }, { merge: true });
         } catch (err) {
             console.warn('Failed to update display name:', err);
         }
