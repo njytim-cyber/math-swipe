@@ -51,10 +51,11 @@ export const MAGIC_TRICKS: MagicTrick[] = [
             result: '4225'
         },
         generatePractice: () => {
-            const tens = Math.floor(Math.random() * 9) + 1; // 1 to 9
+            const tens = Math.floor(Math.random() * 19) + 1; // 1 to 19 (15² through 195²)
             const num = tens * 10 + 5;
             const ans = num * num;
-            return packTrick(`${num} × ${num}`, ans, 100, -100);
+            const spread = Math.max(50, Math.floor(ans * 0.02));
+            return packTrick(`${num} × ${num}`, ans, spread, -spread);
         }
     },
     {
@@ -74,12 +75,13 @@ export const MAGIC_TRICKS: MagicTrick[] = [
             result: '9996'
         },
         generatePractice: () => {
-            const base = [20, 30, 40, 50, 60, 100][Math.floor(Math.random() * 6)];
-            const diff = Math.floor(Math.random() * 4) + 1;
+            const base = [20, 25, 30, 40, 50, 60, 75, 80, 100, 150][Math.floor(Math.random() * 10)];
+            const diff = Math.floor(Math.random() * 5) + 1; // 1 to 5
             const n1 = base - diff;
             const n2 = base + diff;
             const ans = n1 * n2;
-            return packTrick(`${n1} × ${n2}`, ans, diff * diff, -(diff * diff));
+            const off = Math.max(diff * diff + 1, Math.floor(ans * 0.01));
+            return packTrick(`${n1} × ${n2}`, ans, off, -off);
         }
     },
     {
@@ -98,15 +100,11 @@ export const MAGIC_TRICKS: MagicTrick[] = [
             result: '473'
         },
         generatePractice: () => {
-            // Keep sum < 10 for basic drill to match lesson
-            let d1 = 1, d2 = 1;
-            while (d1 + d2 >= 10) {
-                d1 = Math.floor(Math.random() * 8) + 1;
-                d2 = Math.floor(Math.random() * 8) + 1;
-            }
-            const num = d1 * 10 + d2;
+            // Any 2-digit number from 12 to 99 (skip 11 to avoid trivial)
+            const num = Math.floor(Math.random() * 88) + 12;
             const ans = num * 11;
-            return packTrick(`${num} × 11`, ans, 10, -10);
+            const spread = Math.floor(Math.random() * 40) + 11;
+            return packTrick(`${num} × 11`, ans, spread, -spread);
         }
     },
     {
@@ -126,9 +124,12 @@ export const MAGIC_TRICKS: MagicTrick[] = [
             result: '9216'
         },
         generatePractice: () => {
-            const num = Math.floor(Math.random() * 9) + 91; // 91-99
+            // 80s and 90s (81-99) for more variety
+            const num = Math.floor(Math.random() * 19) + 81;
             const ans = num * num;
-            return packTrick(`${num}²`, ans, 10, -10);
+            const gap = 100 - num;
+            const spread = Math.max(20, gap * gap + Math.floor(Math.random() * 30));
+            return packTrick(`${num}²`, ans, spread, -spread);
         }
     },
     {
@@ -147,11 +148,12 @@ export const MAGIC_TRICKS: MagicTrick[] = [
             result: '25'
         },
         generatePractice: () => {
-            const n = Math.floor(Math.random() * 7) + 3; // 3 to 10 terms
+            const n = Math.floor(Math.random() * 10) + 3; // 3 to 12 terms
             const terms = [];
             for (let i = 0; i < n; i++) terms.push(1 + i * 2);
             const expr = terms.slice(0, 3).join(' + ') + (n > 4 ? ' + ... + ' : ' + ') + terms[n - 1];
-            return packTrick(expr, n * n, 1, -1);
+            const spread = Math.max(2, Math.floor(n * 0.7));
+            return packTrick(expr, n * n, spread, -spread);
         }
     }
 ];

@@ -12,9 +12,22 @@ export function TrickPractice({ trick, onClose }: Props) {
 
     // A rapid-fire barrage state
     const [progress, setProgress] = useState(0);
-    const [questions, setQuestions] = useState(() =>
-        Array.from({ length: TOTAL_QUESTIONS }, () => trick.generatePractice())
-    );
+    const [questions, setQuestions] = useState(() => {
+        const qs: ReturnType<typeof trick.generatePractice>[] = [];
+        const seen = new Set<string>();
+        let safety = 0;
+        while (qs.length < TOTAL_QUESTIONS && safety < 100) {
+            safety++;
+            const q = trick.generatePractice();
+            if (!seen.has(q.expression)) {
+                seen.add(q.expression);
+                qs.push(q);
+            }
+        }
+        // Fallback if range is truly tiny
+        while (qs.length < TOTAL_QUESTIONS) qs.push(trick.generatePractice());
+        return qs;
+    });
 
     const [flash, setFlash] = useState<'' | 'correct' | 'wrong'>('');
 
