@@ -74,5 +74,21 @@ service cloud.firestore {
                     && resource.data.targetUid == request.auth.uid
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
     }
+
+    // ── Error Reports (monitoring) ──
+    match /errors/{errorId} {
+      // No reads — only admins via console
+      allow read: if false;
+
+      // Authenticated users can create error reports
+      allow create: if request.auth != null
+                    && request.resource.data.keys().hasOnly([
+                         'message', 'stack', 'source', 'userAgent', 'url', 'timestamp'
+                       ])
+                    && request.resource.data.message is string
+                    && request.resource.data.message.size() <= 500;
+
+      allow update, delete: if false;
+    }
   }
 }

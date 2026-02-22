@@ -12,7 +12,8 @@ import { defaultTypeForBand, typesForBand, AGE_BANDS, BAND_LABELS } from './util
 import { useAutoSummary, usePersonalBest } from './hooks/useSessionUI';
 import { OfflineBanner } from './components/OfflineBanner';
 /** Retry a dynamic import once by reloading the page (handles stale deploy cache on Cloudflare Pages) */
-function lazyRetry<T extends Record<string, unknown>>(factory: () => Promise<T>): Promise<T> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function lazyRetry<T extends Record<string, any>>(factory: () => Promise<T>): Promise<T> {
   return factory().catch(() => {
     const key = 'chunk-reload';
     if (!sessionStorage.getItem(key)) {
@@ -346,6 +347,12 @@ function App() {
               )}
 
               {/* Shield count */}
+              {/* Screen reader announcement for game feedback */}
+              <div className="sr-only" role="status" aria-live="assertive">
+                {flash === 'correct' && `Correct! Streak: ${streak}`}
+                {flash === 'wrong' && (shieldBroken ? 'Wrong! Shield used, streak saved.' : 'Wrong! Streak reset.')}
+                {milestone && `Milestone: ${milestone}`}
+              </div>
               {stats.streakShields > 0 && streak > 0 && (
                 <div className="text-[10px] ui text-[rgb(var(--color-fg))]/30 mt-1 flex items-center gap-0.5">
                   {'🛡️'.repeat(stats.streakShields)}

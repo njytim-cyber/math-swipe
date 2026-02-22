@@ -27,6 +27,9 @@ export const ScoreCounter = memo(function ScoreCounter({ value }: { value: numbe
             key={value}
             animate={{ scale: [1, 1.2, 1] }}
             transition={{ duration: 0.3 }}
+            role="status"
+            aria-live="polite"
+            aria-label={`Score: ${value}`}
         >
             {value === 0 ? (
                 <span className="text-5xl leading-tight">Let's<br />Goooooooo!</span>
