@@ -207,25 +207,33 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
 
         if (correct) {
             recordAnswer(tts, correct);
-            const newStreak = gs.streak + 1;
             const isFast = tts < 1200;
-            const milestoneEmoji = MILESTONES[newStreak] || '';
 
-            setGs(prev => ({
-                ...prev,
-                streak: newStreak,
-                bestStreak: Math.max(prev.bestStreak, newStreak),
-                totalCorrect: prev.totalCorrect + 1,
-                totalAnswered: prev.totalAnswered + 1,
-                answerHistory: [...prev.answerHistory, true].slice(-MAX_HISTORY),
-                score: prev.score + 10 + Math.floor(newStreak / 5) * 5 + (isFast ? 2 : 0),
-                flash: 'correct',
-                chalkState: newStreak >= 10 ? 'streak' : (prev.wrongStreak >= 3 ? 'comeback' as ChalkState : 'success'),
-                milestone: milestoneEmoji,
-                speedBonus: isFast,
-                wrongStreak: 0,
-                frozen: true, // Freeze immediately to prevent queued multi-taps
-            }));
+            // Compute inside functional updater to avoid stale closure
+            let newStreak = 0;
+            let newTotalCorrect = 0;
+            let milestoneEmoji = '';
+
+            setGs(prev => {
+                newStreak = prev.streak + 1;
+                newTotalCorrect = prev.totalCorrect + 1;
+                milestoneEmoji = MILESTONES[newStreak] || '';
+                return {
+                    ...prev,
+                    streak: newStreak,
+                    bestStreak: Math.max(prev.bestStreak, newStreak),
+                    totalCorrect: newTotalCorrect,
+                    totalAnswered: prev.totalAnswered + 1,
+                    answerHistory: [...prev.answerHistory, true].slice(-MAX_HISTORY),
+                    score: prev.score + 10 + Math.floor(newStreak / 5) * 5 + (isFast ? 2 : 0),
+                    flash: 'correct',
+                    chalkState: newStreak >= 10 ? 'streak' : (prev.wrongStreak >= 3 ? 'comeback' as ChalkState : 'success'),
+                    milestone: milestoneEmoji,
+                    speedBonus: isFast,
+                    wrongStreak: 0,
+                    frozen: true,
+                };
+            });
             frozenRef.current = true;
             scheduleChalkReset(newStreak >= 10 ? 2000 : 800);
 
@@ -234,7 +242,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
             if (isFast) safeTimeout(() => setGs(p => ({ ...p, speedBonus: false })), 900);
 
             // Speedrun win condition: 10 correct answers (not necessarily consecutive)
-            if (questionType === 'speedrun' && gs.totalCorrect + 1 >= 10) {
+            if (questionType === 'speedrun' && newTotalCorrect >= 10) {
                 const finalTime = Date.now() - speedrunStartRef.current;
                 setSpeedrunFinalTime(finalTime);
                 setGs(prev => ({ ...prev, flash: 'none' })); // Stay frozen!
@@ -247,63 +255,75 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
                 advanceProblem();
             }, AUTO_ADVANCE_MS);
         } else {
-            // During tutorial (first question) — don't count as wrong, just shake and let them retry
-            const isTutorial = gs.totalAnswered === 0;
+            // Wrong answer handling — use functional updater to avoid stale closures
+            recordAnswer(tts, false);
 
-            if (isTutorial) {
-                setGs(prev => ({
-                    ...prev,
-                    flash: 'wrong',
-                    chalkState: 'fail',
-                    frozen: true,
-                }));
-                frozenRef.current = true;
-                scheduleChalkReset(FAIL_PAUSE_MS);
-                safeTimeout(() => {
-                    setGs(prev => ({ ...prev, flash: 'none', frozen: false }));
-                    frozenRef.current = false;
-                }, FAIL_PAUSE_MS);
-            } else {
-                recordAnswer(tts, false);
+            setGs(prev => {
+                const isTutorial = prev.totalAnswered === 0;
 
-                // Streak Forgiveness: consume a shield instead of resetting
-                if (streakShields > 0 && gs.streak > 0 && onConsumeShield) {
-                    onConsumeShield();
-                    setGs(prev => ({
-                        ...prev,
-                        totalAnswered: prev.totalAnswered + 1,
-                        answerHistory: [...prev.answerHistory, false].slice(-MAX_HISTORY),
-                        flash: 'wrong',
-                        chalkState: 'fail',
-                        frozen: true,
-                        shieldBroken: true,
-                        // Streak survives!
-                    }));
+                if (isTutorial) {
+                    // During tutorial (first question) — shake but don't count
                     frozenRef.current = true;
                     scheduleChalkReset(FAIL_PAUSE_MS);
                     safeTimeout(() => {
-                        setGs(prev => ({ ...prev, flash: 'none', frozen: false, shieldBroken: false }));
+                        setGs(p => ({ ...p, flash: 'none', frozen: false }));
                         frozenRef.current = false;
-                        advanceProblem();
                     }, FAIL_PAUSE_MS);
-                } else {
-                    setGs(wrongAnswerState);
-                    scheduleChalkReset(FAIL_PAUSE_MS);
-
-                    // Speedrun: replenish a problem so pool never runs dry
-                    if (questionType === 'speedrun') {
-                        setProblems(prev => [...prev, generateProblem(level, 'mix-all' as QuestionType, hardMode)]);
-                    }
-
-                    safeTimeout(() => {
-                        setGs(prev => ({ ...prev, flash: 'none', frozen: false }));
-                        frozenRef.current = false;
-                        advanceProblem();
-                    }, FAIL_PAUSE_MS);
+                    return { ...prev, flash: 'wrong' as const, chalkState: 'fail' as ChalkState, frozen: true };
                 }
-            }
+
+                if (streakShields > 0 && prev.streak > 0 && onConsumeShield) {
+                    // Streak Forgiveness: consume a shield instead of resetting
+                    onConsumeShield();
+                    frozenRef.current = true;
+                    scheduleChalkReset(FAIL_PAUSE_MS);
+                    safeTimeout(() => {
+                        setGs(p => ({ ...p, flash: 'none', frozen: false, shieldBroken: false }));
+                        frozenRef.current = false;
+                        advanceProblem();
+                    }, FAIL_PAUSE_MS);
+                    return {
+                        ...prev,
+                        totalAnswered: prev.totalAnswered + 1,
+                        answerHistory: [...prev.answerHistory, false].slice(-MAX_HISTORY),
+                        flash: 'wrong' as const,
+                        chalkState: 'fail' as ChalkState,
+                        frozen: true,
+                        shieldBroken: true,
+                    };
+                }
+
+                // Normal wrong answer
+                frozenRef.current = true;
+                scheduleChalkReset(FAIL_PAUSE_MS);
+
+                // Speedrun: replenish a problem so pool never runs dry
+                if (questionType === 'speedrun') {
+                    setProblems(p => [...p, generateProblem(level, 'mix-all' as QuestionType, hardMode)]);
+                }
+
+                safeTimeout(() => {
+                    setGs(p => ({ ...p, flash: 'none', frozen: false }));
+                    frozenRef.current = false;
+                    advanceProblem();
+                }, FAIL_PAUSE_MS);
+
+                const wrongStreak = prev.wrongStreak + 1;
+                return {
+                    ...prev,
+                    streak: 0,
+                    totalAnswered: prev.totalAnswered + 1,
+                    answerHistory: [...prev.answerHistory, false].slice(-MAX_HISTORY),
+                    score: Math.max(0, prev.score - 5),
+                    flash: 'wrong' as const,
+                    chalkState: (wrongStreak >= 3 ? 'struggling' : 'fail') as ChalkState,
+                    milestone: '',
+                    wrongStreak,
+                    frozen: true,
+                };
+            });
         }
-    }, [gs.streak, gs.totalAnswered, gs.totalCorrect, problems, recordAnswer, scheduleChalkReset, advanceProblem, safeTimeout, questionType, streakShields, onConsumeShield, hardMode, level]);
+    }, [problems, recordAnswer, scheduleChalkReset, advanceProblem, safeTimeout, questionType, streakShields, onConsumeShield, hardMode, level]);
 
     // ── Timed mode tick + auto-skip ──
     useEffect(() => {

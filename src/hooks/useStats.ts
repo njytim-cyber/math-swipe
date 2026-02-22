@@ -261,6 +261,7 @@ export function useStats(uid: string | null) {
             const isPerfect = answered > 0 && correct === answered;
             const isUltimate = hardMode && timedMode;
             return {
+                ...prev,
                 totalXP: prev.totalXP + score,
                 totalSolved: prev.totalSolved + answered,
                 totalCorrect: prev.totalCorrect + correct,
@@ -276,26 +277,21 @@ export function useStats(uid: string | null) {
                         correct: prevType.correct + correct,
                     },
                 },
-                // Hard mode stats
                 hardModeSolved: prev.hardModeSolved + (hardMode ? answered : 0),
                 hardModeCorrect: prev.hardModeCorrect + (hardMode ? correct : 0),
                 hardModeBestStreak: hardMode ? Math.max(prev.hardModeBestStreak, bestStreak) : prev.hardModeBestStreak,
                 hardModeSessions: prev.hardModeSessions + (hardMode ? 1 : 0),
                 hardModePerfects: prev.hardModePerfects + (hardMode && isPerfect ? 1 : 0),
-                // Timed mode stats
                 timedModeSolved: prev.timedModeSolved + (timedMode ? answered : 0),
                 timedModeCorrect: prev.timedModeCorrect + (timedMode ? correct : 0),
                 timedModeBestStreak: timedMode ? Math.max(prev.timedModeBestStreak, bestStreak) : prev.timedModeBestStreak,
                 timedModeSessions: prev.timedModeSessions + (timedMode ? 1 : 0),
                 timedModePerfects: prev.timedModePerfects + (timedMode && isPerfect ? 1 : 0),
-                // Ultimate mode stats (hard + timed)
                 ultimateSolved: prev.ultimateSolved + (isUltimate ? answered : 0),
                 ultimateCorrect: prev.ultimateCorrect + (isUltimate ? correct : 0),
                 ultimateBestStreak: isUltimate ? Math.max(prev.ultimateBestStreak, bestStreak) : prev.ultimateBestStreak,
                 ultimateSessions: prev.ultimateSessions + (isUltimate ? 1 : 0),
                 ultimatePerfects: prev.ultimatePerfects + (isUltimate && isPerfect ? 1 : 0),
-                bestSpeedrunTime: prev.bestSpeedrunTime,
-                speedrunHardMode: prev.speedrunHardMode,
             };
         });
     }, []);

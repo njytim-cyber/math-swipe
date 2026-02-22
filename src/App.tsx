@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BlackboardLayout } from './components/BlackboardLayout';
 import { ProblemView } from './components/ProblemView';
@@ -9,6 +9,7 @@ import { ActionButtons } from './components/ActionButtons';
 import { SwipeTrail } from './components/SwipeTrail';
 import type { AgeBand } from './utils/questionTypes';
 import { defaultTypeForBand, typesForBand, AGE_BANDS, BAND_LABELS } from './utils/questionTypes';
+import { useAutoSummary, usePersonalBest } from './hooks/useSessionUI';
 /** Retry a dynamic import once by reloading the page (handles stale deploy cache on Cloudflare Pages) */
 function lazyRetry<T extends Record<string, unknown>>(factory: () => Promise<T>): Promise<T> {
   return factory().catch(() => {
@@ -116,34 +117,17 @@ function App() {
     }
   }, [score]);
 
-  // ── Session summary ──
-  const [showSummary, setShowSummary] = useState(false);
-  const sessionAccuracy = answerHistory.length > 0
-    ? Math.round(answerHistory.filter(Boolean).length / answerHistory.length * 100)
-    : 0;
+  const sessionAccuracy = useMemo(() =>
+    answerHistory.length > 0
+      ? Math.round(answerHistory.filter(Boolean).length / answerHistory.length * 100)
+      : 0,
+    [answerHistory]
+  );
 
-  // ── Auto-show summary when daily challenge finishes (adjust state during render) ──
-  const [prevDailyComplete, setPrevDailyComplete] = useState(false);
-  if (dailyComplete && !prevDailyComplete) {
-    setPrevDailyComplete(true);
-    setShowSummary(true);
-  }
-  if (!dailyComplete && prevDailyComplete) {
-    setPrevDailyComplete(false);
-  }
-
-  // ── Auto-show summary when speedrun finishes ──
-  const [prevSpeedrunTime, setPrevSpeedrunTime] = useState<number | null>(null);
-  const isNewSpeedrunRecord = !!(speedrunFinalTime && (stats.bestSpeedrunTime === 0 || speedrunFinalTime < stats.bestSpeedrunTime));
-  if (speedrunFinalTime && speedrunFinalTime !== prevSpeedrunTime) {
-    setPrevSpeedrunTime(speedrunFinalTime);
-    setShowSummary(true);
-    // Persist best time
-    updateBestSpeedrunTime(speedrunFinalTime, hardMode);
-  }
-  if (!speedrunFinalTime && prevSpeedrunTime) {
-    setPrevSpeedrunTime(null);
-  }
+  // ── Session summary (auto-show on daily/speedrun finish) ──
+  const { showSummary, setShowSummary, isNewSpeedrunRecord } = useAutoSummary(
+    dailyComplete, speedrunFinalTime, stats.bestSpeedrunTime, updateBestSpeedrunTime, hardMode
+  );
 
   // ── Ping Listener (Async Taunts) ──
   const [pingMessage, setPingMessage] = useState<string | null>(null);
@@ -214,19 +198,8 @@ function App() {
     }
   }, [stats, bestStreak, uid]);
 
-  // ── Personal best detection — fire once when session streak first exceeds all-time best ──
-  const [showPB, setShowPB] = useState(false);
-  const [pbShown, setPbShown] = useState(false);
-  if (!pbShown && bestStreak > stats.bestStreak && bestStreak > 0) {
-    setPbShown(true);
-    setShowPB(true);
-  }
-  // Auto-hide PB toast
-  useEffect(() => {
-    if (!showPB) return;
-    const t = setTimeout(() => setShowPB(false), 2000);
-    return () => clearTimeout(t);
-  }, [showPB]);
+  // ── Personal best detection ──
+  const showPB = usePersonalBest(bestStreak, stats.bestStreak);
 
   const handleTabChange = useCallback((tab: Tab) => {
     if (prevTab.current === 'game' && tab !== 'game' && totalAnswered > 0) {
@@ -234,7 +207,7 @@ function App() {
       setShowSummary(true);
     }
     setActiveTab(tab);
-  }, [score, totalCorrect, totalAnswered, bestStreak, questionType, recordSession, hardMode, timedMode]);
+  }, [score, totalCorrect, totalAnswered, bestStreak, questionType, recordSession, hardMode, timedMode, setShowSummary]);
 
   // ── Costumes & Trails ──
   const [activeCostume, handleCostumeChange] = useLocalState('math-swipe-costume', '', uid);
@@ -274,19 +247,7 @@ function App() {
 
   // Show loading screen while Firebase auth initializes
   if (authLoading) {
-    return (
-      <BlackboardLayout>
-        <div className="flex-1 flex items-center justify-center">
-          <motion.div
-            className="text-lg chalk text-[var(--color-chalk)]/50"
-            animate={{ opacity: [0.3, 1, 0.3] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          >
-            Loading...
-          </motion.div>
-        </div>
-      </BlackboardLayout>
-    );
+    return <BlackboardLayout><LoadingFallback /></BlackboardLayout>;
   }
 
   return (
