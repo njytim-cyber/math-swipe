@@ -303,7 +303,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
                 }
             }
         }
-    }, [gs.streak, gs.totalAnswered, problems, recordAnswer, scheduleChalkReset, advanceProblem, safeTimeout, questionType, streakShields, onConsumeShield]);
+    }, [gs.streak, gs.totalAnswered, gs.totalCorrect, problems, recordAnswer, scheduleChalkReset, advanceProblem, safeTimeout, questionType, streakShields, onConsumeShield, hardMode, level]);
 
     // ── Timed mode tick + auto-skip ──
     useEffect(() => {
