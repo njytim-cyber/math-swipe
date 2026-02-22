@@ -66,18 +66,6 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
     const prevHard = useRef(hardMode);
     const frozenRef = useRef(false); // Mirror of gs.frozen for stale-closure safety
 
-    // ── Refs for stable handleSwipe (avoids callback re-creation on every answer) ──
-    const gsRef = useRef(gs);
-    const problemsRef = useRef(problems);
-    const shieldsRef = useRef(streakShields);
-    const consumeShieldRef = useRef(onConsumeShield);
-    useEffect(() => {
-        gsRef.current = gs;
-        problemsRef.current = problems;
-        shieldsRef.current = streakShields;
-        consumeShieldRef.current = onConsumeShield;
-    });
-
     const dailyRef = useRef<{ dateLabel: string } | null>(null);
     const pendingTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -194,9 +182,9 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
 
     // ── Handle answer ──
     const handleSwipe = useCallback((direction: 'left' | 'right' | 'up' | 'down') => {
-        if (frozenRef.current || problemsRef.current.length === 0) return;
+        if (frozenRef.current || problems.length === 0) return;
 
-        const current = problemsRef.current[0];
+        const current = problems[0];
         if (!current) return; // Extra null guard
         const tts = Date.now() - (current.startTime || Date.now());
 
@@ -217,7 +205,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
 
         if (correct) {
             recordAnswer(tts, correct);
-            const newStreak = gsRef.current.streak + 1;
+            const newStreak = gs.streak + 1;
             const isFast = tts < 1200;
             const milestoneEmoji = MILESTONES[newStreak] || '';
 
@@ -258,7 +246,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
             }, AUTO_ADVANCE_MS);
         } else {
             // During tutorial (first question) — don't count as wrong, just shake and let them retry
-            const isTutorial = gsRef.current.totalAnswered === 0;
+            const isTutorial = gs.totalAnswered === 0;
 
             if (isTutorial) {
                 setGs(prev => ({
@@ -277,8 +265,8 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
                 recordAnswer(tts, false);
 
                 // Streak Forgiveness: consume a shield instead of resetting
-                if (shieldsRef.current > 0 && gsRef.current.streak > 0 && consumeShieldRef.current) {
-                    consumeShieldRef.current();
+                if (streakShields > 0 && gs.streak > 0 && onConsumeShield) {
+                    onConsumeShield();
                     setGs(prev => ({
                         ...prev,
                         totalAnswered: prev.totalAnswered + 1,
@@ -308,7 +296,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
                 }
             }
         }
-    }, [recordAnswer, scheduleChalkReset, advanceProblem, safeTimeout, questionType]);
+    }, [gs.streak, gs.totalAnswered, problems, recordAnswer, scheduleChalkReset, advanceProblem, safeTimeout, questionType, streakShields, onConsumeShield]);
 
     // ── Timed mode tick + auto-skip ──
     useEffect(() => {
