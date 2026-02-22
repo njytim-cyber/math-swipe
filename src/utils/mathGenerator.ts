@@ -74,6 +74,7 @@ function _generateProblem(difficulty: number, type: QuestionType, hardMode: bool
         case 'negatives': return genNegatives(difficulty, hardMode);
         case 'gcflcm': return genGcfLcm();
         case 'ratio': return genRatio();
+        default: return genAdd(difficulty, hardMode); // Exhaustive fallback
     }
 }
 
