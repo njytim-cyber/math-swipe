@@ -152,7 +152,7 @@ export function TrickPractice({ trick, onClose }: Props) {
                     </p>
                     <button
                         onClick={onClose}
-                        className="w-full max-w-[240px] h-14 bg-[var(--color-gold)] text-[var(--color-bg)] rounded-xl font-bold ui text-lg shadow-[0_4px_0_rgb(var(--color-fg),0.2)] active:translate-y-1 active:shadow-none transition-all"
+                        className="w-full max-w-[240px] h-14 bg-[var(--color-gold)] text-[#1a1a2e] rounded-xl font-bold ui text-lg shadow-[0_4px_0_rgb(var(--color-fg),0.2)] active:translate-y-1 active:shadow-none transition-all"
                     >
                         Back to Hub
                     </button>

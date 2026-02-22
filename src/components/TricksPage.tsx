@@ -50,8 +50,12 @@ export function TricksPage({ onLessonActive }: Props) {
                         {/* Difficulty indicator line */}
                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-gold)] opacity-30 group-hover:opacity-100 transition-opacity" />
 
-                        <div className="w-12 h-12 rounded-full bg-[rgb(var(--color-fg))]/5 flex items-center justify-center text-2xl">
-                            {trick.icon}
+                        <div className="w-12 h-12 rounded-full bg-[rgb(var(--color-fg))]/5 flex items-center justify-center">
+                            <svg viewBox="0 0 40 40" className="w-8 h-8" style={{ color: 'var(--color-gold)' }}>
+                                <text x="50%" y="54%" dominantBaseline="middle" textAnchor="middle" fill="currentColor" fontSize="20" fontFamily="ui-serif, Georgia, serif" fontWeight="bold">
+                                    {trick.icon}
+                                </text>
+                            </svg>
                         </div>
                         <div className="flex-1">
                             <h3 className="chalk text-lg text-[rgb(var(--color-fg))]/90 group-hover:text-[var(--color-gold)] transition-colors">
@@ -61,8 +65,8 @@ export function TricksPage({ onLessonActive }: Props) {
                                 {trick.description}
                             </p>
                         </div>
-                        <div className="ui text-xs font-bold px-2 py-1 rounded-md bg-[rgb(var(--color-fg))]/10 text-[rgb(var(--color-fg))]/40">
-                            {'★'.repeat(trick.difficulty)}
+                        <div className="ui text-[10px] font-semibold px-2 py-1 rounded-md bg-[var(--color-gold)]/10 text-[var(--color-gold)]/70">
+                            Lv.{trick.difficulty}
                         </div>
                     </motion.button>
                 ))}

@@ -71,7 +71,7 @@ export function TrickLesson({ trick, onClose }: Props) {
                             if (isLastStep) setStartedPractice(true);
                             else setStep(s => s + 1);
                         }}
-                        className="w-full h-14 bg-[var(--color-gold)] text-[var(--color-bg)] rounded-xl font-bold ui text-lg shadow-[0_4px_0_rgb(var(--color-fg),0.2)] active:translate-y-1 active:shadow-none transition-all"
+                        className="w-full h-14 bg-[var(--color-gold)] text-[#1a1a2e] rounded-xl font-bold ui text-lg shadow-[0_4px_0_rgb(var(--color-fg),0.2)] active:translate-y-1 active:shadow-none transition-all"
                     >
                         {isLastStep ? 'Start Practice Blitz! ⚡' : 'Next Step'}
                     </button>
