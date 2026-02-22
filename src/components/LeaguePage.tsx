@@ -1,22 +1,25 @@
-import { memo, useState, useEffect } from 'react';
+import { memo, useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { collection, query, orderBy, limit, onSnapshot, where, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { CHALK_THEMES } from '../utils/chalkThemes';
 import { COSTUMES } from '../utils/costumes';
-
-// Make COSTUMES accessible: We will import it from MrChalk, so we must export COSTUMES in MrChalk.
-// Assuming we'll export COSTUMES from MrChalk in a subsequent change.
+import { AchievementBadge } from './AchievementBadge';
 
 interface LeaderboardEntry {
     uid: string;
     displayName: string;
     totalXP: number;
     bestStreak: number;
+    bestSpeedrunTime?: number;
     activeThemeId?: string;
     activeCostume?: string;
+    activeBadgeId?: string;
     rank?: number;
+    isYou?: boolean;
 }
+
+type LeagueTab = 'score' | 'speedrun';
 
 interface Props {
     userXP: number;
@@ -25,19 +28,30 @@ interface Props {
     displayName: string;
     activeThemeId: string;
     activeCostume: string;
+    bestSpeedrunTime?: number;
+    onStartSpeedrun?: () => void;
 }
 
-export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, displayName, activeThemeId, activeCostume }: Props) {
-    const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [selectedPlayer, setSelectedPlayer] = useState<LeaderboardEntry | null>(null);
+function formatTime(ms: number): string {
+    const totalSeconds = ms / 1000;
+    if (totalSeconds < 60) return `${totalSeconds.toFixed(2)}s`;
+    const m = Math.floor(totalSeconds / 60);
+    const s = Math.floor(totalSeconds % 60);
+    return `${m}m ${s.toString().padStart(2, '0')}s`;
+}
 
+export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, displayName, activeThemeId, activeCostume, bestSpeedrunTime, onStartSpeedrun }: Props) {
+    const [tab, setTab] = useState<LeagueTab>('score');
+    const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+    const [speedrunEntries, setSpeedrunEntries] = useState<LeaderboardEntry[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [speedrunLoading, setSpeedrunLoading] = useState(true);
+    const [selectedPlayer, setSelectedPlayer] = useState<LeaderboardEntry | null>(null);
     const [pingCooldown, setPingCooldown] = useState(false);
 
-    const handleAction = async (action: 'race' | 'ping') => {
+    const handleAction = useCallback(async (action: 'race' | 'ping') => {
         if (!selectedPlayer) return;
         if (action === 'race') {
-            // Trigger Ghost Race via challenge param
             window.location.search = `?c=ghost-${selectedPlayer.uid}`;
         } else if (action === 'ping') {
             if (pingCooldown) return;
@@ -55,10 +69,11 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, di
                 console.error("Failed to send ping", err);
             }
             setSelectedPlayer(null);
-            setTimeout(() => setPingCooldown(false), 5000); // 5s cooldown
+            setTimeout(() => setPingCooldown(false), 5000);
         }
-    };
+    }, [selectedPlayer, pingCooldown, uid, displayName]);
 
+    // ── Score leaderboard query ──
     useEffect(() => {
         const q = query(
             collection(db, 'users'),
@@ -66,15 +81,16 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, di
             orderBy('totalXP', 'desc'),
             limit(20),
         );
-
         const unsub = onSnapshot(q, (snap) => {
             const data: LeaderboardEntry[] = snap.docs.map(doc => ({
                 uid: doc.id,
                 displayName: doc.data().displayName || 'Anonymous',
                 totalXP: doc.data().totalXP || 0,
                 bestStreak: doc.data().bestStreak || 0,
+                bestSpeedrunTime: doc.data().bestSpeedrunTime || 0,
                 activeThemeId: doc.data().activeThemeId || 'classic',
                 activeCostume: doc.data().activeCostume || '',
+                activeBadgeId: doc.data().activeBadgeId || '',
             }));
             setEntries(data);
             setLoading(false);
@@ -82,25 +98,47 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, di
             console.warn('Leaderboard query failed:', err);
             setLoading(false);
         });
-
         return unsub;
     }, []);
 
-    // Ensure current user appears in the list (they might not be top 20)
-    const board = (() => {
+    // ── Speedrun leaderboard query ──
+    useEffect(() => {
+        const q = query(
+            collection(db, 'users'),
+            where('bestSpeedrunTime', '>', 0),
+            orderBy('bestSpeedrunTime', 'asc'),
+            limit(10),
+        );
+        const unsub = onSnapshot(q, (snap) => {
+            const data: LeaderboardEntry[] = snap.docs.map(doc => ({
+                uid: doc.id,
+                displayName: doc.data().displayName || 'Anonymous',
+                totalXP: doc.data().totalXP || 0,
+                bestStreak: doc.data().bestStreak || 0,
+                bestSpeedrunTime: doc.data().bestSpeedrunTime || 0,
+                activeThemeId: doc.data().activeThemeId || 'classic',
+                activeCostume: doc.data().activeCostume || '',
+                activeBadgeId: doc.data().activeBadgeId || '',
+            }));
+            setSpeedrunEntries(data);
+            setSpeedrunLoading(false);
+        }, (err) => {
+            console.warn('Speedrun leaderboard query failed:', err);
+            setSpeedrunLoading(false);
+        });
+        return unsub;
+    }, []);
+
+    // ── Build score board with current user injected ──
+    const scoreBoard = (() => {
         const list = [...entries];
         const userInList = uid ? list.find(e => e.uid === uid) : null;
         if (!userInList && uid) {
             list.push({
-                uid,
-                displayName: displayName || 'You',
-                totalXP: userXP,
-                bestStreak: userStreak,
-                activeThemeId,
-                activeCostume,
+                uid, displayName: displayName || 'You', totalXP: userXP, bestStreak: userStreak,
+                activeThemeId, activeCostume, bestSpeedrunTime: bestSpeedrunTime || 0,
             });
         } else if (userInList) {
-            // Update with latest local stats (may be newer than Firestore snapshot)
             userInList.totalXP = Math.max(userInList.totalXP, userXP);
             userInList.bestStreak = Math.max(userInList.bestStreak, userStreak);
             userInList.activeThemeId = activeThemeId;
@@ -111,11 +149,31 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, di
             .map((e, i) => ({ ...e, rank: i + 1, isYou: e.uid === uid }));
     })();
 
+    // ── Build speedrun board with current user injected ──
+    const speedrunBoard = (() => {
+        const list = [...speedrunEntries];
+        const userInList = uid ? list.find(e => e.uid === uid) : null;
+        if (!userInList && uid && bestSpeedrunTime && bestSpeedrunTime > 0) {
+            list.push({
+                uid, displayName: displayName || 'You', totalXP: userXP, bestStreak: userStreak,
+                activeThemeId, activeCostume, bestSpeedrunTime,
+            });
+        } else if (userInList && bestSpeedrunTime) {
+            userInList.bestSpeedrunTime = Math.min(userInList.bestSpeedrunTime || Infinity, bestSpeedrunTime);
+        }
+        return list
+            .sort((a, b) => (a.bestSpeedrunTime || Infinity) - (b.bestSpeedrunTime || Infinity))
+            .map((e, i) => ({ ...e, rank: i + 1, isYou: e.uid === uid }));
+    })();
+
+    const isLoading = tab === 'score' ? loading : speedrunLoading;
+    const board = tab === 'score' ? scoreBoard : speedrunBoard;
+
     return (
         <div className="flex-1 flex flex-col items-center px-4 pt-[calc(env(safe-area-inset-top,16px)+40px)] pb-24 overflow-y-auto">
             {/* Header */}
             <motion.div
-                className="text-center mb-6"
+                className="text-center mb-4"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
             >
@@ -123,8 +181,50 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, di
                 <p className="text-xs ui text-[rgb(var(--color-fg))]/30">Global leaderboard</p>
             </motion.div>
 
+            {/* Tab Toggle */}
+            <div className="flex gap-1 mb-4 p-1 bg-[rgb(var(--color-fg))]/5 rounded-xl w-full max-w-xs">
+                <button
+                    onClick={() => setTab('score')}
+                    className={`flex-1 py-2 rounded-lg text-xs ui font-semibold transition-all duration-200 ${tab === 'score'
+                        ? 'bg-[var(--color-gold)]/20 text-[var(--color-gold)] shadow-sm'
+                        : 'text-[rgb(var(--color-fg))]/40 hover:text-[rgb(var(--color-fg))]/60'
+                        }`}
+                >
+                    ⚡ Score
+                </button>
+                <button
+                    onClick={() => setTab('speedrun')}
+                    className={`flex-1 py-2 rounded-lg text-xs ui font-semibold transition-all duration-200 ${tab === 'speedrun'
+                        ? 'bg-[#FF00FF]/15 text-[#FF00FF] shadow-sm'
+                        : 'text-[rgb(var(--color-fg))]/40 hover:text-[rgb(var(--color-fg))]/60'
+                        }`}
+                >
+                    ⏱️ Speedrun
+                </button>
+            </div>
+
+            {/* Start Speedrun CTA (only on speedrun tab) */}
+            {tab === 'speedrun' && onStartSpeedrun && (
+                <motion.button
+                    onClick={onStartSpeedrun}
+                    className="w-full max-w-xs mb-4 py-3 rounded-xl ui font-bold text-sm bg-gradient-to-r from-[#FF00FF]/20 to-[#00FFFF]/20 border border-[#FF00FF]/30 text-[#FF00FF] active:scale-95 transition-transform"
+                    whileTap={{ scale: 0.95 }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                >
+                    ⏱️ Start Speedrun (10 Questions)
+                </motion.button>
+            )}
+
+            {/* Your best time badge */}
+            {tab === 'speedrun' && bestSpeedrunTime && bestSpeedrunTime > 0 && (
+                <div className="text-xs ui text-[rgb(var(--color-fg))]/40 mb-3">
+                    Your best: <span className="text-[#FF00FF] font-semibold">{formatTime(bestSpeedrunTime)}</span>
+                </div>
+            )}
+
             {/* Loading state */}
-            {loading && (
+            {isLoading && (
                 <div className="flex-1 flex items-center justify-center">
                     <motion.div
                         className="text-sm ui text-[rgb(var(--color-fg))]/30"
@@ -137,19 +237,24 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, di
             )}
 
             {/* Empty state */}
-            {!loading && board.length === 0 && (
-                <div className="text-sm ui text-[rgb(var(--color-fg))]/30 mt-8">
-                    No players yet. Be the first! 🎮
+            {!isLoading && board.length === 0 && (
+                <div className="text-sm ui text-[rgb(var(--color-fg))]/30 mt-8 text-center">
+                    {tab === 'speedrun'
+                        ? 'No speedrun times yet. Be the first! ⏱️'
+                        : 'No players yet. Be the first! 🎮'}
                 </div>
             )}
 
             {/* Leaderboard */}
-            <AnimatePresence>
-                {!loading && (
+            <AnimatePresence mode="wait">
+                {!isLoading && (
                     <motion.div
+                        key={tab}
                         className="w-full max-w-sm"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
+                        initial={{ opacity: 0, x: tab === 'speedrun' ? 20 : -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: tab === 'speedrun' ? -20 : 20 }}
+                        transition={{ duration: 0.2 }}
                     >
                         {board.map((entry, i) => (
                             <motion.div
@@ -171,8 +276,13 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, di
                                     {entry.rank === 1 ? '👑' : entry.rank === 2 ? '⚡' : entry.rank === 3 ? '🔥' : entry.rank}
                                 </div>
 
-                                {/* Name & Cosmetic */}
+                                {/* Name & Cosmetic & Badge */}
                                 <div className="flex-1 min-w-0 flex items-center gap-1.5" onClick={() => !entry.isYou && setSelectedPlayer(entry)}>
+                                    {entry.activeBadgeId && (
+                                        <div className="flex-shrink-0 w-[18px] h-[18px]">
+                                            <AchievementBadge achievementId={entry.activeBadgeId} unlocked={true} name="" desc="" />
+                                        </div>
+                                    )}
                                     <div
                                         className={`text-sm ui font-semibold truncate ${entry.isYou ? '' : 'text-[rgb(var(--color-fg))]/70'}`}
                                         style={entry.activeThemeId ? { color: CHALK_THEMES.find(t => t.id === entry.activeThemeId)?.color } : undefined}
@@ -187,31 +297,39 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, di
                                     )}
                                 </div>
 
-                                {/* XP */}
-                                <div className="text-right">
-                                    <div className={`text-sm ui font-semibold ${entry.isYou ? 'text-[var(--color-gold)]' : 'text-[rgb(var(--color-fg))]/50'
-                                        }`}>
-                                        {entry.totalXP.toLocaleString()}
+                                {/* Score or Time */}
+                                {tab === 'score' ? (
+                                    <>
+                                        <div className="text-right">
+                                            <div className={`text-sm ui font-semibold ${entry.isYou ? 'text-[var(--color-gold)]' : 'text-[rgb(var(--color-fg))]/50'}`}>
+                                                {entry.totalXP.toLocaleString()}
+                                            </div>
+                                            <div className="text-[9px] ui text-[rgb(var(--color-fg))]/20">XP</div>
+                                        </div>
+                                        <div className="text-right w-10">
+                                            <div className="text-xs ui font-semibold text-[var(--color-streak-fire)]">
+                                                {entry.bestStreak > 0 ? `${entry.bestStreak}🔥` : '—'}
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="text-right">
+                                        <div className={`text-sm ui font-semibold tabular-nums ${entry.isYou ? 'text-[#FF00FF]' : 'text-[#FF00FF]/70'}`}>
+                                            {entry.bestSpeedrunTime ? formatTime(entry.bestSpeedrunTime) : '—'}
+                                        </div>
+                                        <div className="text-[9px] ui text-[rgb(var(--color-fg))]/20">time</div>
                                     </div>
-                                    <div className="text-[9px] ui text-[rgb(var(--color-fg))]/20">XP</div>
-                                </div>
-
-                                {/* Streak */}
-                                <div className="text-right w-10">
-                                    <div className="text-xs ui font-semibold text-[var(--color-streak-fire)]">
-                                        {entry.bestStreak > 0 ? `${entry.bestStreak}🔥` : '—'}
-                                    </div>
-                                </div>
+                                )}
                             </motion.div>
                         ))}
                     </motion.div>
                 )}
             </AnimatePresence>
+
             {/* Action Sheet Modal */}
             <AnimatePresence>
                 {selectedPlayer && (
                     <>
-                        {/* Backdrop */}
                         <motion.div
                             className="fixed inset-0 bg-[var(--color-overlay)] z-40 backdrop-blur-sm"
                             initial={{ opacity: 0 }}
@@ -219,7 +337,6 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, di
                             exit={{ opacity: 0 }}
                             onClick={() => setSelectedPlayer(null)}
                         />
-                        {/* Drawer */}
                         <motion.div
                             className="fixed bottom-0 left-0 right-0 bg-[var(--color-surface)] border-t border-[var(--color-gold)]/20 rounded-t-3xl p-6 z-50 pb-[calc(env(safe-area-inset-bottom,20px)+20px)]"
                             initial={{ y: '100%' }}

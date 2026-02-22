@@ -5,7 +5,7 @@ export type QuestionType =
     | 'round' | 'orderops'
     | 'exponent' | 'negatives' | 'gcflcm' | 'ratio'
     | 'mix-basic' | 'mix-all'
-    | 'daily' | 'challenge';
+    | 'daily' | 'challenge' | 'speedrun' | 'ghost';
 
 export type QuestionGroup = 'daily' | 'young' | 'whole' | 'core' | 'advanced' | 'parts' | 'mixed';
 

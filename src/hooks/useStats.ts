@@ -41,6 +41,10 @@ export interface Stats {
     activeThemeId?: string;
     activeCostume?: string;
     activeTrailId?: string;
+    activeBadgeId?: string; // Achievement badge shown on leaderboard
+
+    // Speedrun tracking
+    bestSpeedrunTime: number; // Stored in ms. 0 means unplayed.
 }
 
 const STORAGE_KEY = 'math-swipe-stats';
@@ -83,6 +87,8 @@ const EMPTY_STATS: Stats = {
         'mix-all': { ...EMPTY_TYPE },
         daily: { ...EMPTY_TYPE },
         challenge: { ...EMPTY_TYPE },
+        speedrun: { ...EMPTY_TYPE },
+        ghost: { ...EMPTY_TYPE },
     },
     hardModeSolved: 0,
     hardModeCorrect: 0,
@@ -99,6 +105,7 @@ const EMPTY_STATS: Stats = {
     ultimateBestStreak: 0,
     ultimateSessions: 0,
     ultimatePerfects: 0,
+    bestSpeedrunTime: 0,
 };
 
 /** Load from localStorage (fast, synchronous) */
@@ -278,6 +285,7 @@ export function useStats(uid: string | null) {
                 ultimateBestStreak: isUltimate ? Math.max(prev.ultimateBestStreak, bestStreak) : prev.ultimateBestStreak,
                 ultimateSessions: prev.ultimateSessions + (isUltimate ? 1 : 0),
                 ultimatePerfects: prev.ultimatePerfects + (isUltimate && isPerfect ? 1 : 0),
+                bestSpeedrunTime: prev.bestSpeedrunTime,
             };
         });
     }, []);
@@ -286,9 +294,27 @@ export function useStats(uid: string | null) {
         setStats(EMPTY_STATS);
     }, []);
 
+    const updateBestSpeedrunTime = useCallback((timeMs: number) => {
+        setStats(prev => {
+            if (prev.bestSpeedrunTime > 0 && timeMs >= prev.bestSpeedrunTime) return prev;
+            return { ...prev, bestSpeedrunTime: timeMs };
+        });
+    }, []);
+
+    const updateBadge = useCallback((badgeId: string) => {
+        setStats(prev => ({ ...prev, activeBadgeId: badgeId }));
+    }, []);
+
+    const consumeShield = useCallback(() => {
+        setStats(prev => ({
+            ...prev,
+            streakShields: Math.max(0, prev.streakShields - 1),
+        }));
+    }, []);
+
     const accuracy = stats.totalSolved > 0
         ? Math.round((stats.totalCorrect / stats.totalSolved) * 100)
         : 0;
 
-    return { stats, accuracy, recordSession, resetStats, updateCosmetics };
+    return { stats, accuracy, recordSession, resetStats, updateCosmetics, updateBestSpeedrunTime, updateBadge, consumeShield };
 }

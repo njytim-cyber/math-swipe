@@ -27,6 +27,7 @@ interface GameState {
     milestone: string;    // emoji or '' — shown via CSS animation
     speedBonus: boolean;  // true for ~0.8s after fast answer
     wrongStreak: number;  // consecutive wrong answers (for comeback detection)
+    shieldBroken: boolean; // true briefly when a streak shield is consumed
 }
 
 const INITIAL_STATE: GameState = {
@@ -34,6 +35,7 @@ const INITIAL_STATE: GameState = {
     totalCorrect: 0, totalAnswered: 0, answerHistory: [],
     chalkState: 'idle', flash: 'none', frozen: false,
     milestone: '', speedBonus: false, wrongStreak: 0,
+    shieldBroken: false,
 };
 
 /** Shared wrong-answer state transform (avoids 3x duplication) */
@@ -50,7 +52,7 @@ function wrongAnswerState(prev: GameState): GameState {
     };
 }
 
-export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = false, challengeId: string | null = null, timedMode = false) {
+export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = false, challengeId: string | null = null, timedMode = false, streakShields = 0, onConsumeShield?: () => void) {
     const { level, recordAnswer } = useDifficulty();
     const [problems, setProblems] = useState<Problem[]>([]);
     const [gs, setGs] = useState<GameState>(INITIAL_STATE);
@@ -81,6 +83,10 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
     const timedModeRef = useRef(timedMode);
     timedModeRef.current = timedMode;
 
+    // ── Speedrun Mode Timing ──
+    const speedrunStartRef = useRef<number>(0);
+    const [speedrunFinalTime, setSpeedrunFinalTime] = useState<number | null>(null);
+
     // ── Initialize buffer ──
     useEffect(() => {
         if (startedRef.current) return;
@@ -94,6 +100,13 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
             const cp = generateChallenge(challengeId);
             cp[0].startTime = Date.now();
             setProblems(cp);
+        } else if (questionType === 'speedrun') {
+            dailyRef.current = null;
+            const sp = Array.from({ length: 10 }, () => generateProblem(level, 'mix-all' as QuestionType, hardMode));
+            sp[0].startTime = Date.now();
+            speedrunStartRef.current = Date.now();
+            setSpeedrunFinalTime(null);
+            setProblems(sp);
         } else {
             dailyRef.current = null;
             const initial = Array.from({ length: BUFFER_SIZE }, () => generateProblem(level, questionType, hardMode));
@@ -118,6 +131,14 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
             cp[0].startTime = Date.now();
             setProblems(cp);
             setGs(INITIAL_STATE);
+        } else if (questionType === 'speedrun') {
+            dailyRef.current = null;
+            const sp = Array.from({ length: 10 }, () => generateProblem(level, 'mix-all' as QuestionType, hardMode));
+            sp[0].startTime = Date.now();
+            speedrunStartRef.current = Date.now();
+            setSpeedrunFinalTime(null);
+            setProblems(sp);
+            setGs(INITIAL_STATE);
         } else {
             dailyRef.current = null;
             const fresh = Array.from({ length: BUFFER_SIZE }, () => generateProblem(level, questionType, hardMode));
@@ -126,9 +147,9 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
         }
     }, [questionType, hardMode, level, challengeId]);
 
-    // ── Keep buffer full (not for daily/challenge — fixed set) ──
+    // ── Keep buffer full (not for daily/challenge/speedrun — fixed set) ──
     useEffect(() => {
-        if (questionType === 'daily' || questionType === 'challenge') return;
+        if (questionType === 'daily' || questionType === 'challenge' || questionType === 'speedrun') return;
         if (problems.length < BUFFER_SIZE) {
             setProblems(prev => [...prev, generateProblem(level, questionType, hardMode)]);
         }
@@ -208,6 +229,14 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
             if (milestoneEmoji) safeTimeout(() => setGs(p => ({ ...p, milestone: '' })), 1300);
             if (isFast) safeTimeout(() => setGs(p => ({ ...p, speedBonus: false })), 900);
 
+            // Speedrun win condition: answered 10 questions correctly
+            if (questionType === 'speedrun' && newStreak === 10) {
+                const finalTime = Date.now() - speedrunStartRef.current;
+                setSpeedrunFinalTime(finalTime);
+                setGs(prev => ({ ...prev, flash: 'none' })); // Stay frozen!
+                return; // Do not advance!
+            }
+
             safeTimeout(() => {
                 setGs(prev => ({ ...prev, flash: 'none', frozen: false }));
                 frozenRef.current = false;
@@ -232,17 +261,40 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
                 }, FAIL_PAUSE_MS);
             } else {
                 recordAnswer(tts, false);
-                setGs(wrongAnswerState);
-                scheduleChalkReset(FAIL_PAUSE_MS);
 
-                safeTimeout(() => {
-                    setGs(prev => ({ ...prev, flash: 'none', frozen: false }));
-                    frozenRef.current = false;
-                    advanceProblem();
-                }, FAIL_PAUSE_MS);
+                // Streak Forgiveness: consume a shield instead of resetting
+                if (streakShields > 0 && gs.streak > 0 && onConsumeShield) {
+                    onConsumeShield();
+                    setGs(prev => ({
+                        ...prev,
+                        totalAnswered: prev.totalAnswered + 1,
+                        answerHistory: [...prev.answerHistory, false].slice(-MAX_HISTORY),
+                        flash: 'wrong',
+                        chalkState: 'fail',
+                        frozen: true,
+                        shieldBroken: true,
+                        // Streak survives!
+                    }));
+                    frozenRef.current = true;
+                    scheduleChalkReset(FAIL_PAUSE_MS);
+                    safeTimeout(() => {
+                        setGs(prev => ({ ...prev, flash: 'none', frozen: false, shieldBroken: false }));
+                        frozenRef.current = false;
+                        advanceProblem();
+                    }, FAIL_PAUSE_MS);
+                } else {
+                    setGs(wrongAnswerState);
+                    scheduleChalkReset(FAIL_PAUSE_MS);
+
+                    safeTimeout(() => {
+                        setGs(prev => ({ ...prev, flash: 'none', frozen: false }));
+                        frozenRef.current = false;
+                        advanceProblem();
+                    }, FAIL_PAUSE_MS);
+                }
             }
         }
-    }, [gs.streak, gs.totalAnswered, problems, recordAnswer, scheduleChalkReset, advanceProblem, safeTimeout]);
+    }, [gs.streak, gs.totalAnswered, problems, recordAnswer, scheduleChalkReset, advanceProblem, safeTimeout, questionType, streakShields, onConsumeShield]);
 
     // ── Timed mode tick + auto-skip ──
     useEffect(() => {
@@ -295,5 +347,6 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
         timerProgress,
         dailyComplete,
         dailyDateLabel: dailyRef.current?.dateLabel || '',
+        speedrunFinalTime,
     };
 }

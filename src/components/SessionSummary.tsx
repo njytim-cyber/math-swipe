@@ -15,12 +15,23 @@ interface Props {
     onDismiss: () => void;
     hardMode?: boolean;
     timedMode?: boolean;
+    speedrunFinalTime?: number | null;
+    isNewSpeedrunRecord?: boolean;
+}
+
+function formatTime(ms: number): string {
+    const totalSeconds = ms / 1000;
+    if (totalSeconds < 60) return `${totalSeconds.toFixed(2)}s`;
+    const m = Math.floor(totalSeconds / 60);
+    const s = Math.floor(totalSeconds % 60);
+    return `${m}m ${s}s`;
 }
 
 function buildShareText(
     xp: number, streak: number, accuracy: number,
     history: boolean[], questionType: string,
     hardMode?: boolean, timedMode?: boolean,
+    speedrunTime?: number | null,
 ): string {
     const emojis = history.map(ok => ok ? '🟩' : '🟥');
     const emojiRows: string[] = [];
@@ -30,16 +41,22 @@ function buildShareText(
 
     const typeLabel = questionType.startsWith('mix-') ? 'Mix' : questionType.charAt(0).toUpperCase() + questionType.slice(1);
     const modeTag = hardMode && timedMode ? ' 💀⏱️ ULTIMATE' : hardMode ? ' 💀 HARD' : timedMode ? ' ⏱️ TIMED' : '';
-    const headline = accuracy === 100
-        ? `🧮 Math Swipe — PERFECT! 💯${modeTag}`
-        : `🧮 Math Swipe — ${typeLabel}${modeTag}`;
+    const headline = questionType === 'speedrun' && speedrunTime
+        ? `🧮 Math Swipe — SPEEDRUN`
+        : accuracy === 100
+            ? `🧮 Math Swipe — PERFECT! 💯${modeTag}`
+            : `🧮 Math Swipe — ${typeLabel}${modeTag}`;
 
     // Generate a challenge link so the recipient can play the same set
     const challengeUrl = `${window.location.origin}?c=${createChallengeId()}`;
 
+    const subline = questionType === 'speedrun' && speedrunTime
+        ? `⏱️ Cleared in ${formatTime(speedrunTime)}!`
+        : `⚡ ${xp} pts · 🔥 ${streak} streak · 🎯 ${accuracy}%`;
+
     return [
         headline,
-        `⚡ ${xp} pts · 🔥 ${streak} streak · 🎯 ${accuracy}%`,
+        subline,
         '',
         ...emojiRows,
         '',
@@ -49,7 +66,7 @@ function buildShareText(
 
 export const SessionSummary = memo(function SessionSummary({
     solved, bestStreak: streak, accuracy, xpEarned, answerHistory, questionType, visible, onDismiss,
-    hardMode, timedMode,
+    hardMode, timedMode, speedrunFinalTime, isNewSpeedrunRecord,
 }: Props) {
     const [copied, setCopied] = useState(false);
     const [isSharing, setIsSharing] = useState(false);
@@ -75,7 +92,7 @@ export const SessionSummary = memo(function SessionSummary({
     const handleShare = async () => {
         if (isSharing) return;
         setIsSharing(true);
-        const text = buildShareText(xpEarned, streak, accuracy, answerHistory, questionType, hardMode, timedMode);
+        const text = buildShareText(xpEarned, streak, accuracy, answerHistory, questionType, hardMode, timedMode, speedrunFinalTime);
 
         try {
             // Attempt Rich Media Image Generation
@@ -157,9 +174,11 @@ export const SessionSummary = memo(function SessionSummary({
                                         {hardMode && timedMode ? '💀⏱️ ULTIMATE' : hardMode ? '💀 HARD MODE' : timedMode ? '⏱️ TIMED MODE' : questionType.toUpperCase()}
                                     </div>
 
-                                    <div className="text-[200px] mb-8">{accuracy === 100 ? '🏆' : '📝'}</div>
+                                    <div className="text-[200px] mb-8">
+                                        {questionType === 'speedrun' ? '⏱️' : accuracy === 100 ? '🏆' : '📝'}
+                                    </div>
                                     <div className="text-8xl chalk text-white mb-16">
-                                        {accuracy === 100 ? 'PERFECT SCORE' : 'SESSION COMPLETED'}
+                                        {questionType === 'speedrun' ? 'SPEEDRUN CLEAR' : accuracy === 100 ? 'PERFECT SCORE' : 'SESSION COMPLETED'}
                                     </div>
 
                                     <div className="flex justify-between w-[80%] mb-16 px-8 py-12 border-2 border-white/20 rounded-[3rem] bg-black/20">
@@ -168,8 +187,17 @@ export const SessionSummary = memo(function SessionSummary({
                                             <div className="text-3xl ui text-white/40 mt-4">SOLVED</div>
                                         </div>
                                         <div className="text-center">
-                                            <div className="text-9xl chalk text-[var(--color-correct)]">{accuracy}%</div>
-                                            <div className="text-3xl ui text-white/40 mt-4">ACCURACY</div>
+                                            {questionType === 'speedrun' && speedrunFinalTime ? (
+                                                <>
+                                                    <div className="text-7xl chalk text-[var(--color-correct)] mt-4">{formatTime(speedrunFinalTime)}</div>
+                                                    <div className="text-3xl ui text-white/40 mt-6">CLEAR TIME</div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div className="text-9xl chalk text-[var(--color-correct)]">{accuracy}%</div>
+                                                    <div className="text-3xl ui text-white/40 mt-4">ACCURACY</div>
+                                                </>
+                                            )}
                                         </div>
                                         <div className="text-center">
                                             <div className="text-9xl chalk text-[var(--color-streak-fire)]">{streak}🔥</div>
@@ -227,7 +255,22 @@ export const SessionSummary = memo(function SessionSummary({
                                 ));
                             })()}
                         </div>
-                        {accuracy === 100 ? (
+                        {questionType === 'speedrun' && speedrunFinalTime ? (
+                            <>
+                                <motion.div className="text-3xl mb-2" animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }}>
+                                    ⏱️
+                                </motion.div>
+                                <motion.h3 className="text-2xl chalk text-[var(--color-gold)] mb-1">
+                                    Speedrun Cleared!
+                                </motion.h3>
+                                {isNewSpeedrunRecord && (
+                                    <div className="text-xs ui font-bold text-[#FF00FF] uppercase tracking-widest mb-4">
+                                        New Record!
+                                    </div>
+                                )}
+                                {!isNewSpeedrunRecord && <div className="mb-4" />}
+                            </>
+                        ) : accuracy === 100 ? (
                             <>
                                 <motion.div
                                     className="text-3xl mb-2"
@@ -262,9 +305,18 @@ export const SessionSummary = memo(function SessionSummary({
                                 <div className="text-2xl chalk text-[rgb(var(--color-fg))]/80">{solved}</div>
                                 <div className="text-[9px] ui text-[rgb(var(--color-fg))]/30">solved</div>
                             </div>
-                            <div className="text-center">
-                                <div className="text-2xl chalk text-[var(--color-correct)]">{accuracy}%</div>
-                                <div className="text-[9px] ui text-[rgb(var(--color-fg))]/30">accuracy</div>
+                            <div className="text-center min-w-[60px]">
+                                {questionType === 'speedrun' && speedrunFinalTime ? (
+                                    <>
+                                        <div className="text-xl mt-1 chalk text-[var(--color-correct)]">{formatTime(speedrunFinalTime)}</div>
+                                        <div className="text-[9px] ui text-[rgb(var(--color-fg))]/30">clear time</div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="text-2xl chalk text-[var(--color-correct)]">{accuracy}%</div>
+                                        <div className="text-[9px] ui text-[rgb(var(--color-fg))]/30">accuracy</div>
+                                    </>
+                                )}
                             </div>
                             <div className="text-center">
                                 <div className="text-2xl chalk text-[var(--color-streak-fire)]">{streak}🔥</div>

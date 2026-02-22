@@ -15,12 +15,19 @@ service cloud.firestore {
                         'displayName', 'totalXP', 'bestStreak', 'totalSolved',
                         'accuracy', 'isAnonymous', 'createdAt', 'updatedAt',
                         'stats', 'achievements', 'preferences',
-                        'activeThemeId', 'activeCostume', 'activeTrailId'
+                        'activeThemeId', 'activeCostume', 'activeTrailId', 'activeBadgeId',
+                        'bestSpeedrunTime', 'totalCorrect', 'sessionsPlayed',
+                        'dayStreak', 'streakShields', 'lastPlayedDate', 'byType',
+                        'hardModeSolved', 'hardModeCorrect', 'hardModeBestStreak', 'hardModeSessions', 'hardModePerfects',
+                        'timedModeSolved', 'timedModeCorrect', 'timedModeBestStreak', 'timedModeSessions', 'timedModePerfects',
+                        'ultimateSolved', 'ultimateCorrect', 'ultimateBestStreak', 'ultimateSessions', 'ultimatePerfects'
                       ])
-                   // Enforce displayName length and type
+                   // Enforce displayName length and numeric speedrun bounds
                    && (!('displayName' in request.resource.data)
                        || (request.resource.data.displayName is string
-                           && request.resource.data.displayName.size() <= 20));
+                           && request.resource.data.displayName.size() <= 20))
+                   && (!('bestSpeedrunTime' in request.resource.data)
+                       || request.resource.data.bestSpeedrunTime is number);
     }
 
     // ── Pings Collection (social nudges) ──

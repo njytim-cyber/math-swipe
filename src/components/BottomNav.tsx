@@ -22,12 +22,13 @@ const tabs: { id: Tab; label: string; icon: ReactNode }[] = [
         id: 'league',
         label: 'League',
         icon: (
-            <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M6 9H4a1 0 0 0-1 1v2a4 4 0 0 0 4 4h1" />
-                <path d="M18 9h2a1 0 0 1 1 1v2a4 4 0 0 1-4 4h-1" />
-                <path d="M8 4h8v6a4 4 0 0 1-8 0V4z" />
-                <path d="M10 18v2h4v-2" />
-                <path d="M7 22h10" />
+            <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                <path d="M4 22h16" />
+                <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+                <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+                <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
             </svg>
         ),
     },

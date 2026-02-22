@@ -75,6 +75,8 @@ function App() {
     challengeId ? 'challenge' : 'multiply'
   );
 
+  const { stats, accuracy, recordSession, resetStats, updateCosmetics, updateBestSpeedrunTime, updateBadge, consumeShield } = useStats(uid);
+
   const {
     problems,
     score,
@@ -91,9 +93,9 @@ function App() {
     handleSwipe,
     timerProgress,
     dailyComplete,
-  } = useGameLoop(questionType, hardMode, challengeId, timedMode);
-
-  const { stats, accuracy, recordSession, resetStats, updateCosmetics } = useStats(uid);
+    speedrunFinalTime,
+    shieldBroken,
+  } = useGameLoop(questionType, hardMode, challengeId, timedMode, stats.streakShields, consumeShield);
 
   const currentProblem = problems[0];
   const isFirstQuestion = totalAnswered === 0;
@@ -127,6 +129,19 @@ function App() {
   }
   if (!dailyComplete && prevDailyComplete) {
     setPrevDailyComplete(false);
+  }
+
+  // ── Auto-show summary when speedrun finishes ──
+  const [prevSpeedrunTime, setPrevSpeedrunTime] = useState<number | null>(null);
+  const isNewSpeedrunRecord = !!(speedrunFinalTime && (stats.bestSpeedrunTime === 0 || speedrunFinalTime < stats.bestSpeedrunTime));
+  if (speedrunFinalTime && speedrunFinalTime !== prevSpeedrunTime) {
+    setPrevSpeedrunTime(speedrunFinalTime);
+    setShowSummary(true);
+    // Persist best time
+    updateBestSpeedrunTime(speedrunFinalTime);
+  }
+  if (!speedrunFinalTime && prevSpeedrunTime) {
+    setPrevSpeedrunTime(null);
   }
 
   // ── Ping Listener (Async Taunts) ──
@@ -331,7 +346,7 @@ function App() {
         </div>
 
         {activeTab === 'game' && (
-          <div key={totalAnswered} className={`flex-1 flex flex-col w-full ${flash === 'wrong' ? 'wrong-shake' : flash === 'correct' ? 'answer-bounce' : ''}`}>
+          <div key={totalAnswered} className={`flex-1 flex flex-col w-full ${flash === 'wrong' && !shieldBroken ? 'wrong-shake' : flash === 'correct' ? 'answer-bounce' : ''}`}>
             {/* ── Score (centered, pushed down from edge) ── */}
             <div className="landscape-score flex flex-col items-center pt-[calc(env(safe-area-inset-top,16px)+40px)] pb-6 z-30">
               {/* Challenge header */}
@@ -343,6 +358,13 @@ function App() {
                 </div>
               )}
               <ScoreCounter value={score} />
+
+              {/* Shield count */}
+              {stats.streakShields > 0 && streak > 0 && (
+                <div className="text-[10px] ui text-[rgb(var(--color-fg))]/30 mt-1 flex items-center gap-0.5">
+                  {'🛡️'.repeat(stats.streakShields)}
+                </div>
+              )}
 
               {/* Streak display */}
               <AnimatePresence>
@@ -501,7 +523,7 @@ function App() {
           </div>
         )}
 
-        {activeTab === 'league' && <Suspense fallback={<LoadingFallback />}><LeaguePage userXP={stats.totalXP} userStreak={stats.bestStreak} uid={uid} displayName={user?.displayName ?? 'You'} activeThemeId={activeThemeId as string} activeCostume={activeCostume as string} /></Suspense>}
+        {activeTab === 'league' && <Suspense fallback={<LoadingFallback />}><LeaguePage userXP={stats.totalXP} userStreak={stats.bestStreak} uid={uid} displayName={user?.displayName ?? 'You'} activeThemeId={activeThemeId as string} activeCostume={activeCostume as string} bestSpeedrunTime={stats.bestSpeedrunTime} onStartSpeedrun={() => { setQuestionType('speedrun'); setActiveTab('game'); }} /></Suspense>}
 
         {activeTab === 'me' && (
           <Suspense fallback={<LoadingFallback />}><MePage
@@ -522,6 +544,8 @@ function App() {
             isAnonymous={user?.isAnonymous ?? true}
             onLinkGoogle={linkGoogle}
             ageBand={ageBand}
+            activeBadge={stats.activeBadgeId || ''}
+            onBadgeChange={updateBadge}
           /></Suspense>
         )}
 
@@ -547,6 +571,8 @@ function App() {
           onDismiss={() => setShowSummary(false)}
           hardMode={hardMode}
           timedMode={timedMode}
+          speedrunFinalTime={speedrunFinalTime}
+          isNewSpeedrunRecord={isNewSpeedrunRecord}
         />
 
         {/* ── Achievement unlock toast ── */}
