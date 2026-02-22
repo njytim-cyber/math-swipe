@@ -125,5 +125,22 @@ service cloud.firestore {
 
       allow update, delete: if false;
     }
+
+    // ── Web Vitals (performance monitoring) ──
+    match /vitals/{vitalId} {
+      allow read: if false;
+
+      allow create: if request.auth != null
+                    && request.resource.data.keys().hasOnly([
+                         'name', 'value', 'rating', 'navigationType', 'userAgent', 'timestamp'
+                       ])
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() <= 10
+                    && request.resource.data.value is number
+                    && request.resource.data.rating is string
+                    && request.resource.data.rating.size() <= 20;
+
+      allow update, delete: if false;
+    }
   }
 }
