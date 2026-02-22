@@ -1,73 +1,69 @@
-# React + TypeScript + Vite
+# Math Swipe ✏️
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A fast-paced mental math game with a chalkboard aesthetic. Built with React, TypeScript, Vite, and Firebase.
 
-Currently, two official plugins are available:
+## Quick Start
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev        # Start dev server
+npm run verify     # Lint + typecheck + test + build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Git Workflow
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+> **⚠️ NEVER push directly to `master`.** All changes go through PRs.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+master (production — auto-deploys to Cloudflare Pages)
+  └── dev (integration branch for PRs)
+        └── feature/* | fix/* | chore/*
+```
+
+### Steps
+
+1. **Branch** from `dev`: `git checkout -b fix/description`
+2. **Develop** — commit early and often
+3. **Verify**: `npm run verify` (eslint + tsc + vitest + vite build)
+4. **Push** the branch: `git push -u origin fix/description`
+5. **Open PR** → `dev` on GitHub
+6. **Merge PR** on GitHub (squash recommended)
+7. **Release**: PR `dev` → `master` to deploy to production
+
+### Pre-push Hook
+
+The `prepare` script installs a git hook that runs `npm run verify` before every push. If it fails, the push is blocked.
+
+## Tech Stack
+
+| Layer | Tech |
+|-------|------|
+| Framework | React 19 + TypeScript |
+| Build | Vite 7 |
+| Styling | Tailwind CSS 4 |
+| Animation | Framer Motion |
+| Backend | Firebase Auth + Firestore |
+| Deploy | Cloudflare Pages (auto-deploy on `master`) |
+| Tests | Vitest |
+
+## Project Structure
+
+```
+src/
+├── App.tsx                  # Main app component
+├── components/              # UI components
+├── hooks/                   # Custom React hooks
+│   ├── useGameLoop.ts       # Core game logic
+│   ├── useStats.ts          # Stats persistence
+│   ├── useSessionUI.ts      # Auto-summary + PB detection
+│   └── ...
+├── utils/                   # Pure utilities
+│   ├── mathGenerator.ts     # Question generation
+│   ├── achievements.ts      # Badge system
+│   └── ...
+└── tests/                   # Vitest tests
+```
+
+## Version
+
+Current: **v1.0.2** (semver)
