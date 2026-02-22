@@ -454,7 +454,8 @@ function nearDistractors(answer: number): [number, number] {
     }
     // Deep fallback
     let fallback = answer + 1;
-    while (result.length < 2) {
+    let fallbackSafety = 0;
+    while (result.length < 2 && fallbackSafety++ < 20) {
         if (!used.has(fallback)) {
             used.add(fallback);
             result.push(fallback);
@@ -511,7 +512,8 @@ function decimalDistractors(answer: number): [number, number] {
     }
     // Deep fallback
     let fallbackOffset = 1;
-    while (result.length < 2) {
+    let fallbackSafety = 0;
+    while (result.length < 2 && fallbackSafety++ < 20) {
         const fallback = Math.round((answer + fallbackOffset * 0.5) * 10) / 10;
         if (!used.has(fallback)) {
             used.add(fallback);
@@ -560,7 +562,9 @@ function pack(
     const used = new Set([answer]);
     if (used.has(d1)) d1 += 1;
     used.add(d1);
-    while (used.has(d2)) {
+
+    let uniquenessSafety = 0;
+    while (used.has(d2) && uniquenessSafety++ < 20) {
         d2 += 1;
     }
     used.add(d2);

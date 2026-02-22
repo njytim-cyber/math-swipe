@@ -48,7 +48,21 @@ service cloud.firestore {
                    && (!('streakShields' in request.resource.data)
                        || (request.resource.data.streakShields is number
                            && request.resource.data.streakShields >= 0
-                           && request.resource.data.streakShields <= 10));
+                           && request.resource.data.streakShields <= 10))
+                   // Nested object size constraints (prevent payload bloat DoS)
+                   // Map size() returns the number of keys. We stringify to check raw byte size roughly.
+                   && (!('stats' in request.resource.data)
+                       || (request.resource.data.stats is map
+                           && string(request.resource.data.stats).size() <= 15000))
+                   && (!('achievements' in request.resource.data)
+                       || (request.resource.data.achievements is list
+                           && string(request.resource.data.achievements).size() <= 2000))
+                   && (!('preferences' in request.resource.data)
+                       || (request.resource.data.preferences is map
+                           && string(request.resource.data.preferences).size() <= 1000))
+                   && (!('byType' in request.resource.data)
+                       || (request.resource.data.byType is map
+                           && string(request.resource.data.byType).size() <= 5000));
     }
 
     // ── Pings Collection (social nudges) ──
@@ -86,7 +100,11 @@ service cloud.firestore {
                          'message', 'stack', 'source', 'userAgent', 'url', 'timestamp'
                        ])
                     && request.resource.data.message is string
-                    && request.resource.data.message.size() <= 500;
+                    && request.resource.data.message.size() <= 500
+                    && (!('stack' in request.resource.data) || (request.resource.data.stack is string && request.resource.data.stack.size() <= 2000))
+                    && (!('source' in request.resource.data) || (request.resource.data.source is string && request.resource.data.source.size() <= 200))
+                    && (!('userAgent' in request.resource.data) || (request.resource.data.userAgent is string && request.resource.data.userAgent.size() <= 200))
+                    && (!('url' in request.resource.data) || (request.resource.data.url is string && request.resource.data.url.size() <= 500));
 
       allow update, delete: if false;
     }
