@@ -1,5 +1,4 @@
-import { memo, useMemo } from 'react';
-import katex from 'katex';
+import { memo, useState, useEffect } from 'react';
 import 'katex/dist/katex.min.css';
 
 interface Props {
@@ -9,20 +8,28 @@ interface Props {
 }
 
 /**
- * Renders a LaTeX string using KaTeX.
- * Uses renderToString for static HTML — no DOM manipulation overhead.
+ * Renders a LaTeX string using KaTeX (lazy-loaded).
+ * Shows raw LaTeX as fallback while KaTeX loads.
  */
 export const MathExpr = memo(function MathExpr({ latex, className = '', displayMode = false }: Props) {
-    const html = useMemo(() => {
-        try {
-            return katex.renderToString(latex, {
-                throwOnError: false,
-                displayMode,
-            });
-        } catch {
-            return latex;
-        }
+    const [html, setHtml] = useState<string | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        import('katex').then(({ default: katex }) => {
+            if (cancelled) return;
+            try {
+                setHtml(katex.renderToString(latex, { throwOnError: false, displayMode }));
+            } catch {
+                setHtml(latex);
+            }
+        });
+        return () => { cancelled = true; };
     }, [latex, displayMode]);
+
+    if (html === null) {
+        return <span className={className}>{latex}</span>;
+    }
 
     return (
         <span

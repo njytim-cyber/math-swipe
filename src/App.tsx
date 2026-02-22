@@ -10,6 +10,7 @@ import { SwipeTrail } from './components/SwipeTrail';
 import type { AgeBand } from './utils/questionTypes';
 import { defaultTypeForBand, typesForBand, AGE_BANDS, BAND_LABELS } from './utils/questionTypes';
 import { useAutoSummary, usePersonalBest } from './hooks/useSessionUI';
+import { OfflineBanner } from './components/OfflineBanner';
 /** Retry a dynamic import once by reloading the page (handles stale deploy cache on Cloudflare Pages) */
 function lazyRetry<T extends Record<string, unknown>>(factory: () => Promise<T>): Promise<T> {
   return factory().catch(() => {
@@ -254,6 +255,7 @@ function App() {
     <>
 
       <BlackboardLayout>
+        <OfflineBanner />
         {/* ── Global Canvas Overlay (Swipe Trail) ── */}
         <SwipeTrail
           streak={streak}

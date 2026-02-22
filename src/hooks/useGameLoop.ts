@@ -329,7 +329,8 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
             const p = Math.min(elapsed / TIMED_MODE_MS, 1);
             setTimerProgress(p);
             if (p >= 1) {
-                // Time's up — skip and break streak
+                // Time's up — cancel RAF and skip
+                cancelAnimationFrame(timerRafRef.current);
                 frozenRef.current = true;
                 setGs(prev => {
                     const wrongStreak = prev.wrongStreak + 1;

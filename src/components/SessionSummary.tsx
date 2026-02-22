@@ -1,6 +1,5 @@
 import { memo, useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useSpring, useMotionValueEvent } from 'framer-motion';
-import { toBlob } from 'html-to-image';
 import { createChallengeId } from '../utils/dailyChallenge';
 
 interface Props {
@@ -97,10 +96,11 @@ export const SessionSummary = memo(function SessionSummary({
         try {
             // Attempt Rich Media Image Generation
             if (cardRef.current) {
+                const { toBlob } = await import('html-to-image');
                 const blob = await toBlob(cardRef.current, {
                     cacheBust: true,
                     type: 'image/png',
-                    pixelRatio: 2, // Retina resolution
+                    pixelRatio: 2,
                 });
 
                 if (blob) {

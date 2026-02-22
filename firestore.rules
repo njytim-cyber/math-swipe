@@ -16,7 +16,7 @@ service cloud.firestore {
                         'accuracy', 'isAnonymous', 'createdAt', 'updatedAt',
                         'stats', 'achievements', 'preferences',
                         'activeThemeId', 'activeCostume', 'activeTrailId', 'activeBadgeId',
-                        'bestSpeedrunTime', 'totalCorrect', 'sessionsPlayed',
+                        'bestSpeedrunTime', 'speedrunHardMode', 'totalCorrect', 'sessionsPlayed',
                         'dayStreak', 'streakShields', 'lastPlayedDate', 'byType',
                         'hardModeSolved', 'hardModeCorrect', 'hardModeBestStreak', 'hardModeSessions', 'hardModePerfects',
                         'timedModeSolved', 'timedModeCorrect', 'timedModeBestStreak', 'timedModeSessions', 'timedModePerfects',
