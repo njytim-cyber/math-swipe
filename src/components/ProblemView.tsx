@@ -1,4 +1,4 @@
-import { memo, useEffect } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import { motion, useMotionValue, useTransform, useMotionTemplate, animate, type MotionValue } from 'framer-motion';
 import type { PanInfo } from 'framer-motion';
 import type { Problem } from '../utils/mathGenerator';
@@ -103,18 +103,23 @@ export const ProblemView = memo(function ProblemView({ problem, frozen, highligh
     const x = useMotionValue(0);
     const y = useMotionValue(0);
 
-    // Desktop arrow-key support
+    // Desktop arrow-key support (stable listener — no churn)
+    const onSwipeRef = useRef(onSwipe);
+    const frozenRef = useRef(frozen);
+    useEffect(() => { onSwipeRef.current = onSwipe; }, [onSwipe]);
+    useEffect(() => { frozenRef.current = frozen; }, [frozen]);
+
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
             const dir = KEY_MAP[e.key];
-            if (dir && !frozen) {
+            if (dir && !frozenRef.current) {
                 e.preventDefault();
-                onSwipe(dir);
+                onSwipeRef.current(dir);
             }
         };
         window.addEventListener('keydown', handler);
         return () => window.removeEventListener('keydown', handler);
-    }, [frozen, onSwipe]);
+    }, []);
 
     const leftGlow = useTransform(x, [-140, -50, 0], [1, 0.3, 0]);
     const rightGlow = useTransform(x, [0, 50, 140], [0, 0.3, 1]);
