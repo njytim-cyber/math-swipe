@@ -41,19 +41,6 @@ const INITIAL_STATE: GameState = {
     shieldBroken: false,
 };
 
-/** Shared wrong-answer state transform (avoids 3x duplication) */
-function wrongAnswerState(prev: GameState): GameState {
-    return {
-        ...prev,
-        streak: 0,
-        totalAnswered: prev.totalAnswered + 1,
-        answerHistory: [...prev.answerHistory, false].slice(-MAX_HISTORY),
-        flash: 'wrong',
-        chalkState: 'fail',
-        frozen: true,
-        wrongStreak: prev.wrongStreak + 1,
-    };
-}
 
 export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = false, challengeId: string | null = null, timedMode = false, streakShields = 0, onConsumeShield?: () => void) {
     const { level, recordAnswer } = useDifficulty();
@@ -256,13 +243,12 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
             }, AUTO_ADVANCE_MS);
         } else {
             // Wrong answer handling — use functional updater to avoid stale closures
-            recordAnswer(tts, false);
-
             setGs(prev => {
                 const isTutorial = prev.totalAnswered === 0;
 
                 if (isTutorial) {
                     // During tutorial (first question) — shake but don't count
+                    // Do NOT call recordAnswer — tutorial mistakes shouldn't affect difficulty
                     frozenRef.current = true;
                     scheduleChalkReset(FAIL_PAUSE_MS);
                     safeTimeout(() => {
@@ -271,6 +257,9 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
                     }, FAIL_PAUSE_MS);
                     return { ...prev, flash: 'wrong' as const, chalkState: 'fail' as ChalkState, frozen: true };
                 }
+
+                // Not tutorial — record the wrong answer for difficulty tracking
+                recordAnswer(tts, false);
 
                 if (streakShields > 0 && prev.streak > 0 && onConsumeShield) {
                     // Streak Forgiveness: consume a shield instead of resetting
@@ -341,7 +330,22 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
             setTimerProgress(p);
             if (p >= 1) {
                 // Time's up — skip and break streak
-                setGs(wrongAnswerState);
+                frozenRef.current = true;
+                setGs(prev => {
+                    const wrongStreak = prev.wrongStreak + 1;
+                    return {
+                        ...prev,
+                        streak: 0,
+                        totalAnswered: prev.totalAnswered + 1,
+                        answerHistory: [...prev.answerHistory, false].slice(-MAX_HISTORY),
+                        score: Math.max(0, prev.score - 5),
+                        flash: 'wrong' as const,
+                        chalkState: (wrongStreak >= 3 ? 'struggling' : 'fail') as ChalkState,
+                        milestone: '',
+                        wrongStreak,
+                        frozen: true,
+                    };
+                });
                 scheduleChalkReset(FAIL_PAUSE_MS);
                 safeTimeout(() => {
                     setGs(prev => ({ ...prev, flash: 'none', frozen: false }));

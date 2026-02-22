@@ -146,6 +146,7 @@ async function saveStatsCloud(uid: string, s: Stats) {
             activeTrailId: s.activeTrailId || '',
             activeBadgeId: s.activeBadgeId || '',
             bestSpeedrunTime: s.bestSpeedrunTime || 0,
+            speedrunHardMode: s.speedrunHardMode || false,
             streakShields: s.streakShields || 0,
             // Full stats blob
             stats: s,
@@ -174,10 +175,58 @@ async function loadStatsCloud(uid: string): Promise<Stats | null> {
     return null;
 }
 
-/** Pick the "better" stats — whoever has more XP wins (most recent progress) */
+/** Merge stats from local + cloud — take the best of each field */
 function mergeStats(local: Stats, cloud: Stats): Stats {
-    if (cloud.totalXP > local.totalXP) return cloud;
-    return local;
+    // Merge byType per-key (take max of each)
+    const mergedByType = { ...EMPTY_STATS.byType };
+    for (const key of Object.keys(mergedByType) as QuestionType[]) {
+        const l = local.byType[key] || EMPTY_TYPE;
+        const c = cloud.byType[key] || EMPTY_TYPE;
+        mergedByType[key] = {
+            solved: Math.max(l.solved, c.solved),
+            correct: Math.max(l.correct, c.correct),
+        };
+    }
+
+    return {
+        ...EMPTY_STATS,
+        totalXP: Math.max(local.totalXP, cloud.totalXP),
+        totalSolved: Math.max(local.totalSolved, cloud.totalSolved),
+        totalCorrect: Math.max(local.totalCorrect, cloud.totalCorrect),
+        bestStreak: Math.max(local.bestStreak, cloud.bestStreak),
+        sessionsPlayed: Math.max(local.sessionsPlayed, cloud.sessionsPlayed),
+        dayStreak: Math.max(local.dayStreak, cloud.dayStreak),
+        streakShields: Math.max(local.streakShields, cloud.streakShields),
+        lastPlayedDate: local.lastPlayedDate > cloud.lastPlayedDate ? local.lastPlayedDate : cloud.lastPlayedDate,
+        byType: mergedByType,
+        hardModeSolved: Math.max(local.hardModeSolved, cloud.hardModeSolved),
+        hardModeCorrect: Math.max(local.hardModeCorrect, cloud.hardModeCorrect),
+        hardModeBestStreak: Math.max(local.hardModeBestStreak, cloud.hardModeBestStreak),
+        hardModeSessions: Math.max(local.hardModeSessions, cloud.hardModeSessions),
+        hardModePerfects: Math.max(local.hardModePerfects, cloud.hardModePerfects),
+        timedModeSolved: Math.max(local.timedModeSolved, cloud.timedModeSolved),
+        timedModeCorrect: Math.max(local.timedModeCorrect, cloud.timedModeCorrect),
+        timedModeBestStreak: Math.max(local.timedModeBestStreak, cloud.timedModeBestStreak),
+        timedModeSessions: Math.max(local.timedModeSessions, cloud.timedModeSessions),
+        timedModePerfects: Math.max(local.timedModePerfects, cloud.timedModePerfects),
+        ultimateSolved: Math.max(local.ultimateSolved, cloud.ultimateSolved),
+        ultimateCorrect: Math.max(local.ultimateCorrect, cloud.ultimateCorrect),
+        ultimateBestStreak: Math.max(local.ultimateBestStreak, cloud.ultimateBestStreak),
+        ultimateSessions: Math.max(local.ultimateSessions, cloud.ultimateSessions),
+        ultimatePerfects: Math.max(local.ultimatePerfects, cloud.ultimatePerfects),
+        bestSpeedrunTime: local.bestSpeedrunTime > 0 && cloud.bestSpeedrunTime > 0
+            ? Math.min(local.bestSpeedrunTime, cloud.bestSpeedrunTime)
+            : local.bestSpeedrunTime || cloud.bestSpeedrunTime,
+        speedrunHardMode: (local.bestSpeedrunTime > 0 && cloud.bestSpeedrunTime > 0
+            ? (local.bestSpeedrunTime <= cloud.bestSpeedrunTime ? local : cloud)
+            : local.bestSpeedrunTime ? local : cloud
+        ).speedrunHardMode,
+        // Preserve cosmetics from whichever side has them
+        activeThemeId: local.activeThemeId || cloud.activeThemeId,
+        activeCostume: local.activeCostume || cloud.activeCostume,
+        activeTrailId: local.activeTrailId || cloud.activeTrailId,
+        activeBadgeId: local.activeBadgeId || cloud.activeBadgeId,
+    };
 }
 
 export function useStats(uid: string | null) {
