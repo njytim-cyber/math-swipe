@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "verify": "eslint . && tsc --noEmit && vitest run && vite build",
+    "prepare": "node -e \"const fs=require('fs'),p='.git/hooks/pre-push';if(!fs.existsSync(p)){fs.mkdirSync('.git/hooks',{recursive:true});fs.writeFileSync(p,'#!/bin/sh\\nnpm run verify\\n');try{fs.chmodSync(p,0o755)}catch{}}\""
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.18",
