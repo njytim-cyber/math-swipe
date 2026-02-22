@@ -94,6 +94,7 @@ function App() {
     timerProgress,
     dailyComplete,
     speedrunFinalTime,
+    speedrunElapsed,
     shieldBroken,
   } = useGameLoop(questionType, hardMode, challengeId, timedMode, stats.streakShields, consumeShield);
 
@@ -299,54 +300,63 @@ function App() {
           baseColor={CHALK_THEMES.find(t => t.id === activeThemeId)?.color}
         />
 
-        {/* ── Top-right controls (band picker + theme toggle) ── */}
-        <div className="absolute top-[calc(env(safe-area-inset-top,12px)+12px)] right-4 z-50 flex items-center gap-2">
-          <button
-            onClick={() => {
-              const idx = AGE_BANDS.indexOf(ageBand);
-              handleBandChange(AGE_BANDS[(idx + 1) % AGE_BANDS.length]);
-            }}
-            className="flex items-center gap-1 px-2 py-1 rounded-lg text-[rgb(var(--color-fg))]/50 active:text-[var(--color-gold)] transition-colors"
-            aria-label="Change age band"
-          >
-            <span className="text-base">{BAND_LABELS[ageBand].emoji}</span>
-            <span className="text-[10px] ui">{BAND_LABELS[ageBand].label}</span>
-          </button>
-          <button
-            onClick={toggleThemeMode}
-            className="w-9 h-9 flex items-center justify-center text-[rgb(var(--color-fg))]/60 active:text-[var(--color-gold)] transition-colors"
-            aria-label="Toggle theme"
-          >
-            {themeMode === 'light' ? (
-              <motion.svg
-                viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-              >
-                <circle cx="12" cy="12" r="5" />
-                <line x1="12" y1="1" x2="12" y2="3" />
-                <line x1="12" y1="21" x2="12" y2="23" />
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                <line x1="1" y1="12" x2="3" y2="12" />
-                <line x1="21" y1="12" x2="23" y2="12" />
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-              </motion.svg>
-            ) : (
-              <motion.svg
-                viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                animate={{ rotate: [0, -8, 8, -5, 5, 0] }}
-                transition={{ duration: 4, repeat: Infinity, repeatDelay: 3, ease: 'easeInOut' }}
-              >
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-              </motion.svg>
-            )}
-          </button>
-        </div>
+        {/* ── Top-right controls (band picker + theme toggle) — game tab only ── */}
+        {activeTab === 'game' && (
+          <div className="absolute top-[calc(env(safe-area-inset-top,12px)+12px)] right-4 z-50 flex items-center gap-2">
+            <button
+              onClick={() => {
+                const idx = AGE_BANDS.indexOf(ageBand);
+                handleBandChange(AGE_BANDS[(idx + 1) % AGE_BANDS.length]);
+              }}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[rgb(var(--color-fg))]/50 active:text-[var(--color-gold)] transition-colors"
+              aria-label="Change age band"
+            >
+              <span className="text-base">{BAND_LABELS[ageBand].emoji}</span>
+              <span className="text-[10px] ui">{BAND_LABELS[ageBand].label}</span>
+            </button>
+            <button
+              onClick={toggleThemeMode}
+              className="w-9 h-9 flex items-center justify-center text-[rgb(var(--color-fg))]/60 active:text-[var(--color-gold)] transition-colors"
+              aria-label="Toggle theme"
+            >
+              {themeMode === 'light' ? (
+                <motion.svg
+                  viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+                >
+                  <circle cx="12" cy="12" r="5" />
+                  <line x1="12" y1="1" x2="12" y2="3" />
+                  <line x1="12" y1="21" x2="12" y2="23" />
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                  <line x1="1" y1="12" x2="3" y2="12" />
+                  <line x1="21" y1="12" x2="23" y2="12" />
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                </motion.svg>
+              ) : (
+                <motion.svg
+                  viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  animate={{ rotate: [0, -8, 8, -5, 5, 0] }}
+                  transition={{ duration: 4, repeat: Infinity, repeatDelay: 3, ease: 'easeInOut' }}
+                >
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </motion.svg>
+              )}
+            </button>
+          </div>
+        )}
 
         {activeTab === 'game' && (
-          <div key={totalAnswered} className={`flex-1 flex flex-col w-full ${flash === 'wrong' && !shieldBroken ? 'wrong-shake' : flash === 'correct' ? 'answer-bounce' : ''}`}>
+          <div ref={(el) => {
+            // Restart CSS animation without remounting entire subtree
+            if (el && (flash === 'wrong' || flash === 'correct')) {
+              el.classList.remove('wrong-shake', 'answer-bounce');
+              void el.offsetHeight; // force reflow
+              el.classList.add(flash === 'wrong' && !shieldBroken ? 'wrong-shake' : flash === 'correct' ? 'answer-bounce' : '');
+            }
+          }} className="flex-1 flex flex-col w-full">
             {/* ── Score (centered, pushed down from edge) ── */}
             <div className="landscape-score flex flex-col items-center pt-[calc(env(safe-area-inset-top,16px)+40px)] pb-6 z-30">
               {/* Challenge header */}
@@ -357,7 +367,20 @@ function App() {
                   <span className="text-[rgb(var(--color-fg))]/40">{totalAnswered}/10</span>
                 </div>
               )}
-              <ScoreCounter value={score} />
+              {questionType === 'speedrun' && (
+                <div className="text-xs ui text-[#FF00FF] mb-2 flex items-center gap-2">
+                  <span>⏱️ Speedrun</span>
+                  <span className="text-[rgb(var(--color-fg))]/30">·</span>
+                  <span className="text-[rgb(var(--color-fg))]/40">{totalCorrect}/10</span>
+                </div>
+              )}
+              {questionType === 'speedrun' ? (
+                <div className="chalk text-[#FF00FF] text-7xl leading-none tabular-nums">
+                  {((speedrunFinalTime ?? speedrunElapsed) / 1000).toFixed(1)}<span className="text-3xl">s</span>
+                </div>
+              ) : (
+                <ScoreCounter value={score} />
+              )}
 
               {/* Shield count */}
               {stats.streakShields > 0 && streak > 0 && (
@@ -404,7 +427,7 @@ function App() {
                     {[5, 10, 20, 50].includes(streak) && (
                       <motion.div
                         key={`milestone-glow-${streak}`}
-                        className="absolute inset-0 rounded-full"
+                        className="absolute inset-0 rounded-full pointer-events-none"
                         initial={{ scale: 1, opacity: 0.6 }}
                         animate={{ scale: 2.5, opacity: 0 }}
                         transition={{ duration: 0.6 }}

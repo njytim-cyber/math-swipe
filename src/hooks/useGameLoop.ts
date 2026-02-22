@@ -88,6 +88,8 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
 
     // ── Speedrun Mode Timing ──
     const speedrunStartRef = useRef<number>(0);
+    const speedrunRafRef = useRef<number>(0);
+    const [speedrunElapsed, setSpeedrunElapsed] = useState(0);
     const [speedrunFinalTime, setSpeedrunFinalTime] = useState<number | null>(null);
 
     // ── Initialize buffer ──
@@ -332,12 +334,28 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
 
     const dailyComplete = (questionType === 'daily' || questionType === 'challenge') && gs.totalAnswered > 0 && problems.length === 0;
 
+    // ── Speedrun live stopwatch ──
+    useEffect(() => {
+        if (questionType !== 'speedrun' || speedrunFinalTime !== null) {
+            cancelAnimationFrame(speedrunRafRef.current);
+            return;
+        }
+        if (speedrunStartRef.current === 0) return;
+        const tick = () => {
+            setSpeedrunElapsed(Date.now() - speedrunStartRef.current);
+            speedrunRafRef.current = requestAnimationFrame(tick);
+        };
+        speedrunRafRef.current = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(speedrunRafRef.current);
+    }, [questionType, speedrunFinalTime, problems.length]);
+
     // ── Cleanup all timers on unmount (#4, #11) ──
     useEffect(() => {
         return () => {
             if (chalkTimerRef.current) clearTimeout(chalkTimerRef.current);
             pendingTimers.current.forEach(t => clearTimeout(t));
             pendingTimers.current = [];
+            cancelAnimationFrame(speedrunRafRef.current);
         };
     }, []);
 
@@ -350,5 +368,6 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
         dailyComplete,
         dailyDateLabel: dailyRef.current?.dateLabel || '',
         speedrunFinalTime,
+        speedrunElapsed,
     };
 }

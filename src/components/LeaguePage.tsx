@@ -48,6 +48,7 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, di
     const [speedrunLoading, setSpeedrunLoading] = useState(true);
     const [selectedPlayer, setSelectedPlayer] = useState<LeaderboardEntry | null>(null);
     const [pingCooldown, setPingCooldown] = useState(false);
+    const [pingSuccess, setPingSuccess] = useState('');
 
     const handleAction = useCallback(async (action: 'race' | 'ping') => {
         if (!selectedPlayer) return;
@@ -64,11 +65,14 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, di
                     createdAt: serverTimestamp(),
                     read: false
                 });
-                alert(`Ping sent to ${selectedPlayer.displayName}!`);
+                const name = selectedPlayer.displayName;
+                setSelectedPlayer(null);
+                setPingSuccess(`Pinged ${name}! 👋`);
+                setTimeout(() => setPingSuccess(''), 3000);
             } catch (err) {
                 console.error("Failed to send ping", err);
+                setSelectedPlayer(null);
             }
-            setSelectedPlayer(null);
             setTimeout(() => setPingCooldown(false), 5000);
         }
     }, [selectedPlayer, pingCooldown, uid, displayName]);
@@ -338,7 +342,7 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, di
                             onClick={() => setSelectedPlayer(null)}
                         />
                         <motion.div
-                            className="fixed bottom-0 left-0 right-0 bg-[var(--color-surface)] border-t border-[var(--color-gold)]/20 rounded-t-3xl p-6 z-50 pb-[calc(env(safe-area-inset-bottom,20px)+20px)]"
+                            className="fixed bottom-0 left-0 right-0 bg-[var(--color-surface)] backdrop-blur-md border-t border-[var(--color-gold)]/20 rounded-t-3xl p-6 z-50 pb-[calc(env(safe-area-inset-bottom,20px)+80px)]"
                             initial={{ y: '100%' }}
                             animate={{ y: 0 }}
                             exit={{ y: '100%' }}
@@ -366,7 +370,7 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, di
                             <div className="space-y-3">
                                 <button
                                     onClick={() => handleAction('race')}
-                                    className="w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold ui text-[var(--color-surface)] bg-[var(--color-gold)] active:opacity-80 transition-opacity"
+                                    className="w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold ui text-[#422006] bg-[var(--color-gold)] active:opacity-80 transition-opacity"
                                 >
                                     <span>⚔️</span> Ghost Race
                                 </button>
@@ -379,6 +383,20 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, di
                             </div>
                         </motion.div>
                     </>
+                )}
+            </AnimatePresence>
+
+            {/* Ping success toast */}
+            <AnimatePresence>
+                {pingSuccess && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 20 }}
+                        className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-[var(--color-overlay)] border border-[var(--color-gold)]/30 rounded-2xl px-5 py-3 text-sm ui text-[var(--color-gold)]"
+                    >
+                        {pingSuccess}
+                    </motion.div>
                 )}
             </AnimatePresence>
         </div>
