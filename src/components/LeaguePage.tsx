@@ -29,6 +29,7 @@ interface Props {
     activeThemeId: string;
     activeCostume: string;
     bestSpeedrunTime?: number;
+    speedrunHardMode?: boolean;
     onStartSpeedrun?: () => void;
 }
 
@@ -40,7 +41,7 @@ function formatTime(ms: number): string {
     return `${m}m ${s.toString().padStart(2, '0')}s`;
 }
 
-export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, displayName, activeThemeId, activeCostume, bestSpeedrunTime, onStartSpeedrun }: Props) {
+export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, displayName, activeThemeId, activeCostume, bestSpeedrunTime, speedrunHardMode, onStartSpeedrun }: Props) {
     const [tab, setTab] = useState<LeagueTab>('score');
     const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
     const [speedrunEntries, setSpeedrunEntries] = useState<LeaderboardEntry[]>([]);
@@ -223,7 +224,7 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, di
             {/* Your best time badge */}
             {tab === 'speedrun' && bestSpeedrunTime && bestSpeedrunTime > 0 && (
                 <div className="text-xs ui text-[rgb(var(--color-fg))]/40 mb-3">
-                    Your best: <span className="text-[#FF00FF] font-semibold">{formatTime(bestSpeedrunTime)}</span>
+                    Your best: <span className="text-[#FF00FF] font-semibold">{formatTime(bestSpeedrunTime)}</span>{speedrunHardMode && <span title="Hard Mode"> 💀</span>}
                 </div>
             )}
 

@@ -139,7 +139,7 @@ function App() {
     setPrevSpeedrunTime(speedrunFinalTime);
     setShowSummary(true);
     // Persist best time
-    updateBestSpeedrunTime(speedrunFinalTime);
+    updateBestSpeedrunTime(speedrunFinalTime, hardMode);
   }
   if (!speedrunFinalTime && prevSpeedrunTime) {
     setPrevSpeedrunTime(null);
@@ -546,7 +546,7 @@ function App() {
           </div>
         )}
 
-        {activeTab === 'league' && <Suspense fallback={<LoadingFallback />}><LeaguePage userXP={stats.totalXP} userStreak={stats.bestStreak} uid={uid} displayName={user?.displayName ?? 'You'} activeThemeId={activeThemeId as string} activeCostume={activeCostume as string} bestSpeedrunTime={stats.bestSpeedrunTime} onStartSpeedrun={() => { setQuestionType('speedrun'); setActiveTab('game'); }} /></Suspense>}
+        {activeTab === 'league' && <Suspense fallback={<LoadingFallback />}><LeaguePage userXP={stats.totalXP} userStreak={stats.bestStreak} uid={uid} displayName={user?.displayName ?? 'You'} activeThemeId={activeThemeId as string} activeCostume={activeCostume as string} bestSpeedrunTime={stats.bestSpeedrunTime} speedrunHardMode={stats.speedrunHardMode} onStartSpeedrun={() => { setQuestionType('speedrun'); setActiveTab('game'); }} /></Suspense>}
 
         {activeTab === 'me' && (
           <Suspense fallback={<LoadingFallback />}><MePage

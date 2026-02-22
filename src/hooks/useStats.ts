@@ -45,6 +45,7 @@ export interface Stats {
 
     // Speedrun tracking
     bestSpeedrunTime: number; // Stored in ms. 0 means unplayed.
+    speedrunHardMode: boolean; // true if best speedrun was on hard mode
 }
 
 const STORAGE_KEY = 'math-swipe-stats';
@@ -106,6 +107,7 @@ const EMPTY_STATS: Stats = {
     ultimateSessions: 0,
     ultimatePerfects: 0,
     bestSpeedrunTime: 0,
+    speedrunHardMode: false,
 };
 
 /** Load from localStorage (fast, synchronous) */
@@ -293,6 +295,7 @@ export function useStats(uid: string | null) {
                 ultimateSessions: prev.ultimateSessions + (isUltimate ? 1 : 0),
                 ultimatePerfects: prev.ultimatePerfects + (isUltimate && isPerfect ? 1 : 0),
                 bestSpeedrunTime: prev.bestSpeedrunTime,
+                speedrunHardMode: prev.speedrunHardMode,
             };
         });
     }, []);
@@ -301,10 +304,10 @@ export function useStats(uid: string | null) {
         setStats(EMPTY_STATS);
     }, []);
 
-    const updateBestSpeedrunTime = useCallback((timeMs: number) => {
+    const updateBestSpeedrunTime = useCallback((timeMs: number, hardMode = false) => {
         setStats(prev => {
             if (prev.bestSpeedrunTime > 0 && timeMs >= prev.bestSpeedrunTime) return prev;
-            return { ...prev, bestSpeedrunTime: timeMs };
+            return { ...prev, bestSpeedrunTime: timeMs, speedrunHardMode: hardMode };
         });
     }, []);
 

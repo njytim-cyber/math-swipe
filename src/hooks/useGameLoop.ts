@@ -233,8 +233,8 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
             if (milestoneEmoji) safeTimeout(() => setGs(p => ({ ...p, milestone: '' })), 1300);
             if (isFast) safeTimeout(() => setGs(p => ({ ...p, speedBonus: false })), 900);
 
-            // Speedrun win condition: answered 10 questions correctly
-            if (questionType === 'speedrun' && newStreak === 10) {
+            // Speedrun win condition: 10 correct answers (not necessarily consecutive)
+            if (questionType === 'speedrun' && gs.totalCorrect + 1 >= 10) {
                 const finalTime = Date.now() - speedrunStartRef.current;
                 setSpeedrunFinalTime(finalTime);
                 setGs(prev => ({ ...prev, flash: 'none' })); // Stay frozen!
@@ -289,6 +289,11 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
                 } else {
                     setGs(wrongAnswerState);
                     scheduleChalkReset(FAIL_PAUSE_MS);
+
+                    // Speedrun: replenish a problem so pool never runs dry
+                    if (questionType === 'speedrun') {
+                        setProblems(prev => [...prev, generateProblem(level, 'mix-all' as QuestionType, hardMode)]);
+                    }
 
                     safeTimeout(() => {
                         setGs(prev => ({ ...prev, flash: 'none', frozen: false }));
