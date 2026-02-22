@@ -48,3 +48,9 @@ export function applyTheme(theme: ChalkTheme) {
     document.documentElement.style.setProperty('--chalk-theme-color', theme.color);
     document.documentElement.style.setProperty('--chalk-theme-color-light', theme.lightColor);
 }
+
+/** O(1) theme lookup by ID — avoids repeated .find() across components */
+const THEME_MAP = new Map(CHALK_THEMES.map(t => [t.id, t]));
+export function getThemeColor(id?: string): string | undefined {
+    return id ? THEME_MAP.get(id)?.color : undefined;
+}

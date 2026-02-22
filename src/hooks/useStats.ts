@@ -142,6 +142,8 @@ async function saveStatsCloud(uid: string, s: Stats) {
             activeThemeId: s.activeThemeId || 'classic',
             activeCostume: s.activeCostume || '',
             activeTrailId: s.activeTrailId || '',
+            activeBadgeId: s.activeBadgeId || '',
+            bestSpeedrunTime: s.bestSpeedrunTime || 0,
             streakShields: s.streakShields || 0,
             // Full stats blob
             stats: s,
@@ -196,11 +198,16 @@ export function useStats(uid: string | null) {
         });
     }, [uid]);
 
-    // Save to localStorage on every change + async Firestore sync
+    // Save to localStorage on every change + debounced Firestore sync
+    const cloudTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     useEffect(() => {
         saveStatsLocal(stats);
         if (uidRef.current) {
-            saveStatsCloud(uidRef.current, stats);
+            // Debounce Firestore writes to reduce costs during rapid gameplay
+            clearTimeout(cloudTimerRef.current);
+            cloudTimerRef.current = setTimeout(() => {
+                if (uidRef.current) saveStatsCloud(uidRef.current, stats);
+            }, 2000);
         }
     }, [stats]);
 
