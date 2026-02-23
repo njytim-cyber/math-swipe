@@ -5,6 +5,11 @@ import {
     GoogleAuthProvider,
     signInWithPopup,
     linkWithPopup,
+    sendSignInLinkToEmail,
+    isSignInWithEmailLink,
+    signInWithEmailLink,
+    linkWithCredential,
+    EmailAuthProvider,
     type User,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -81,6 +86,33 @@ export function useFirebaseAuth() {
         return unsub;
     }, []);
 
+    // ── Email link sign-in completion (runs once on page load) ──
+    useEffect(() => {
+        if (!isSignInWithEmailLink(auth, window.location.href)) return;
+        const email = localStorage.getItem('math-swipe-email-for-signin');
+        if (!email) return;
+        const currentUser = auth.currentUser;
+        if (currentUser?.isAnonymous) {
+            const credential = EmailAuthProvider.credentialWithLink(email, window.location.href);
+            linkWithCredential(currentUser, credential)
+                .then(() => {
+                    localStorage.removeItem('math-swipe-email-for-signin');
+                    setUser(prev => prev ? { ...prev, isAnonymous: false } : null);
+                    setDoc(doc(db, 'users', currentUser.uid), { isAnonymous: false, updatedAt: serverTimestamp() }, { merge: true }).catch(() => { });
+                    // Clean the URL
+                    window.history.replaceState(null, '', window.location.pathname);
+                })
+                .catch(err => console.warn('Email link linking failed:', err));
+        } else {
+            signInWithEmailLink(auth, email, window.location.href)
+                .then(() => {
+                    localStorage.removeItem('math-swipe-email-for-signin');
+                    window.history.replaceState(null, '', window.location.pathname);
+                })
+                .catch(err => console.warn('Email link sign-in failed:', err));
+        }
+    }, []);
+
     /** Update display name in Firestore */
     const setDisplayName = useCallback(async (name: string) => {
         if (!user) return;
@@ -133,5 +165,15 @@ export function useFirebaseAuth() {
         }
     }, [user]);
 
-    return { user, loading, setDisplayName, linkGoogle };
+    /** Send email magic link for sign-in / account linking */
+    const sendEmailLink = useCallback(async (email: string) => {
+        const actionCodeSettings = {
+            url: window.location.origin,
+            handleCodeInApp: true,
+        };
+        await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+        localStorage.setItem('math-swipe-email-for-signin', email);
+    }, []);
+
+    return { user, loading, setDisplayName, linkGoogle, sendEmailLink };
 }

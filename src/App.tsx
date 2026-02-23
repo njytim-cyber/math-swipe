@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
+import type { PanInfo } from 'framer-motion';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BlackboardLayout } from './components/BlackboardLayout';
 import { ProblemView } from './components/ProblemView';
@@ -33,6 +34,7 @@ import { useStats } from './hooks/useStats';
 import type { QuestionType } from './utils/questionTypes';
 import { EVERY_ACHIEVEMENT, loadUnlocked, saveUnlocked, checkAchievements, restoreUnlockedFromCloud } from './utils/achievements';
 import { SessionSummary } from './components/SessionSummary';
+import { WeeklyRecap } from './components/WeeklyRecap';
 import { CHALK_THEMES, applyTheme, type ChalkTheme } from './utils/chalkThemes';
 import { applyMode } from './hooks/useThemeMode';
 import { useLocalState } from './hooks/useLocalState';
@@ -41,6 +43,7 @@ import { collection, query, where, onSnapshot, doc, updateDoc, orderBy, limit } 
 import { db } from './utils/firebase';
 
 type Tab = 'game' | 'league' | 'me' | 'magic';
+const TAB_ORDER: Tab[] = ['game', 'league', 'magic', 'me'];
 
 function LoadingFallback() {
   return (
@@ -57,7 +60,7 @@ function LoadingFallback() {
 }
 
 function App() {
-  const { user, loading: authLoading, setDisplayName, linkGoogle } = useFirebaseAuth();
+  const { user, loading: authLoading, setDisplayName, linkGoogle, sendEmailLink } = useFirebaseAuth();
   const uid = user?.uid ?? null;
 
   const [activeTab, setActiveTab] = useState<Tab>('game');
@@ -101,6 +104,16 @@ function App() {
     speedrunElapsed,
     shieldBroken,
   } = useGameLoop(questionType, hardMode, challengeId, timedMode, stats.streakShields, consumeShield);
+
+  // ── Shield consumed toast ──
+  const [shieldToast, setShieldToast] = useState(false);
+  useEffect(() => {
+    if (shieldBroken) {
+      setShieldToast(true);
+      const t = setTimeout(() => setShieldToast(false), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [shieldBroken]);
 
   const currentProblem = problems[0];
   const isFirstQuestion = totalAnswered === 0;
@@ -212,6 +225,19 @@ function App() {
     setActiveTab(tab);
   }, [score, totalCorrect, totalAnswered, bestStreak, questionType, recordSession, hardMode, timedMode, setShowSummary]);
 
+  // ── Tab swipe (non-game tabs only) ──
+  const handleTabSwipe = useCallback((_: unknown, info: PanInfo) => {
+    if (isMagicLessonActive) return;
+    if (activeTab === 'game') return; // game uses horizontal swipe for answers
+    const t = 80;
+    const idx = TAB_ORDER.indexOf(activeTab);
+    if ((info.offset.x < -t || info.velocity.x < -400) && idx < TAB_ORDER.length - 1) {
+      handleTabChange(TAB_ORDER[idx + 1]);
+    } else if ((info.offset.x > t || info.velocity.x > 400) && idx > 0) {
+      handleTabChange(TAB_ORDER[idx - 1]);
+    }
+  }, [activeTab, handleTabChange, isMagicLessonActive]);
+
   // ── Costumes & Trails ──
   const [activeCostume, handleCostumeChange] = useLocalState('math-swipe-costume', '', uid);
   const [activeTrailId, handleTrailChange] = useLocalState('math-swipe-trail', '', uid);
@@ -239,6 +265,19 @@ function App() {
   }, [themeMode, setThemeMode]);
   // ── Age Band ──
   const [ageBand, setAgeBand] = useLocalState('math-swipe-age-band', '35' as AgeBand, uid) as [AgeBand, (v: AgeBand) => void];
+
+  // ── Practice focus: find lowest-accuracy topic ──
+  const levelUpSuggestion = useMemo(() => {
+    const available = typesForBand(ageBand).filter(t => t.id !== 'speedrun' && t.id !== 'challenge');
+    let worst: { type: QuestionType; acc: number; label: string } | null = null;
+    for (const t of available) {
+      const s = stats.byType[t.id];
+      if (!s || s.solved < 5) continue;
+      const acc = s.correct / s.solved;
+      if (!worst || acc < worst.acc) worst = { type: t.id as QuestionType, acc, label: t.label };
+    }
+    return worst && worst.acc < 0.8 ? worst : null;
+  }, [stats.byType, ageBand]);
   const handleBandChange = useCallback((band: AgeBand) => {
     setAgeBand(band);
     // Reset to the band's default type if current type isn't in the new band
@@ -421,6 +460,31 @@ function App() {
                   )}
                 </div>
               )}
+              {/* Level Up suggestion — only visible when idle */}
+              {isFirstQuestion && levelUpSuggestion && questionType !== 'speedrun' && questionType !== 'challenge' && (
+                <motion.button
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-2 flex items-center gap-2 text-[10px] ui text-[var(--color-gold)]/70 hover:text-[var(--color-gold)] transition-colors"
+                  onClick={() => setQuestionType(levelUpSuggestion.type)}
+                >
+                  <span>🚀</span>
+                  <span>Level up your {levelUpSuggestion.label}!</span>
+                  <span className="text-[rgb(var(--color-fg))]/20">({Math.round(levelUpSuggestion.acc * 100)}%)</span>
+                </motion.button>
+              )}
+              {/* Daily challenge callout — subtle, only when idle and not already on daily */}
+              {isFirstQuestion && questionType !== 'daily' && questionType !== 'speedrun' && questionType !== 'challenge' && (
+                <motion.button
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="mt-1.5 text-[10px] ui text-[rgb(var(--color-fg))]/25 hover:text-[rgb(var(--color-fg))]/40 transition-colors"
+                  onClick={() => setQuestionType('daily' as QuestionType)}
+                >
+                  📅 Daily challenge available
+                </motion.button>
+              )}
             </div>
 
             {/* ── Points earned floater ── */}
@@ -518,40 +582,48 @@ function App() {
           </div>
         )}
 
-        {activeTab === 'league' && <Suspense fallback={<LoadingFallback />}><LeaguePage userXP={stats.totalXP} userStreak={stats.bestStreak} uid={uid} displayName={user?.displayName ?? 'You'} activeThemeId={activeThemeId as string} activeCostume={activeCostume as string} bestSpeedrunTime={stats.bestSpeedrunTime} speedrunHardMode={stats.speedrunHardMode} onStartSpeedrun={() => { setQuestionType('speedrun'); setActiveTab('game'); }} /></Suspense>}
+        {/* Non-game tabs (no wrapper — each page scrolls independently) */}
+        {activeTab === 'league' && (
+          <motion.div className="flex-1 flex flex-col min-h-0" onPanEnd={handleTabSwipe}>
+            <Suspense fallback={<LoadingFallback />}><LeaguePage userXP={stats.totalXP} userStreak={stats.bestStreak} uid={uid} displayName={user?.displayName ?? 'You'} activeThemeId={activeThemeId as string} activeCostume={activeCostume as string} bestSpeedrunTime={stats.bestSpeedrunTime} speedrunHardMode={stats.speedrunHardMode} onStartSpeedrun={() => { setQuestionType('speedrun'); setActiveTab('game'); }} /></Suspense>
+          </motion.div>
+        )}
 
         {activeTab === 'me' && (
-          <Suspense fallback={<LoadingFallback />}><MePage
-            stats={stats}
-            accuracy={accuracy}
-            sessionScore={score}
-            sessionStreak={bestStreak}
-            onReset={resetStats}
-            unlocked={unlocked}
-            activeCostume={activeCostume}
-            onCostumeChange={handleCostumeChange}
-            activeTheme={activeThemeId}
-            onThemeChange={handleThemeChange}
-            activeTrailId={activeTrailId as string}
-            onTrailChange={handleTrailChange}
-            displayName={user?.displayName ?? ''}
-            onDisplayNameChange={setDisplayName}
-            isAnonymous={user?.isAnonymous ?? true}
-            onLinkGoogle={linkGoogle}
-            ageBand={ageBand}
-            activeBadge={stats.activeBadgeId || ''}
-            onBadgeChange={updateBadge}
-          /></Suspense>
+          <motion.div className="flex-1 flex flex-col min-h-0" onPanEnd={handleTabSwipe}>
+            <Suspense fallback={<LoadingFallback />}><MePage
+              stats={stats}
+              accuracy={accuracy}
+              sessionScore={score}
+              sessionStreak={bestStreak}
+              onReset={resetStats}
+              unlocked={unlocked}
+              activeCostume={activeCostume}
+              onCostumeChange={handleCostumeChange}
+              activeTheme={activeThemeId}
+              onThemeChange={handleThemeChange}
+              activeTrailId={activeTrailId as string}
+              onTrailChange={handleTrailChange}
+              displayName={user?.displayName ?? ''}
+              onDisplayNameChange={setDisplayName}
+              isAnonymous={user?.isAnonymous ?? true}
+              onLinkGoogle={linkGoogle}
+              onSendEmailLink={sendEmailLink}
+              ageBand={ageBand}
+              activeBadge={stats.activeBadgeId || ''}
+              onBadgeChange={updateBadge}
+            /></Suspense>
+          </motion.div>
         )}
 
         {activeTab === 'magic' && (
-          <Suspense fallback={<LoadingFallback />}><TricksPage onLessonActive={setIsMagicLessonActive} /></Suspense>
+          <motion.div className="flex-1 flex flex-col min-h-0" onPanEnd={!isMagicLessonActive ? handleTabSwipe : undefined}>
+            <Suspense fallback={<LoadingFallback />}><TricksPage onLessonActive={setIsMagicLessonActive} /></Suspense>
+          </motion.div>
         )}
 
         {/* ── Bottom Navigation ── */}
-        {!isMagicLessonActive && (
-          <BottomNav active={activeTab} onChange={handleTabChange} />
-        )}
+        <BottomNav active={activeTab} onChange={handleTabChange} />
 
         {/* ── Session Summary ── */}
         <SessionSummary
@@ -580,6 +652,9 @@ function App() {
           isNewSpeedrunRecord={isNewSpeedrunRecord}
         />
 
+        {/* ── Weekly recap (first open of the week) ── */}
+        <WeeklyRecap stats={stats} />
+
         {/* ── Achievement unlock toast ── */}
         <AnimatePresence>
           {unlockToast && (
@@ -595,6 +670,26 @@ function App() {
               <div>
                 <div className="text-xs ui text-[rgb(var(--color-fg))]/40">Achievement Unlocked!</div>
                 <div className="text-sm chalk text-[var(--color-gold)]">{unlockToast}</div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── Streak shield consumed toast ── */}
+        <AnimatePresence>
+          {shieldToast && (
+            <motion.div
+              key="shield-toast"
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 40 }}
+              transition={{ duration: 0.3 }}
+              className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-[var(--color-overlay)] border border-[var(--color-gold)]/30 rounded-2xl px-5 py-3 flex items-center gap-3"
+            >
+              <span className="text-2xl">🛡️</span>
+              <div>
+                <div className="text-xs ui text-[rgb(var(--color-fg))]/40">Streak Saved!</div>
+                <div className="text-sm chalk text-[var(--color-gold)]">Shield protected your streak</div>
               </div>
             </motion.div>
           )}

@@ -55,7 +55,11 @@ export function ReloadPrompt({ suppress = false }: ReloadPromptProps) {
                             Later
                         </button>
                         <button
-                            onClick={() => updateServiceWorker(true)}
+                            onClick={() => {
+                                updateServiceWorker(true);
+                                // Fallback: if SW update doesn't trigger page reload, force it
+                                setTimeout(() => window.location.reload(), 2000);
+                            }}
                             className="text-xs ui font-semibold text-[var(--color-gold)] bg-[var(--color-gold)]/10 px-3 py-1 rounded-lg active:bg-[var(--color-gold)]/20 transition-colors"
                         >
                             Update

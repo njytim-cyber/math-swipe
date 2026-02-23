@@ -537,54 +537,55 @@ export const MAGIC_TRICKS: MagicTrick[] = [
         }
     },
     {
-        id: 'left-to-right-add',
-        title: 'Left-to-Right Addition',
-        description: 'Add numbers the way you read them.',
-        difficulty: 2,
-        icon: '⏩',
+        id: 'add-reversed',
+        title: 'Add Reversed Numbers',
+        description: 'Algebraic shortcut: ab + ba = 11(a+b)',
+        difficulty: 1,
+        icon: '🪞',
         lesson: {
-            equation: '47 + 35',
+            equation: '47 + 74',
             steps: [
-                'Forget carrying from the right. Add the tens first.',
-                '40 + 30 = 70.',
-                'Now add the units: 7 + 5 = 12.',
-                'Combine them: 70 + 12 = 82.'
+                'Identify the two digits: 4 and 7',
+                'Add them together: 4 + 7 = 11',
+                'Multiply by 11: 11 × 11 = 121',
+                'Why? (10a+b) + (10b+a) = 11a + 11b'
             ],
-            result: '82'
+            result: '121'
         },
         generatePractice: () => {
-            const n1 = Math.floor(Math.random() * 88) + 12; // 12-99
-            const n2 = Math.floor(Math.random() * 88) + 12; // 12-99
+            const a = Math.floor(Math.random() * 8) + 1; // 1-8
+            const b = Math.floor(Math.random() * (9 - a)) + a + 1; // ensures a+b <= 15 for easy mental math
+            const n1 = a * 10 + b;
+            const n2 = b * 10 + a;
             const ans = n1 + n2;
-            const spread = Math.max(5, Math.floor(ans * 0.05));
+            const spread = 11; // Distractors should be off by multiples of 11
             return packTrick(`${n1} + ${n2}`, ans, spread, -spread);
         }
     },
     {
-        id: 'round-and-compensate',
-        title: 'Round and Compensate',
-        description: 'Addition shortcut using friendly numbers.',
-        difficulty: 2,
-        icon: '🎯',
+        id: 'sub-reversed',
+        title: 'Subtract Reversed Numbers',
+        description: 'Algebraic shortcut: ab - ba = 9(a-b)',
+        difficulty: 1,
+        icon: '📉',
         lesson: {
-            equation: '48 + 35',
+            equation: '82 - 28',
             steps: [
-                '48 is very close to 50.',
-                'Add 50 instead of 48: 50 + 35 = 85.',
-                'Since we added 2 too many, subtract 2 from the result.',
-                '85 - 2 = 83.'
+                'Identify the two digits: 8 and 2',
+                'Find their difference: 8 - 2 = 6',
+                'Multiply by 9: 6 × 9 = 54',
+                'Why? (10a+b) - (10b+a) = 9a - 9b'
             ],
-            result: '83'
+            result: '54'
         },
         generatePractice: () => {
-            // Generate numbers close to multiples of 10
-            const n1 = (Math.floor(Math.random() * 8) + 1) * 10 + (Math.random() > 0.5 ? 8 : 9); // ends in 8 or 9
-            const n2 = Math.floor(Math.random() * 88) + 12; // 12-99
-            const p1 = Math.random() > 0.5 ? n1 : n2;
-            const p2 = p1 === n1 ? n2 : n1;
-            const ans = p1 + p2;
-            const spread = Math.max(5, Math.floor(ans * 0.05));
-            return packTrick(`${p1} + ${p2}`, ans, spread, -spread);
+            const a = Math.floor(Math.random() * 6) + 4; // 4-9
+            const b = Math.floor(Math.random() * (a - 1)) + 1; // 1 to a-1
+            const n1 = a * 10 + b;
+            const n2 = b * 10 + a;
+            const ans = n1 - n2;
+            const spread = 9; // Distractors off by 9
+            return packTrick(`${n1} - ${n2}`, ans, spread, -spread);
         }
     },
     {
@@ -634,5 +635,395 @@ export const MAGIC_TRICKS: MagicTrick[] = [
             const spread = Math.max(5, Math.floor(ans * 0.05));
             return packTrick(`${num} ÷ 3`, ans, spread, -spread);
         }
+    },
+
+    // ── New tricks ────────────────────────────────────────
+
+    {
+        id: 'complement-100',
+        title: 'Near-100 Multiplication (Below)',
+        description: 'Multiply numbers just below 100',
+        difficulty: 3,
+        icon: '🪞',
+        lesson: {
+            equation: '97 × 94',
+            steps: [
+                'Both are close to 100. Find the deficits:',
+                '100 − 97 = 3, and 100 − 94 = 6',
+                'Subtract cross-deficit: 97 − 6 = 91 (or 94 − 3 = 91)',
+                'Multiply deficits: 3 × 6 = 18',
+                'Combine: 91 | 18 → 9118'
+            ],
+            result: '9118'
+        },
+        generatePractice: () => {
+            const a = 90 + Math.floor(Math.random() * 9) + 1; // 91-99
+            const b = 90 + Math.floor(Math.random() * 9) + 1;
+            const ans = a * b;
+            const spread = Math.max(10, Math.floor(ans * 0.01));
+            return packTrick(`${a} × ${b}`, ans, spread, -spread);
+        }
+    },
+    {
+        id: 'divisible-11',
+        title: 'Divisibility by 11',
+        description: 'Alternating digit sum must be 0 or 11',
+        difficulty: 3,
+        icon: '⚖️',
+        lesson: {
+            equation: 'Is 2728 div by 11?',
+            steps: [
+                'Take alternating signs of the digits: + - + -',
+                '2 - 7 + 2 - 8 = -11',
+                '-11 is divisible by 11, so yes it is!',
+                '(Or sum alternating positions: 2+2=4, 7+8=15. Difference is 11)'
+            ],
+            result: 'Yes!'
+        },
+        generatePractice: () => {
+            const isDiv = Math.random() > 0.5;
+            const base = Math.floor(Math.random() * 900) + 100;
+            const n = isDiv ? base * 11 : base * 11 + (Math.floor(Math.random() * 9) + 1);
+            return {
+                expression: `${n} div by 11?`,
+                answer: isDiv ? 1 : 0,
+                // Represent Yes as 1, No as 0 in options
+                options: [1, 0],
+                optionLabels: ['Yes', 'No'],
+                correctIndex: isDiv ? 0 : 1
+            };
+        }
+    },
+    {
+        id: 'flip-percent',
+        title: 'Flip the Percent',
+        description: 'Swap: A% of B = B% of A',
+        difficulty: 1,
+        icon: '🔄',
+        lesson: {
+            equation: '8% of 50',
+            steps: [
+                'This looks tricky. But flip it!',
+                '8% of 50 = 50% of 8',
+                '50% of 8 = 4. Done!'
+            ],
+            result: '4'
+        },
+        generatePractice: () => {
+            // Generate pairs where one direction is easy
+            const easyPcts = [10, 20, 25, 50];
+            const easyPct = easyPcts[Math.floor(Math.random() * easyPcts.length)];
+            // numA is the "hard" percentage to present
+            let numA: number;
+            if (easyPct === 50) numA = (Math.floor(Math.random() * 9) + 2) * 2; // even: 4-20
+            else if (easyPct === 25) numA = (Math.floor(Math.random() * 5) + 1) * 4; // mult of 4: 4-20
+            else numA = Math.floor(Math.random() * 9) + 2; // 2-10 for 10%/20%
+            const ans = easyPct * numA / 100;
+            const spread = Math.max(1, Math.round(ans * 0.3));
+            return packTrick(`${numA}% of ${easyPct}`, ans, spread, -spread);
+        }
+    },
+    {
+        id: 'telescoping-sum',
+        title: 'Telescoping Sums',
+        description: 'Partial fractions make interior terms vanish',
+        difficulty: 4,
+        icon: '🔭',
+        lesson: {
+            equation: '1/(1×2) + 1/(2×3) + ... + 1/(Nx[N+1])',
+            steps: [
+                'Rewrite 1/(1×2) as (1/1 - 1/2)',
+                'The sum becomes: (1 - 1/2) + (1/2 - 1/3) + ...',
+                'All the middle terms cancel out! (The telescope collapses)',
+                'You are left with: 1 - 1/(N+1)'
+            ],
+            result: 'N/(N+1)'
+        },
+        generatePractice: () => {
+            const n = Math.floor(Math.random() * 15) + 5; // 5-19
+            return {
+                expression: `Telescoping sum to 1/(${n}×${n + 1})`,
+                latex: `\\sum_{k=1}^{${n}} \\frac{1}{k(k+1)}`,
+                answer: n / (n + 1),
+                options: [n / (n + 1), (n - 1) / n, (n + 1) / (n + 2)].sort(() => Math.random() - 0.5),
+                optionLabels: [`${n}/${n + 1}`, `${n - 1}/${n}`, `${n + 1}/${n + 2}`], // We need formatted fractions
+                correctIndex: NaN // Computed later based on shuffle
+            };
+        }
+    },
+    {
+        id: 'zeno-paradox',
+        title: 'Zeno\'s Paradox (Geom Series)',
+        description: 'Infinite halves add up to a whole',
+        difficulty: 4,
+        icon: '🐢',
+        lesson: {
+            equation: '1/2 + 1/4 + 1/8 + ... to ∞',
+            steps: [
+                'Walk halfway to the wall. Then halfway again.',
+                'Will you ever reach the wall? In infinite steps, yes.',
+                'Sum = a / (1 - r). Here a = 1/2, r = 1/2.',
+                'So (1/2) / (1 - 1/2) = 1.'
+            ],
+            result: '1'
+        },
+        generatePractice: () => {
+            // Test finite vs infinite. If N is given, sum is 1 - 1/2^N
+            const n = Math.floor(Math.random() * 5) + 3; // 3-7
+            const ans = 1 - Math.pow(0.5, n);
+            const den = Math.pow(2, n);
+            const num = den - 1;
+            return {
+                expression: `Sum 1/2^k from k=1 to ${n}`,
+                latex: `\\sum_{k=1}^{${n}} \\frac{1}{2^k}`,
+                answer: ans,
+                options: [ans, 1 - Math.pow(0.5, n - 1), 1 - Math.pow(0.5, n + 1)].sort(() => Math.random() - 0.5),
+                optionLabels: [`${num}/${den}`, `${den / 2 - 1}/${den / 2}`, `${den * 2 - 1}/${den * 2}`],
+                correctIndex: NaN
+            };
+        }
+    },
+    {
+        id: 'digit-sum-mod',
+        title: 'Digital Root (Mod 9)',
+        description: 'Find remainder by summing digits',
+        difficulty: 2,
+        icon: '🔢',
+        lesson: {
+            equation: '4573 mod 9',
+            steps: [
+                'Sum the digits: 4 + 5 + 7 + 3 = 19',
+                'Sum again: 1 + 9 = 10 → 1 + 0 = 1',
+                'The remainder when dividing by 9 is 1!'
+            ],
+            result: '1'
+        },
+        generatePractice: () => {
+            const n = Math.floor(Math.random() * 9000) + 1000; // 1000-9999
+            const mod = [3, 9][Math.floor(Math.random() * 2)];
+            const correctAns = n % mod;
+            // Distractors: other possible remainders
+            let d1 = (correctAns + 1) % mod;
+            let d2 = (correctAns + 2) % mod;
+            if (d1 === correctAns) d1 = (correctAns + 3) % mod;
+            if (d2 === correctAns || d2 === d1) d2 = (correctAns + 4) % mod;
+            const opts = [correctAns, d1, d2].sort(() => Math.random() - 0.5);
+            return {
+                expression: `${n} mod ${mod}`,
+                answer: correctAns,
+                options: opts,
+                correctIndex: opts.indexOf(correctAns)
+            };
+        }
+    },
+    {
+        id: 'power-last-digit',
+        title: 'Last Digit of Powers',
+        description: 'Predict the last digit using cycles',
+        difficulty: 3,
+        icon: '🔮',
+        lesson: {
+            equation: 'Last digit of 7⁴³',
+            steps: [
+                'Powers of 7 cycle: 7, 9, 3, 1, 7, 9, 3, 1...',
+                'The cycle length is 4',
+                '43 mod 4 = 3, so take the 3rd in the cycle',
+                'The 3rd value is 3!'
+            ],
+            result: '3'
+        },
+        generatePractice: () => {
+            const base = Math.floor(Math.random() * 8) + 2; // 2-9
+            const exp = Math.floor(Math.random() * 26) + 5; // 5-30
+            // Compute last digit via cycle
+            const cycle: number[] = [];
+            let v = base % 10;
+            for (let i = 0; i < 4; i++) {
+                cycle.push(v);
+                v = (v * base) % 10;
+            }
+            const ans = cycle[(exp - 1) % cycle.length];
+            // Distractors: other digits from the cycle
+            const otherDigits = cycle.filter(d => d !== ans);
+            const d1 = otherDigits.length > 0 ? otherDigits[0] : (ans + 1) % 10;
+            const d2 = otherDigits.length > 1 ? otherDigits[1] : (ans + 3) % 10;
+            const opts = [ans, d1, d2].sort(() => Math.random() - 0.5);
+            return {
+                expression: `Last digit: ${base}^${exp}`,
+                latex: `\\text{Last digit of } ${base}^{${exp}}`,
+                answer: ans,
+                options: opts,
+                correctIndex: opts.indexOf(ans)
+            };
+        }
+    },
+    {
+        id: 'product-last-digit',
+        title: 'Last Digit of Products',
+        description: 'Multiply only the last digits',
+        difficulty: 1,
+        icon: '🔎',
+        lesson: {
+            equation: 'Last digit of 347 × 893',
+            steps: [
+                'Ignore all digits except the last ones!',
+                'Just multiply: 7 × 3 = 21',
+                'The last digit of 21 is 1',
+                'So 347 × 893 ends in 1'
+            ],
+            result: '1'
+        },
+        generatePractice: () => {
+            const a = Math.floor(Math.random() * 900) + 100; // 100-999
+            const b = Math.floor(Math.random() * 900) + 100;
+            const ans = ((a % 10) * (b % 10)) % 10;
+            // Distractors: nearby digits
+            const d1 = (ans + Math.floor(Math.random() * 3) + 1) % 10;
+            let d2 = (ans + Math.floor(Math.random() * 3) + 4) % 10;
+            if (d2 === d1) d2 = (d2 + 1) % 10;
+            if (d2 === ans) d2 = (d2 + 1) % 10;
+            const opts = [ans, d1, d2].sort(() => Math.random() - 0.5);
+            return {
+                expression: `Last digit: ${a} × ${b}`,
+                answer: ans,
+                options: opts,
+                correctIndex: opts.indexOf(ans)
+            };
+        }
+    },
+    {
+        id: 'gauss-sum',
+        title: 'Sum 1 to N (Gauss)',
+        description: 'Sum any range instantly with N×(N+1)÷2',
+        difficulty: 2,
+        icon: '📐',
+        lesson: {
+            equation: '1 + 2 + 3 + ... + 100',
+            steps: [
+                'Pair the first and last: 1 + 100 = 101',
+                'How many pairs? 100 ÷ 2 = 50',
+                'Multiply: 101 × 50 = 5050',
+                'Formula: N × (N+1) ÷ 2'
+            ],
+            result: '5050'
+        },
+        generatePractice: () => {
+            const ns = [10, 15, 20, 25, 30, 40, 50, 60, 75, 100];
+            const n = ns[Math.floor(Math.random() * ns.length)];
+            const ans = n * (n + 1) / 2;
+            const spread = Math.max(5, Math.floor(ans * 0.08));
+            return packTrick(`1 + 2 + ... + ${n}`, ans, spread, -spread);
+        }
+    },
+    {
+        id: 'golden-ratio',
+        title: 'The Golden Ratio (Continued Fraction)',
+        description: 'Evaluate an infinite nested fraction',
+        difficulty: 5,
+        icon: '🐚',
+        lesson: {
+            equation: 'x = 1 + 1 / (1 + 1 / (1 + ...))',
+            steps: [
+                'Look at the denominator: 1 + 1 / (1 + ...)',
+                'That exact infinite pattern is just x again!',
+                'So the equation simplifies to: x = 1 + 1/x',
+                'Multiply by x: x² = x + 1, so x² - x - 1 = 0.',
+                'Solving this gives Phi (φ) ~ 1.618'
+            ],
+            result: 'φ (1.618...)'
+        },
+        generatePractice: () => {
+            return {
+                expression: `Value of 1 + 1/(1 + 1/(1+...))`,
+                answer: 1.618,
+                options: [1.618, 1.414, 2],
+                optionLabels: ['φ (1.618)', '√2 (1.414)', '2'],
+                correctIndex: 0 // Will be shuffled later
+            };
+        }
     }
 ];
+
+/** Trick categories for the Magic School progression UI */
+export interface TrickCategory {
+    id: string;
+    label: string;
+    emoji: string;
+    trickIds: string[];
+}
+
+export const TRICK_CATEGORIES: TrickCategory[] = [
+    {
+        id: 'multiplication',
+        label: 'Multiplication',
+        emoji: '✕',
+        trickIds: [
+            'multiply-5', 'multiply-9', 'multiply-11', 'multiply-12',
+            'multiply-15', 'multiply-25', 'rule-of-99', 'rule-of-101',
+            'double-halve', 'diff-squares', 'cross-multiply',
+            'just-over-100', 'complement-100', 'multiply-ends-5-10-apart',
+        ],
+    },
+    {
+        id: 'squaring',
+        label: 'Squaring',
+        emoji: '²',
+        trickIds: ['square-5', 'near-100', 'square-50s', 'square-40s', 'near-1000'],
+    },
+    {
+        id: 'division',
+        label: 'Division',
+        emoji: '➗',
+        trickIds: ['divide-5', 'divide-25', 'divide-3'],
+    },
+    {
+        id: 'addition',
+        label: 'Addition',
+        emoji: '➕',
+        trickIds: ['add-reversed'],
+    },
+    {
+        id: 'subtraction',
+        label: 'Subtraction',
+        emoji: '➖',
+        trickIds: ['sub-reversed', 'sub-1000'],
+    },
+    {
+        id: 'series',
+        label: 'Series & Sequences',
+        emoji: '📐',
+        trickIds: ['sum-odds', 'gauss-sum'],
+    },
+    {
+        id: 'inf-series',
+        label: 'Infinite & Telescoping',
+        emoji: '♾️',
+        trickIds: ['telescoping-sum', 'zeno-paradox'],
+    },
+    {
+        id: 'Number Theory',
+        label: 'Number Theory',
+        emoji: '🔮',
+        trickIds: ['power-last-digit', 'product-last-digit', 'digit-sum-mod', 'divisible-11'],
+    },
+    {
+        id: 'continued-fractions',
+        label: 'Continued Fractions',
+        emoji: '♾️',
+        trickIds: ['golden-ratio'],
+    },
+    {
+        id: 'fractions',
+        label: 'Fractions & Ratios',
+        emoji: '⅑',
+        trickIds: ['flip-percent'],
+    }
+];
+
+/** Find the next recommended trick: first unmastered by difficulty order */
+export function getRecommendedTrick(mastered: Set<string>): MagicTrick | null {
+    // Sort by difficulty, return first unmastered
+    const sorted = [...MAGIC_TRICKS].sort((a, b) => a.difficulty - b.difficulty);
+    return sorted.find(t => !mastered.has(t.id)) ?? null;
+}
+

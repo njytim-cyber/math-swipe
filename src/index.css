@@ -27,19 +27,21 @@
 
 /* ── Light mode overrides ── */
 [data-theme="light"] {
-  --color-board: #f8f4ec;
-  --color-chalk: #000000;
-  --color-fg: 0 0 0;
-  /* pure black — needed because most text uses /40 – /60 opacity */
-  --color-overlay: rgba(255, 255, 255, 0.95);
-  --color-overlay-dim: rgba(0, 0, 0, 0.40);
-  --color-surface: rgba(255, 255, 255, 0.80);
-  /* white cards on cream background */
-  --color-locked: rgba(0, 0, 0, 0.08);
+  --color-board: #ffffff;
+  /* Pure white — clean, standard */
+  --color-chalk: #111827;
+  /* Gray-900 — strong readable text */
+  --color-fg: 17 24 39;
+  /* Gray-900 rgb */
+  --color-overlay: rgba(255, 255, 255, 0.96);
+  --color-overlay-dim: rgba(0, 0, 0, 0.35);
+  --color-surface: rgba(249, 250, 251, 0.90);
+  /* Gray-50 surface cards */
+  --color-locked: rgba(17, 24, 39, 0.06);
   --color-correct: #16a34a;
   --color-wrong: #dc2626;
-  --color-gold: #d97706;
-  /* Brighter Amber */
+  --color-gold: #b45309;
+  /* Amber-700 */
   --color-streak-fire: #c2410c;
 }
 
@@ -87,9 +89,9 @@
 
 [data-theme="light"] .blackboard-bg {
   background-image:
-    radial-gradient(ellipse at 15% 40%, rgba(200, 180, 150, 0.08) 0%, transparent 60%),
-    radial-gradient(ellipse at 85% 25%, rgba(180, 160, 140, 0.06) 0%, transparent 55%),
-    radial-gradient(ellipse at 50% 80%, rgba(160, 140, 120, 0.04) 0%, transparent 50%);
+    radial-gradient(ellipse at 15% 40%, rgba(229, 231, 235, 0.15) 0%, transparent 60%),
+    radial-gradient(ellipse at 85% 25%, rgba(229, 231, 235, 0.10) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 80%, rgba(229, 231, 235, 0.08) 0%, transparent 50%);
 }
 
 /* ── Vignette overlay ── */
