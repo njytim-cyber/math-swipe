@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MAGIC_TRICKS, TRICK_CATEGORIES, getRecommendedTrick, type MagicTrick } from '../utils/mathTricks';
 import { TrickLesson } from './TrickLesson';
 import { loadMastered } from './TrickPractice';
+import { MathExpr } from './MathExpr';
 
 interface Props {
     onLessonActive: (active: boolean) => void;
@@ -192,7 +193,12 @@ export function TricksPage({ onLessonActive }: Props) {
                                                                     onClick={() => setPreviewTrick(null)}
                                                                     className="mt-1 bg-[var(--color-overlay)] border border-[var(--color-gold)]/20 rounded-xl p-4 text-center"
                                                                 >
-                                                                    <div className="text-lg chalk text-[var(--color-chalk)] mb-1">{trick.lesson.equation}</div>
+                                                                    <div className="mb-1 flex items-center justify-center">
+                                                                        {trick.lesson.latex
+                                                                            ? <MathExpr latex={`${trick.lesson.latex} = ?`} displayMode className="text-2xl" />
+                                                                            : <span className="text-lg chalk text-[var(--color-chalk)]">{trick.lesson.equation} = ?</span>
+                                                                        }
+                                                                    </div>
                                                                     <div className="text-[11px] ui text-[rgb(var(--color-fg))]/50 leading-relaxed">{trick.lesson.steps[0]}</div>
                                                                     <div className="text-[9px] ui text-[rgb(var(--color-fg))]/25 mt-2">Tap to dismiss · Tap card to start lesson</div>
                                                                 </motion.div>

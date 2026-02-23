@@ -382,7 +382,7 @@ export const SessionSummary = memo(function SessionSummary({
 
                         <button
                             onClick={onDismiss}
-                            className="text-xs ui text-[rgb(var(--color-fg))]/30 hover:text-[rgb(var(--color-fg))]/50 transition-colors"
+                            className="text-xs ui text-[rgb(var(--color-fg))]/50 hover:text-[rgb(var(--color-fg))]/70 transition-colors"
                         >
                             tap to continue
                         </button>

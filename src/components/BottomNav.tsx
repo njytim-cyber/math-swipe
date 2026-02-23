@@ -65,7 +65,7 @@ export const BottomNav = memo(function BottomNav({ active, onChange }: Props) {
                     <motion.button
                         key={tab.id}
                         onClick={() => onChange(tab.id)}
-                        className={`flex flex-col items-center gap-0.5 py-1 px-4 rounded-lg transition-colors ${isActive
+                        className={`relative flex flex-col items-center gap-0.5 py-1 px-4 rounded-lg transition-colors ${isActive
                             ? 'text-[var(--color-gold)]'
                             : 'text-[rgb(var(--color-fg))]/60 active:text-[rgb(var(--color-fg))]/80'
                             }`}
@@ -75,6 +75,13 @@ export const BottomNav = memo(function BottomNav({ active, onChange }: Props) {
                         <span className="text-[10px] ui tracking-wide">
                             {tab.label}
                         </span>
+                        {isActive && (
+                            <motion.div
+                                layoutId="nav-dot"
+                                className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-[var(--color-gold)]"
+                                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                            />
+                        )}
                     </motion.button>
                 );
             })}

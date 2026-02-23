@@ -95,13 +95,19 @@ export function WeeklyRecap({ stats }: Props) {
                                 <div className="text-xl chalk text-[var(--color-correct)]">{acc}%</div>
                                 <div className="text-[9px] ui text-[rgb(var(--color-fg))]/30">accuracy</div>
                             </div>
+                            {stats.dayStreak >= 3 && (
+                                <div className="text-center">
+                                    <div className="text-xl chalk text-[var(--color-streak-fire)]">{stats.dayStreak}🔥</div>
+                                    <div className="text-[9px] ui text-[rgb(var(--color-fg))]/30">day streak</div>
+                                </div>
+                            )}
                         </div>
 
                         <button
                             onClick={dismiss}
                             className="text-xs ui text-[rgb(var(--color-fg))]/30 hover:text-[rgb(var(--color-fg))]/50 transition-colors"
                         >
-                            let's go! →
+                            Let's go! →
                         </button>
                     </motion.div>
                 </motion.div>

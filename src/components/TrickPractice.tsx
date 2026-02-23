@@ -89,11 +89,11 @@ export function TrickPractice({ trick, onClose }: Props) {
             setFlash('wrong');
             setChalkState('fail');
             setHighlightCorrect(true);
+            setTimeout(() => setChalkState('idle'), 400);
             setTimeout(() => {
                 setFlash('');
                 setFrozen(false);
                 setHighlightCorrect(false);
-                setChalkState('idle');
             }, 500);
             // Add extra question on wrong answer
             if (questions.length < TOTAL_QUESTIONS + 5) {
