@@ -230,11 +230,11 @@ export function saveUnlocked(ids: Set<string>, uid?: string | null) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids]));
     if (uid) {
         // Async Firestore write (fire-and-forget)
-        import('firebase/firestore').then(({ doc, setDoc, serverTimestamp }) => {
+        import('firebase/firestore').then(({ doc, setDoc }) => {
             import('./firebase').then(({ db }) => {
                 setDoc(doc(db, 'users', uid), {
                     achievements: [...ids],
-                    updatedAt: serverTimestamp(),
+                    // Note: no updatedAt here to avoid rate-limit conflict with stats sync
                 }, { merge: true }).catch(err => {
                     console.warn('Failed to sync achievements to cloud:', err);
                 });
