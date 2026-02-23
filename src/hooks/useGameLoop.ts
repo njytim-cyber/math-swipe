@@ -52,6 +52,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
     const prevType = useRef(questionType);
     const prevHard = useRef(hardMode);
     const frozenRef = useRef(false); // Mirror of gs.frozen for stale-closure safety
+    const correctCountRef = useRef(0); // Synchronous correct-answer counter (avoids deferred updater issue)
 
     const dailyRef = useRef<{ dateLabel: string } | null>(null);
     const pendingTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -94,6 +95,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
             setProblems(cp);
         } else if (questionType === 'speedrun') {
             dailyRef.current = null;
+            correctCountRef.current = 0;
             const sp = Array.from({ length: 10 }, () => generateProblem(level, 'mix-all' as QuestionType, hardMode));
             sp[0].startTime = Date.now();
             speedrunStartRef.current = Date.now();
@@ -125,6 +127,7 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
             setGs(INITIAL_STATE);
         } else if (questionType === 'speedrun') {
             dailyRef.current = null;
+            correctCountRef.current = 0;
             const sp = Array.from({ length: 10 }, () => generateProblem(level, 'mix-all' as QuestionType, hardMode));
             sp[0].startTime = Date.now();
             speedrunStartRef.current = Date.now();
@@ -196,20 +199,22 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
             recordAnswer(tts, correct);
             const isFast = tts < 1200;
 
+            // Increment synchronous counter OUTSIDE React state (avoids deferred updater)
+            correctCountRef.current += 1;
+            const actualCorrectCount = correctCountRef.current;
+
             // Compute inside functional updater to avoid stale closure
             let newStreak = 0;
-            let newTotalCorrect = 0;
             let milestoneEmoji = '';
 
             setGs(prev => {
                 newStreak = prev.streak + 1;
-                newTotalCorrect = prev.totalCorrect + 1;
                 milestoneEmoji = MILESTONES[newStreak] || '';
                 return {
                     ...prev,
                     streak: newStreak,
                     bestStreak: Math.max(prev.bestStreak, newStreak),
-                    totalCorrect: newTotalCorrect,
+                    totalCorrect: prev.totalCorrect + 1,
                     totalAnswered: prev.totalAnswered + 1,
                     answerHistory: [...prev.answerHistory, true].slice(-MAX_HISTORY),
                     score: prev.score + 10 + Math.floor(newStreak / 5) * 5 + (isFast ? 2 : 0),
@@ -228,8 +233,8 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
             if (milestoneEmoji) safeTimeout(() => setGs(p => ({ ...p, milestone: '' })), 1300);
             if (isFast) safeTimeout(() => setGs(p => ({ ...p, speedBonus: false })), 900);
 
-            // Speedrun win condition: 10 correct answers (not necessarily consecutive)
-            if (questionType === 'speedrun' && newTotalCorrect >= 10) {
+            // Speedrun win condition: 10 correct answers (uses synchronous ref, not deferred state)
+            if (questionType === 'speedrun' && actualCorrectCount >= 10) {
                 const finalTime = Date.now() - speedrunStartRef.current;
                 setSpeedrunFinalTime(finalTime);
                 setGs(prev => ({ ...prev, flash: 'none' })); // Stay frozen!
