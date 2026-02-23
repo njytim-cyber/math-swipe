@@ -11,6 +11,7 @@ import type { AgeBand } from './utils/questionTypes';
 import { defaultTypeForBand, typesForBand, AGE_BANDS, BAND_LABELS } from './utils/questionTypes';
 import { useAutoSummary, usePersonalBest } from './hooks/useSessionUI';
 import { OfflineBanner } from './components/OfflineBanner';
+import { ReloadPrompt } from './components/ReloadPrompt';
 /** Retry a dynamic import once by reloading the page (handles stale deploy cache on Cloudflare Pages) */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function lazyRetry<T extends Record<string, any>>(factory: () => Promise<T>): Promise<T> {
@@ -257,6 +258,7 @@ function App() {
 
       <BlackboardLayout>
         <OfflineBanner />
+        <ReloadPrompt suppress={activeTab === 'game'} />
         {/* ── Global Canvas Overlay (Swipe Trail) ── */}
         <SwipeTrail
           streak={streak}
