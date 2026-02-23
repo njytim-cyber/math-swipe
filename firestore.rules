@@ -84,17 +84,13 @@ service cloud.firestore {
                        || request.time > resource.data.updatedAt + duration.value(1, 's'))
                    // Nested object size constraints (prevent payload bloat DoS)
                    && (!('stats' in request.resource.data)
-                       || (request.resource.data.stats is map
-                           && string(request.resource.data.stats).size() <= 15000))
+                       || request.resource.data.stats is map)
                    && (!('achievements' in request.resource.data)
-                       || (request.resource.data.achievements is list
-                           && string(request.resource.data.achievements).size() <= 2000))
+                       || request.resource.data.achievements is list)
                    && (!('preferences' in request.resource.data)
-                       || (request.resource.data.preferences is map
-                           && string(request.resource.data.preferences).size() <= 1000))
+                       || request.resource.data.preferences is map)
                    && (!('byType' in request.resource.data)
-                       || (request.resource.data.byType is map
-                           && string(request.resource.data.byType).size() <= 5000));
+                       || request.resource.data.byType is map);
     }
 
     // ── Pings Collection (social nudges) ──
