@@ -363,6 +363,24 @@ export const SessionSummary = memo(function SessionSummary({
                         </motion.button>
 
                         <button
+                            onClick={async (e) => {
+                                e.stopPropagation();
+                                const url = `${window.location.origin}?c=${createChallengeId()}`;
+                                const text = `⚔️ Can you beat my score? Try this challenge!\n${url}`;
+                                try {
+                                    if (navigator.share) {
+                                        await navigator.share({ text, url });
+                                    } else {
+                                        await navigator.clipboard.writeText(text);
+                                    }
+                                } catch { /* cancelled */ }
+                            }}
+                            className="w-full py-2 rounded-xl border text-xs ui mb-3 border-[rgb(var(--color-fg))]/10 text-[rgb(var(--color-fg))]/40 hover:text-[rgb(var(--color-fg))]/60 transition-colors"
+                        >
+                            ⚔️ Challenge a Friend
+                        </button>
+
+                        <button
                             onClick={onDismiss}
                             className="text-xs ui text-[rgb(var(--color-fg))]/30 hover:text-[rgb(var(--color-fg))]/50 transition-colors"
                         >

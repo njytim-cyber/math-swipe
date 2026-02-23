@@ -233,7 +233,7 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, di
             )}
 
             {/* Your best time badge */}
-            {tab === 'speedrun' && bestSpeedrunTime && bestSpeedrunTime > 0 && (
+            {tab === 'speedrun' && bestSpeedrunTime != null && bestSpeedrunTime > 0 && (
                 <div className="text-xs ui text-[rgb(var(--color-fg))]/40 mb-3">
                     Your best: <span className="text-[#FF00FF] font-semibold">{formatTime(bestSpeedrunTime)}</span>{speedrunHardMode && <span title="Hard Mode"> 💀</span>}
                 </div>

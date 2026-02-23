@@ -28,5 +28,5 @@ export function applyMode(mode: ThemeMode) {
     );
     // Update PWA theme-color to match
     const meta = document.getElementById('meta-theme-color');
-    if (meta) meta.setAttribute('content', mode === 'light' ? '#f5f0e8' : '#1b1b1b');
+    if (meta) meta.setAttribute('content', mode === 'dark' ? '#0f0d0c' : '#ffffff');
 }

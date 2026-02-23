@@ -1,162 +1,191 @@
-import { useState } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { MagicTrick } from '../utils/mathTricks';
+import type { Problem } from '../utils/mathGenerator';
+import { ProblemView } from './ProblemView';
+import { MrChalk } from './MrChalk';
+import type { ChalkState } from '../hooks/useGameLoop';
+
+const MASTERY_KEY = 'math-swipe-mastered-tricks';
+
+/** Load mastered trick IDs from localStorage */
+// eslint-disable-next-line react-refresh/only-export-components
+export function loadMastered(): Set<string> {
+    try {
+        const raw = localStorage.getItem(MASTERY_KEY);
+        return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch { return new Set(); }
+}
+
+/** Save a newly mastered trick */
+function saveMastered(trickId: string) {
+    const set = loadMastered();
+    set.add(trickId);
+    localStorage.setItem(MASTERY_KEY, JSON.stringify([...set]));
+}
+
+/** Convert a trick's generatePractice result to a Problem for ProblemView */
+function trickToProblem(trick: MagicTrick): Problem {
+    const p = trick.generatePractice();
+    return {
+        id: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        expression: p.expression,
+        latex: p.latex,
+        answer: p.answer,
+        options: p.options,
+        correctIndex: p.correctIndex,
+    };
+}
+
+const TOTAL_QUESTIONS = 5;
 
 interface Props {
     trick: MagicTrick;
     onClose: () => void;
 }
 
+
 export function TrickPractice({ trick, onClose }: Props) {
-    const TOTAL_QUESTIONS = 5;
-
-    // A rapid-fire barrage state
+    const [questions, setQuestions] = useState(() =>
+        Array.from({ length: TOTAL_QUESTIONS }, () => trickToProblem(trick))
+    );
     const [progress, setProgress] = useState(0);
-    const [questions, setQuestions] = useState(() => {
-        const qs: ReturnType<typeof trick.generatePractice>[] = [];
-        const seen = new Set<string>();
-        let safety = 0;
-        while (qs.length < TOTAL_QUESTIONS && safety < 100) {
-            safety++;
-            const q = trick.generatePractice();
-            if (!seen.has(q.expression)) {
-                seen.add(q.expression);
-                qs.push(q);
-            }
-        }
-        // Fallback if range is truly tiny
-        while (qs.length < TOTAL_QUESTIONS) qs.push(trick.generatePractice());
-        return qs;
-    });
-
-    const [flash, setFlash] = useState<'' | 'correct' | 'wrong'>('');
     const [frozen, setFrozen] = useState(false);
+    const [flash, setFlash] = useState('');
+    const [chalkState, setChalkState] = useState<ChalkState>('idle');
+    const [highlightCorrect, setHighlightCorrect] = useState(false);
 
-    const current = questions[progress];
-    const MAX_QUESTIONS = TOTAL_QUESTIONS + 10; // Cap runaway wrong-answer extensions
+    const current = questions[progress] ?? null;
+    const isComplete = progress >= TOTAL_QUESTIONS;
 
-    const handleAnswer = (ans: number) => {
-        if (frozen || !current) return; // Guard against multi-tap and null current
-        if (ans === current.answer) {
+    // Persist mastery on completion
+    useMemo(() => {
+        if (isComplete) saveMastered(trick.id);
+    }, [isComplete, trick.id]);
+
+    const handleSwipe = useCallback((dir: 'left' | 'right' | 'up' | 'down') => {
+        if (frozen || !current) return;
+        const DIRS = ['left', 'down', 'right'];
+        const idx = DIRS.indexOf(dir);
+        if (idx === -1) return; // skip 'up' (skip)
+
+        const selectedAnswer = current.options[idx];
+        const isCorrect = selectedAnswer === current.answer;
+
+        if (isCorrect) {
             setFrozen(true);
             setFlash('correct');
+            setChalkState('success');
+            setHighlightCorrect(true);
             setTimeout(() => {
                 setFlash('');
                 setFrozen(false);
+                setHighlightCorrect(false);
+                setChalkState('idle');
                 setProgress(p => p + 1);
-            }, 300);
+            }, 400);
         } else {
             setFrozen(true);
             setFlash('wrong');
+            setChalkState('fail');
+            setHighlightCorrect(true);
             setTimeout(() => {
                 setFlash('');
                 setFrozen(false);
-            }, 400);
-            // On wrong answer, push a new question (capped to prevent infinite growth)
-            if (questions.length < MAX_QUESTIONS) {
-                setQuestions(q => [...q, trick.generatePractice()]);
+                setHighlightCorrect(false);
+                setChalkState('idle');
+            }, 500);
+            // Add extra question on wrong answer
+            if (questions.length < TOTAL_QUESTIONS + 5) {
+                setQuestions(q => [...q, trickToProblem(trick)]);
             }
         }
-    };
-
-    const isComplete = progress >= TOTAL_QUESTIONS;
+    }, [frozen, current, questions.length, trick]);
 
     return (
         <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className={`absolute inset-0 bg-[var(--color-bg)] z-50 flex flex-col pt-[max(env(safe-area-inset-top,12px),12px)] px-4 pb-[env(safe-area-inset-bottom,12px)]
-                      ${flash === 'wrong' ? 'wrong-shake' : flash === 'correct' ? 'answer-bounce' : ''}`}
+            className="flex-1 flex flex-col relative"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
         >
-            {/* Feedback overlay */}
-            {flash !== '' && (
-                <div className={`absolute inset-0 pointer-events-none z-30 ${flash === 'correct' ? 'flash-correct' : 'flash-wrong'}`} />
-            )}
+            {/* Flash overlay */}
+            <AnimatePresence>
+                {flash && (
+                    <motion.div
+                        key={flash}
+                        className={`absolute inset-0 z-40 pointer-events-none ${flash === 'correct' ? 'bg-[var(--color-correct)]' : 'bg-[var(--color-wrong)]'}`}
+                        initial={{ opacity: 0.25 }}
+                        animate={{ opacity: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.4 }}
+                    />
+                )}
+            </AnimatePresence>
 
-            <div className="flex items-center justify-between mb-8">
-                <button
-                    onClick={onClose}
-                    className="w-10 h-10 flex items-center justify-center text-[rgb(var(--color-fg))]/50 bg-[rgb(var(--color-fg))]/5 rounded-full"
-                >
-                    ✕
-                </button>
-                <div className="ui text-[10px] uppercase tracking-widest text-[var(--color-gold)] font-bold">
-                    Practice Blitz
-                </div>
-                <div className="w-10" />
+            {/* Close button */}
+            <button
+                onClick={onClose}
+                className="absolute left-3 top-3 z-30 w-8 h-8 rounded-full bg-[rgb(var(--color-fg))]/10 flex items-center justify-center text-[rgb(var(--color-fg))]/50 hover:text-[rgb(var(--color-fg))]/80 transition-colors"
+            >
+                ✕
+            </button>
+
+            {/* Header */}
+            <div className="text-center pt-3">
+                <div className="text-xs ui text-[var(--color-gold)]/60 uppercase tracking-wider">Practice Blitz</div>
             </div>
 
-            {!isComplete ? (
-                <div className="flex-1 flex flex-col pt-[15vh]">
-                    {/* Progress Dots */}
-                    <div className="flex justify-center gap-2 mb-12">
-                        {Array.from({ length: TOTAL_QUESTIONS }).map((_, i) => (
-                            <div
-                                key={i}
-                                className={`w-3 h-3 rounded-full transition-colors ${i < progress ? 'bg-[var(--color-gold)]' : 'bg-[rgb(var(--color-fg))]/10'}`}
-                            />
-                        ))}
-                    </div>
+            {/* Progress dots */}
+            <div className="flex justify-center gap-1.5 mt-2 mb-4">
+                {Array.from({ length: TOTAL_QUESTIONS }).map((_, i) => (
+                    <div
+                        key={i}
+                        className={`w-2 h-2 rounded-full transition-colors ${i < progress
+                            ? 'bg-[var(--color-correct)]'
+                            : i === progress
+                                ? 'bg-[var(--color-gold)]'
+                                : 'bg-[rgb(var(--color-fg))]/15'
+                            }`}
+                    />
+                ))}
+            </div>
 
-                    {/* Question Display */}
-                    <AnimatePresence mode="popLayout">
-                        <motion.div
-                            key={progress}
-                            initial={{ scale: 0.8, opacity: 0, filter: 'blur(4px)' }}
-                            animate={{ scale: 1, opacity: 1, filter: 'blur(0px)' }}
-                            exit={{ scale: 1.2, opacity: 0, filter: 'blur(4px)' }}
-                            transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-                            className="text-center mb-16"
-                        >
-                            <div className="text-6xl chalk">{current.expression}</div>
-                        </motion.div>
-                    </AnimatePresence>
-
-                    {/* Options */}
-                    <div className="grid grid-cols-1 gap-4 w-full max-w-sm mx-auto mt-auto mb-12">
-                        {current.options.map((opt, i) => (
-                            <motion.button
-                                key={`${progress}-${i}`}
-                                initial={{ y: 20, opacity: 0 }}
-                                animate={{ y: 0, opacity: 1 }}
-                                transition={{ delay: i * 0.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => handleAnswer(opt)}
-                                className="h-20 bg-[rgb(var(--color-fg))]/5 border-2 border-[rgb(var(--color-fg))]/10 
-                                         rounded-2xl chalk text-4xl text-[var(--color-gold)] hover:bg-[rgb(var(--color-fg))]/10 transition-colors"
-                            >
-                                {opt}
-                            </motion.button>
-                        ))}
-                    </div>
-                </div>
-            ) : (
-                /* Mastery State */
+            {isComplete ? (
+                /* ── Completion screen ── */
                 <motion.div
+                    className="flex-1 flex flex-col items-center justify-center gap-4 px-8"
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    className="flex-1 flex flex-col items-center justify-center text-center -mt-12"
                 >
-                    <motion.div
-                        initial={{ scale: 0, rotate: -45 }}
-                        animate={{ scale: [0, 1.2, 1], rotate: 0 }}
-                        transition={{ type: 'spring', delay: 0.2 }}
-                        className="text-8xl mb-8"
-                    >
-                        🏆
-                    </motion.div>
-                    <h2 className="chalk text-4xl text-[var(--color-gold)] mb-4">Mastered!</h2>
-                    <p className="ui mb-12 text-[rgb(var(--color-fg))]/60 px-8">
-                        You've unlocked the secret to <span className="text-[var(--color-gold)]">{trick.title}</span>.
+                    <div className="text-4xl">🎉</div>
+                    <h2 className="text-2xl chalk text-[var(--color-gold)]">Mastered!</h2>
+                    <p className="text-sm ui text-[rgb(var(--color-fg))]/50 text-center">
+                        You've earned the <span className="text-[var(--color-gold)]">{trick.title}</span> technique
                     </p>
-                    <button
+                    <motion.button
                         onClick={onClose}
-                        className="w-full max-w-[240px] h-14 bg-[var(--color-gold)] text-[#1a1a2e] rounded-xl font-bold ui text-lg shadow-[0_4px_0_rgb(var(--color-fg),0.2)] active:translate-y-1 active:shadow-none transition-all"
+                        className="mt-4 px-8 py-3 rounded-2xl bg-[var(--color-gold)]/20 border border-[var(--color-gold)]/30 text-[var(--color-gold)] ui font-semibold text-sm"
+                        whileTap={{ scale: 0.95 }}
                     >
-                        Back to Hub
-                    </button>
+                        Continue →
+                    </motion.button>
                 </motion.div>
+            ) : current ? (
+                /* ── Problem view (reused from game tab!) ── */
+                <div className="flex-1 flex flex-col">
+                    <ProblemView
+                        problem={current}
+                        frozen={frozen}
+                        highlightCorrect={highlightCorrect}
+                        onSwipe={handleSwipe}
+                    />
+                </div>
+            ) : null}
+
+            {/* Mr Chalk mascot — same as game tab, just render directly */}
+            {!isComplete && (
+                <MrChalk state={chalkState} streak={progress} totalAnswered={progress} />
             )}
         </motion.div>
     );

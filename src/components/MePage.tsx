@@ -24,6 +24,7 @@ interface Props {
     onDisplayNameChange: (name: string) => Promise<void>;
     isAnonymous: boolean;
     onLinkGoogle: () => Promise<void>;
+    onSendEmailLink: (email: string) => Promise<void>;
     ageBand: AgeBand;
     activeBadge: string;
     onBadgeChange: (id: string) => void;
@@ -60,11 +61,14 @@ function getRank(xp: number) {
     return { rank, nextRank, progress };
 }
 
-export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked, activeCostume, onCostumeChange, activeTheme, onThemeChange, activeTrailId, onTrailChange, displayName, onDisplayNameChange, isAnonymous, onLinkGoogle, ageBand, activeBadge, onBadgeChange }: Props) {
+export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked, activeCostume, onCostumeChange, activeTheme, onThemeChange, activeTrailId, onTrailChange, displayName, onDisplayNameChange, isAnonymous, onLinkGoogle, onSendEmailLink, ageBand, activeBadge, onBadgeChange }: Props) {
     const [showRanks, setShowRanks] = useState(false);
     const [resetConfirm, setResetConfirm] = useState<string | null>(null);
     const [editingName, setEditingName] = useState(false);
     const [nameInput, setNameInput] = useState(displayName);
+    const [showEmailInput, setShowEmailInput] = useState(false);
+    const [emailInput, setEmailInput] = useState('');
+    const [emailSent, setEmailSent] = useState(false);
     const { rank, nextRank, progress } = getRank(stats.totalXP);
 
     return (
@@ -103,15 +107,96 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                 )}
             </div>
 
-            {/* Google sign-in (Phase 3) */}
-            {isAnonymous && (
-                <button
-                    onClick={onLinkGoogle}
-                    className="flex items-center gap-2 text-xs ui text-[rgb(var(--color-fg))]/40 hover:text-[rgb(var(--color-fg))]/60 transition-colors mb-3 border border-[rgb(var(--color-fg))]/10 rounded-lg px-3 py-1.5"
-                >
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" /><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" /><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" /><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" /></svg>
-                    Link Google Account
-                </button>
+            {/* Contextual save-progress nudge — value-framed, dismissible with cooldown */}
+            {isAnonymous && (() => {
+                const DISMISS_KEY = 'math-swipe-login-dismiss';
+                const dismissed = localStorage.getItem(DISMISS_KEY);
+                const dismissedAt = dismissed ? parseInt(dismissed, 10) : 0;
+                const sessionsSinceDismiss = stats.sessionsPlayed - dismissedAt;
+                // Only show after 5 sessions, and not within 5 sessions of last dismiss
+                if (stats.sessionsPlayed < 5 || (dismissedAt > 0 && sessionsSinceDismiss < 5)) return null;
+
+                return (
+                    <div className="mb-3 relative bg-[rgb(var(--color-fg))]/[0.03] border border-[rgb(var(--color-fg))]/8 rounded-xl overflow-hidden">
+                        {/* Dismiss button */}
+                        <button
+                            onClick={() => localStorage.setItem(DISMISS_KEY, String(stats.sessionsPlayed))}
+                            className="absolute top-2 right-2 z-10 text-[rgb(var(--color-fg))]/20 hover:text-[rgb(var(--color-fg))]/50 text-xs transition-colors"
+                        >✕</button>
+
+                        {!showEmailInput ? (
+                            <div className="p-3">
+                                <div className="text-[11px] ui text-[rgb(var(--color-fg))]/50 mb-2.5">
+                                    ☁️ Save your {stats.totalXP.toLocaleString()} XP across devices
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={onLinkGoogle}
+                                        className="flex-1 flex items-center justify-center gap-1.5 text-[11px] ui text-[rgb(var(--color-fg))]/50 hover:text-[rgb(var(--color-fg))]/70 transition-colors border border-[rgb(var(--color-fg))]/10 rounded-lg py-1.5"
+                                    >
+                                        <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" /><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" /><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" /><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" /></svg>
+                                        Google
+                                    </button>
+                                    <button
+                                        onClick={() => setShowEmailInput(true)}
+                                        className="flex-1 flex items-center justify-center gap-1.5 text-[11px] ui text-[rgb(var(--color-fg))]/50 hover:text-[rgb(var(--color-fg))]/70 transition-colors border border-[rgb(var(--color-fg))]/10 rounded-lg py-1.5"
+                                    >
+                                        ✉️ Email
+                                    </button>
+                                </div>
+                            </div>
+                        ) : emailSent ? (
+                            <div className="p-3 text-[10px] ui text-[var(--color-correct)]">
+                                ✓ Check your email for the magic link!
+                            </div>
+                        ) : (
+                            <form
+                                onSubmit={async (e) => {
+                                    e.preventDefault();
+                                    if (!emailInput.includes('@')) return;
+                                    try {
+                                        await onSendEmailLink(emailInput);
+                                        setEmailSent(true);
+                                        setShowEmailInput(false);
+                                    } catch (err) {
+                                        console.warn('Email link failed:', err);
+                                    }
+                                }}
+                                className="flex gap-1.5 p-3"
+                            >
+                                <input
+                                    type="email"
+                                    value={emailInput}
+                                    onChange={(e) => setEmailInput(e.target.value)}
+                                    placeholder="your@email.com"
+                                    autoFocus
+                                    className="flex-1 text-xs ui bg-[rgb(var(--color-fg))]/5 border border-[rgb(var(--color-fg))]/10 rounded-lg px-3 py-1.5 text-[rgb(var(--color-fg))]/80 placeholder:text-[rgb(var(--color-fg))]/20 outline-none focus:border-[var(--color-gold)]/40"
+                                />
+                                <button type="submit" className="text-xs ui font-semibold text-[var(--color-gold)] bg-[var(--color-gold)]/10 px-3 py-1.5 rounded-lg">Send</button>
+                                <button type="button" onClick={() => setShowEmailInput(false)} className="text-xs text-[rgb(var(--color-fg))]/30 px-1">✕</button>
+                            </form>
+                        )}
+                    </div>
+                );
+            })()}
+
+            {/* Always-visible sign-in escape hatch — quiet but always accessible */}
+            {isAnonymous && !showEmailInput && (
+                <div className="flex items-center gap-2 mb-3 px-1">
+                    <button
+                        onClick={onLinkGoogle}
+                        className="text-[10px] ui text-[rgb(var(--color-fg))]/20 hover:text-[rgb(var(--color-fg))]/50 transition-colors"
+                    >
+                        Sign in with Google
+                    </button>
+                    <span className="text-[rgb(var(--color-fg))]/10 text-[10px]">·</span>
+                    <button
+                        onClick={() => setShowEmailInput(true)}
+                        className="text-[10px] ui text-[rgb(var(--color-fg))]/20 hover:text-[rgb(var(--color-fg))]/50 transition-colors"
+                    >
+                        Email
+                    </button>
+                </div>
             )}
 
             <motion.div
@@ -487,6 +572,11 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                     </>
                 )}
             </AnimatePresence>
+
+            {/* Version */}
+            <div className="text-[10px] ui text-[rgb(var(--color-fg))]/15 mt-8 tracking-widest">
+                v{__APP_VERSION__}
+            </div>
         </div>
     );
 });
