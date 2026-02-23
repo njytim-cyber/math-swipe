@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 
@@ -16,11 +16,14 @@ export function useLocalState(
         () => localStorage.getItem(key) || defaultValue,
     );
 
-    // Restore from Firestore if localStorage is empty
+    // Restore from Firestore if localStorage is empty or UID changed
+    const prevUidRef = useRef(uid);
     useEffect(() => {
         if (!uid) return;
+        const uidChanged = prevUidRef.current !== uid;
+        prevUidRef.current = uid;
         const localVal = localStorage.getItem(key);
-        if (localVal) return; // already have local data, skip cloud
+        if (localVal && !uidChanged) return; // already have local data and same user
         getDoc(doc(db, 'users', uid)).then(snap => {
             if (snap.exists() && snap.data().preferences) {
                 const prefs = snap.data().preferences;

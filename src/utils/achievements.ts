@@ -86,7 +86,7 @@ export const ACHIEVEMENTS: Achievement[] = [
         name: 'All-Rounder',
         desc: 'Solve 10+ of every type',
         check: s => {
-            const META: string[] = ['daily', 'challenge', 'mix-basic', 'mix-all'];
+            const META: string[] = ['daily', 'challenge', 'mix-basic', 'mix-all', 'speedrun', 'ghost'];
             const validEntries = Object.entries(s.byType).filter(([k]) => !META.includes(k));
 
             // If they haven't even played out 10 distinct modes, they can't be an all rounder

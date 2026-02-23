@@ -184,6 +184,10 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
             // Freeze briefly on skip to prevent double-skip
             frozenRef.current = true;
             setGs(prev => ({ ...prev, streak: 0, chalkState: 'idle', frozen: true }));
+            // Speedrun: replenish a problem so pool never runs dry on skips
+            if (questionType === 'speedrun') {
+                setProblems(p => [...p, generateProblem(level, 'mix-all' as QuestionType, hardMode)]);
+            }
             safeTimeout(() => {
                 setGs(prev => ({ ...prev, frozen: false }));
                 frozenRef.current = false;

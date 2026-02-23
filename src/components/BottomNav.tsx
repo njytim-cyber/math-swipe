@@ -47,7 +47,7 @@ const tabs: { id: Tab; label: string; icon: ReactNode }[] = [
         icon: (
             <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <circle cx="12" cy="8" r="5" />
-                <path d="M3 21v-1a7 7 0 0 1 14 0v1" />
+                <path d="M5 21v-1a7 7 0 0 1 14 0v1" />
             </svg>
         ),
     },

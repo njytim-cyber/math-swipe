@@ -1,4 +1,4 @@
-import { memo, useState, useEffect, useCallback } from 'react';
+import { memo, useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { collection, query, orderBy, limit, onSnapshot, where, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../utils/firebase';
@@ -50,6 +50,14 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, di
     const [selectedPlayer, setSelectedPlayer] = useState<LeaderboardEntry | null>(null);
     const [pingCooldown, setPingCooldown] = useState(false);
     const [pingSuccess, setPingSuccess] = useState('');
+    const pingSuccessTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+    const pingCooldownTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+    // Clean up ping timers on unmount
+    useEffect(() => () => {
+        clearTimeout(pingSuccessTimer.current);
+        clearTimeout(pingCooldownTimer.current);
+    }, []);
 
     const handleAction = useCallback(async (action: 'race' | 'ping') => {
         if (!selectedPlayer) return;
@@ -69,12 +77,12 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, di
                 const name = selectedPlayer.displayName;
                 setSelectedPlayer(null);
                 setPingSuccess(`Pinged ${name}! 👋`);
-                setTimeout(() => setPingSuccess(''), 3000);
+                pingSuccessTimer.current = setTimeout(() => setPingSuccess(''), 3000);
             } catch (err) {
                 console.error("Failed to send ping", err);
                 setSelectedPlayer(null);
             }
-            setTimeout(() => setPingCooldown(false), 5000);
+            pingCooldownTimer.current = setTimeout(() => setPingCooldown(false), 5000);
         }
     }, [selectedPlayer, pingCooldown, uid, displayName]);
 
@@ -136,18 +144,21 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, di
 
     // ── Build score board with current user injected ──
     const scoreBoard = (() => {
-        const list = [...entries];
-        const userInList = uid ? list.find(e => e.uid === uid) : null;
-        if (!userInList && uid) {
+        let list = [...entries];
+        const userIdx = uid ? list.findIndex(e => e.uid === uid) : -1;
+        if (userIdx === -1 && uid) {
             list.push({
                 uid, displayName: displayName || 'You', totalXP: userXP, bestStreak: userStreak,
                 activeThemeId, activeCostume, bestSpeedrunTime: bestSpeedrunTime || 0,
             });
-        } else if (userInList) {
-            userInList.totalXP = Math.max(userInList.totalXP, userXP);
-            userInList.bestStreak = Math.max(userInList.bestStreak, userStreak);
-            userInList.activeThemeId = activeThemeId;
-            userInList.activeCostume = activeCostume;
+        } else if (userIdx >= 0) {
+            list = list.map((e, i) => i === userIdx ? {
+                ...e,
+                totalXP: Math.max(e.totalXP, userXP),
+                bestStreak: Math.max(e.bestStreak, userStreak),
+                activeThemeId,
+                activeCostume,
+            } : e);
         }
         return list
             .sort((a, b) => b.totalXP - a.totalXP)

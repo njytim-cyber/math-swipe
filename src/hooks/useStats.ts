@@ -260,6 +260,7 @@ export function useStats(uid: string | null) {
                 if (uidRef.current) saveStatsCloud(uidRef.current, stats);
             }, 2000);
         }
+        return () => clearTimeout(cloudTimerRef.current);
     }, [stats]);
 
     const updateCosmetics = useCallback((themeId: string, costumeId: string, trailId: string) => {
@@ -294,14 +295,19 @@ export function useStats(uid: string | null) {
                     }
                 } else if (prev.lastPlayedDate !== '') {
                     // Missed one or more days (and not very first session ever)
-                    if (streakShields > 0) {
+                    // Calculate exact gap in days
+                    const lastParts = prev.lastPlayedDate.split('-').map(Number);
+                    const lastDate = new Date(lastParts[0], lastParts[1] - 1, lastParts[2]);
+                    const gap = Math.round((today.getTime() - lastDate.getTime()) / 86400000) - 1;
+
+                    if (gap <= 1 && streakShields > 0) {
                         streakShields -= 1;
                         dayStreak = prev.dayStreak + 1; // Shield consumed! Forgive and extend.
                         if (dayStreak % 7 === 0) {
                             streakShields = Math.min(3, streakShields + 1);
                         }
                     } else {
-                        dayStreak = 1; // Streak broken
+                        dayStreak = 1; // Streak broken (gap too large or no shields)
                     }
                 } else {
                     dayStreak = 1; // First session ever

@@ -101,6 +101,15 @@ export const SessionSummary = memo(function SessionSummary({
                     cacheBust: true,
                     type: 'image/png',
                     pixelRatio: 2,
+                    filter: (node: Node) => {
+                        // Skip cross-origin <link> stylesheets (e.g. Google Fonts)
+                        // to avoid SecurityError when reading cssRules
+                        if (node instanceof HTMLLinkElement && node.rel === 'stylesheet' && node.href) {
+                            try { return new URL(node.href).origin === window.location.origin; }
+                            catch { return true; }
+                        }
+                        return true;
+                    },
                 });
 
                 if (blob) {

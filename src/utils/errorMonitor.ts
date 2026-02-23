@@ -13,14 +13,14 @@ function reportError(error: { message: string; stack?: string; source?: string }
     if (reportCount >= MAX_REPORTS) return;
     reportCount++;
 
-    const uid = localStorage.getItem('math-swipe-uid') || 'unknown';
-    const errorId = `${uid}-${Date.now()}`;
+    const errorId = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 
     // Fire and forget — don't block the main thread
     setDoc(doc(db, 'errors', errorId), {
         message: error.message.slice(0, 500),
         stack: (error.stack || '').slice(0, 2000),
         source: error.source || 'unknown',
+        user: localStorage.getItem('math-swipe-displayName') || 'anonymous',
         userAgent: navigator.userAgent.slice(0, 200),
         url: window.location.href,
         timestamp: serverTimestamp(),

@@ -563,7 +563,17 @@ function App() {
           answerHistory={answerHistory}
           questionType={questionType}
           visible={showSummary}
-          onDismiss={() => setShowSummary(false)}
+          onDismiss={() => {
+            setShowSummary(false);
+            if (questionType === 'speedrun') {
+              // Record session stats before leaving (can't use handleTabChange — it re-shows summary)
+              if (totalAnswered > 0) {
+                recordSession(score, totalCorrect, totalAnswered, bestStreak, questionType, hardMode, timedMode);
+              }
+              setActiveTab('league');
+              setQuestionType(defaultTypeForBand(ageBand));
+            }
+          }}
           hardMode={hardMode}
           timedMode={timedMode}
           speedrunFinalTime={speedrunFinalTime}
