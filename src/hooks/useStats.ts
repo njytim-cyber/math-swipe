@@ -148,8 +148,8 @@ async function saveStatsCloud(uid: string, s: Stats) {
             bestSpeedrunTime: s.bestSpeedrunTime || 0,
             speedrunHardMode: s.speedrunHardMode || false,
             streakShields: s.streakShields || 0,
-            // Full stats blob
-            stats: s,
+            // Full stats blob — strip undefined values (Firestore rejects them)
+            stats: JSON.parse(JSON.stringify(s)),
             updatedAt: serverTimestamp(),
         }, { merge: true });
     } catch (err) {
