@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { PanInfo } from 'framer-motion';
 import type { MagicTrick } from '../utils/mathTricks';
 import { TrickPractice } from './TrickPractice';
+import { MathExpr } from './MathExpr';
 
 interface Props {
     trick: MagicTrick;
@@ -63,8 +64,18 @@ export function TrickLesson({ trick, onClose }: Props) {
                 <h2 className="chalk text-2xl text-[var(--color-gold)] mb-8">{trick.title}</h2>
 
                 {/* Example Equation */}
-                <div className="text-5xl chalk mb-12">
-                    {trick.lesson.equation} = {isLastStep ? <span className="text-[var(--color-gold)]">{trick.lesson.result}</span> : '?'}
+                <div className="mb-12 flex items-center justify-center">
+                    {trick.lesson.latex ? (
+                        <MathExpr
+                            latex={`${trick.lesson.latex} = ${isLastStep ? String.raw`{\color{gold} ${trick.lesson.result}}` : '?'}`}
+                            displayMode
+                            className="text-4xl"
+                        />
+                    ) : (
+                        <div className="text-5xl chalk">
+                            {trick.lesson.equation} = {isLastStep ? <span className="text-[var(--color-gold)]">{trick.lesson.result}</span> : '?'}
+                        </div>
+                    )}
                 </div>
 
                 {/* Steps Display */}
