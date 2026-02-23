@@ -16,7 +16,7 @@ export function TricksPage({ onLessonActive }: Props) {
     const longPressTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
     useEffect(() => {
-        if (!selectedTrick) setMastered(loadMastered());
+        if (!selectedTrick) queueMicrotask(() => setMastered(loadMastered()));
     }, [selectedTrick]);
 
     useEffect(() => {

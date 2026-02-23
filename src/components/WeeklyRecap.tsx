@@ -28,7 +28,7 @@ export function WeeklyRecap({ stats }: Props) {
         const lastShown = localStorage.getItem(RECAP_KEY);
         // Only show if it's a new week AND user has played at least one session
         if (lastShown !== currentWeek && stats.sessionsPlayed > 0) {
-            setVisible(true);
+            queueMicrotask(() => setVisible(true));
         }
     }, [stats.sessionsPlayed]);
 

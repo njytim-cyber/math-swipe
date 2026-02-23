@@ -9,6 +9,7 @@ import type { ChalkState } from '../hooks/useGameLoop';
 const MASTERY_KEY = 'math-swipe-mastered-tricks';
 
 /** Load mastered trick IDs from localStorage */
+// eslint-disable-next-line react-refresh/only-export-components
 export function loadMastered(): Set<string> {
     try {
         const raw = localStorage.getItem(MASTERY_KEY);

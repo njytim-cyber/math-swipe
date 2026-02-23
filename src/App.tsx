@@ -109,9 +109,11 @@ function App() {
   const [shieldToast, setShieldToast] = useState(false);
   useEffect(() => {
     if (shieldBroken) {
-      setShieldToast(true);
-      const t = setTimeout(() => setShieldToast(false), 3000);
-      return () => clearTimeout(t);
+      queueMicrotask(() => {
+        setShieldToast(true);
+        const t = setTimeout(() => setShieldToast(false), 3000);
+        return () => clearTimeout(t);
+      });
     }
   }, [shieldBroken]);
 
