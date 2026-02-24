@@ -3,7 +3,7 @@ import { generateProblem, type Problem, type QuestionType } from '../utils/mathG
 import { generateDailyChallenge, generateChallenge } from '../utils/dailyChallenge';
 import { useDifficulty } from './useDifficulty';
 
-export type ChalkState = 'idle' | 'success' | 'fail' | 'streak' | 'comeback';
+export type ChalkState = 'idle' | 'success' | 'fail' | 'streak' | 'comeback' | 'struggling';
 export type FeedbackFlash = 'none' | 'correct' | 'wrong';
 
 const MILESTONES: Record<number, string> = { 5: '🔥', 10: '⚡', 20: '👑', 50: '🏆' };

@@ -33,6 +33,7 @@ export function useLocalState(
                     'math-swipe-chalk-theme': 'chalkTheme',
                     'math-swipe-theme': 'themeMode',
                     'math-swipe-age-band': 'ageBand',
+                    'math-swipe-trail': 'trailId',
                 };
                 const field = fieldMap[key];
                 if (field && prefs[field]) {
@@ -53,6 +54,7 @@ export function useLocalState(
                 'math-swipe-chalk-theme': 'chalkTheme',
                 'math-swipe-theme': 'themeMode',
                 'math-swipe-age-band': 'ageBand',
+                'math-swipe-trail': 'trailId',
             };
             const field = fieldMap[key];
             if (field) {
