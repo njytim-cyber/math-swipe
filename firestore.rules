@@ -23,7 +23,8 @@ service cloud.firestore {
                            'dayStreak', 'streakShields', 'lastPlayedDate', 'byType',
                            'hardModeSolved', 'hardModeCorrect', 'hardModeBestStreak', 'hardModeSessions', 'hardModePerfects',
                            'timedModeSolved', 'timedModeCorrect', 'timedModeBestStreak', 'timedModeSessions', 'timedModePerfects',
-                           'ultimateSolved', 'ultimateCorrect', 'ultimateBestStreak', 'ultimateSessions', 'ultimatePerfects'
+                           'ultimateSolved', 'ultimateCorrect', 'ultimateBestStreak', 'ultimateSessions', 'ultimatePerfects',
+                           'lastPingAt'
                          ])
                        : request.resource.data.diff(resource.data).affectedKeys().hasOnly([
                            'displayName', 'totalXP', 'bestStreak', 'totalSolved',
@@ -34,7 +35,8 @@ service cloud.firestore {
                            'dayStreak', 'streakShields', 'lastPlayedDate', 'byType',
                            'hardModeSolved', 'hardModeCorrect', 'hardModeBestStreak', 'hardModeSessions', 'hardModePerfects',
                            'timedModeSolved', 'timedModeCorrect', 'timedModeBestStreak', 'timedModeSessions', 'timedModePerfects',
-                           'ultimateSolved', 'ultimateCorrect', 'ultimateBestStreak', 'ultimateSessions', 'ultimatePerfects'
+                           'ultimateSolved', 'ultimateCorrect', 'ultimateBestStreak', 'ultimateSessions', 'ultimatePerfects',
+                           'lastPingAt'
                          ])
                       )
                    // String field constraints
@@ -100,16 +102,24 @@ service cloud.firestore {
                   && resource.data.targetUid == request.auth.uid;
 
       // Authenticated users can create pings (but not update/delete)
+      // Rate-limited to 1 ping per 30 seconds per sender, enforced server-side.
+      // Self-pings are blocked.
       allow create: if request.auth != null
                     && request.resource.data.keys().hasOnly([
                          'targetUid', 'senderUid', 'senderName',
                          'createdAt', 'read'
                        ])
                     && request.resource.data.senderUid == request.auth.uid
+                    && request.resource.data.senderUid != request.resource.data.targetUid
                     && request.resource.data.senderName is string
                     && request.resource.data.senderName.size() <= 20
                     && request.resource.data.targetUid is string
-                    && request.resource.data.read == false;
+                    && request.resource.data.read == false
+                    // Server-side rate limit: sender's lastPingAt must be > 30s ago
+                    && (
+                         !('lastPingAt' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data)
+                         || request.time > get(/databases/$(database)/documents/users/$(request.auth.uid)).data.lastPingAt + duration.value(30, 's')
+                       );
 
       // Only the target user can mark a ping as read
       allow update: if request.auth != null

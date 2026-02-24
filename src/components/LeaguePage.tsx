@@ -1,6 +1,6 @@
 import { memo, useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { collection, query, orderBy, limit, onSnapshot, where, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, limit, onSnapshot, where, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { getThemeColor } from '../utils/chalkThemes';
 import { COSTUMES } from '../utils/costumes';
@@ -74,15 +74,20 @@ export const LeaguePage = memo(function LeaguePage({ userXP, userStreak, uid, di
                     createdAt: serverTimestamp(),
                     read: false
                 });
+                // Record lastPingAt so Firestore rule can enforce 30s server-side cooldown
+                if (uid) {
+                    setDoc(doc(db, 'users', uid), { lastPingAt: serverTimestamp() }, { merge: true })
+                        .catch(() => { /* silent */ });
+                }
                 const name = selectedPlayer.displayName;
                 setSelectedPlayer(null);
                 setPingSuccess(`Pinged ${name}! 👋`);
                 pingSuccessTimer.current = setTimeout(() => setPingSuccess(''), 3000);
-            } catch (err) {
-                console.error("Failed to send ping", err);
+            } catch {
                 setSelectedPlayer(null);
             }
-            pingCooldownTimer.current = setTimeout(() => setPingCooldown(false), 5000);
+            // Match the 30s server-side rule cooldown
+            pingCooldownTimer.current = setTimeout(() => setPingCooldown(false), 30000);
         }
     }, [selectedPlayer, pingCooldown, uid, displayName]);
 
