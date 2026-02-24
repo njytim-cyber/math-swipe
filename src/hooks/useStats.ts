@@ -9,6 +9,9 @@ interface TypeStat {
 }
 
 export interface Stats {
+    lastDailyDate: string;      // YYYY-MM-DD of the last daily session
+    todayDailySolved: number;   // problems answered in today's daily session
+    todayDailyCorrect: number;  // correct in today's daily session
     totalXP: number;
     totalSolved: number;
     totalCorrect: number;
@@ -53,6 +56,9 @@ const STORAGE_KEY = 'math-swipe-stats';
 const EMPTY_TYPE: TypeStat = { solved: 0, correct: 0 };
 
 const EMPTY_STATS: Stats = {
+    lastDailyDate: '',
+    todayDailySolved: 0,
+    todayDailyCorrect: 0,
     totalXP: 0,
     totalSolved: 0,
     totalCorrect: 0,
@@ -190,6 +196,9 @@ function mergeStats(local: Stats, cloud: Stats): Stats {
 
     return {
         ...EMPTY_STATS,
+        lastDailyDate: local.lastDailyDate > cloud.lastDailyDate ? local.lastDailyDate : cloud.lastDailyDate,
+        todayDailySolved: local.lastDailyDate > cloud.lastDailyDate ? local.todayDailySolved : cloud.todayDailySolved,
+        todayDailyCorrect: local.lastDailyDate > cloud.lastDailyDate ? local.todayDailyCorrect : cloud.todayDailyCorrect,
         totalXP: Math.max(local.totalXP, cloud.totalXP),
         totalSolved: Math.max(local.totalSolved, cloud.totalSolved),
         totalCorrect: Math.max(local.totalCorrect, cloud.totalCorrect),
@@ -313,10 +322,20 @@ export function useStats(uid: string | null) {
                     dayStreak = 1; // First session ever
                 }
             }
+            // Track today's daily progress (reset each new day)
+            const isDaily = questionType === 'daily';
+            const dailySameDay = prev.lastDailyDate === todayStr;
+            const todayDailySolved = isDaily ? (dailySameDay ? prev.todayDailySolved : 0) + answered : prev.todayDailySolved;
+            const todayDailyCorrect = isDaily ? (dailySameDay ? prev.todayDailyCorrect : 0) + correct : prev.todayDailyCorrect;
+            const lastDailyDate = isDaily ? todayStr : prev.lastDailyDate;
+
             const isPerfect = answered > 0 && correct === answered;
             const isUltimate = hardMode && timedMode;
             return {
                 ...prev,
+                lastDailyDate,
+                todayDailySolved,
+                todayDailyCorrect,
                 totalXP: prev.totalXP + score,
                 totalSolved: prev.totalSolved + answered,
                 totalCorrect: prev.totalCorrect + correct,

@@ -23,15 +23,13 @@ export const SwipeTrail = memo(function SwipeTrail({ streak, activeTrailId, base
 
     // Determine target color based on streak and unlocks
     const getTrailColor = useCallback(() => {
-        // If a specific trail cosmetic is equipped, we'd handle it here
-        if (activeTrailId === 'rainbow') {
-            // A static rainbow gradient will be created in the render loop based on bounding box
-            return 'rainbow';
-        }
+        if (activeTrailId === 'rainbow') return 'rainbow';
+        if (activeTrailId === 'fire') return 'fire';
+        if (activeTrailId === 'lightning') return 'lightning';
 
-        // Default behavior: react to streak
-        if (streak >= 10) return '#FF00FF'; // Magenta
-        if (streak >= 5) return 'var(--color-gold)';
+        // Default: react to streak
+        if (streak >= 10) return '#FF00FF';
+        if (streak >= 5) return '#fbbc04';
         return baseColor;
     }, [activeTrailId, streak, baseColor]);
 
@@ -89,13 +87,14 @@ export const SwipeTrail = memo(function SwipeTrail({ streak, activeTrailId, base
             if (points.length > 1) {
                 const color = getTrailColor();
 
-                // Advanced Rainbow rendering bypasses standard strokeStyle
+                // Reset shadow defaults
+                ctx.shadowBlur = 0;
+                ctx.shadowColor = 'transparent';
+
                 if (color === 'rainbow') {
-                    // Create bounding box for gradient
                     const xs = points.map(p => p.x);
                     const minX = Math.min(...xs);
                     const maxX = Math.max(...xs);
-
                     if (maxX - minX > 0) {
                         const grad = ctx.createLinearGradient(minX, 0, maxX, 0);
                         grad.addColorStop(0, '#ff0000');
@@ -108,47 +107,65 @@ export const SwipeTrail = memo(function SwipeTrail({ streak, activeTrailId, base
                     } else {
                         ctx.strokeStyle = '#FFFFFF';
                     }
+                } else if (color === 'fire') {
+                    // Warm orange-to-yellow gradient along the swipe direction
+                    const xs = points.map(p => p.x);
+                    const minX = Math.min(...xs);
+                    const maxX = Math.max(...xs);
+                    if (maxX - minX > 2) {
+                        const grad = ctx.createLinearGradient(minX, 0, maxX, 0);
+                        grad.addColorStop(0, '#ff2200');
+                        grad.addColorStop(0.5, '#ff7700');
+                        grad.addColorStop(1, '#ffdd00');
+                        ctx.strokeStyle = grad;
+                    } else {
+                        ctx.strokeStyle = '#ff6600';
+                    }
+                    ctx.shadowBlur = 18;
+                    ctx.shadowColor = '#ff4400';
+                } else if (color === 'lightning') {
+                    ctx.strokeStyle = '#aaeeff';
+                    ctx.shadowBlur = 22;
+                    ctx.shadowColor = '#00ccff';
                 } else {
-                    // Normalize CSS variables to actual canvas-readable values if needed
-                    // For performance, direct canvas 2D rendering works best without CSS vars, 
-                    // but most modern browsers can resolve them if attached to the root document.
-                    // For safety, we use hex fallbacks.
-                    if (color === 'var(--color-gold)') ctx.strokeStyle = '#fbbc04'; // exact gold hex
+                    if (color === 'var(--color-gold)') ctx.strokeStyle = '#fbbc04';
                     else ctx.strokeStyle = color;
                 }
 
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
 
-                // Draw splines segment by segment to apply fading thickness
-                // (Canvas 2D doesn't support interpolating thickness across a single path natively)
                 for (let i = 0; i < points.length - 1; i++) {
                     const p1 = points[i];
                     const p2 = points[i + 1];
-
-                    // Age defines 0 to 1 value (0 = brand new, 1 = dead)
                     const age1 = (time - p1.timestamp) / TRAIL_LIFETIME_MS;
-
-                    // Fade out opacity and shrink width
                     const alpha = Math.max(0, 1 - age1);
                     ctx.globalAlpha = alpha;
-
-                    // Bezier Curve approximation or simple line interpolation for thickness
-                    // Reverse ease-out logic: brand new points are thinnest, middle points inflate.
-                    // To simulate fruit-ninja, the leading edge is thick, trailing is thin.
                     ctx.lineWidth = Math.max(1, TRAIL_MAX_WIDTH * (1 - age1));
 
                     ctx.beginPath();
-                    ctx.moveTo(p1.x, p1.y);
 
-                    // Simple quadratic curve to smooth rigid pointer events
-                    if (i < points.length - 2) {
-                        const p3 = points[i + 2];
-                        const xc = (p2.x + p3.x) / 2;
-                        const yc = (p2.y + p3.y) / 2;
-                        ctx.quadraticCurveTo(p2.x, p2.y, xc, yc);
-                    } else {
+                    if (color === 'lightning') {
+                        // Jagged segments: add a small random perpendicular offset per segment
+                        const dx = p2.x - p1.x;
+                        const dy = p2.y - p1.y;
+                        const len = Math.sqrt(dx * dx + dy * dy) || 1;
+                        const jitter = (Math.random() - 0.5) * 10 * alpha;
+                        const mx = (p1.x + p2.x) / 2 + (-dy / len) * jitter;
+                        const my = (p1.y + p2.y) / 2 + (dx / len) * jitter;
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(mx, my);
                         ctx.lineTo(p2.x, p2.y);
+                    } else {
+                        ctx.moveTo(p1.x, p1.y);
+                        if (i < points.length - 2) {
+                            const p3 = points[i + 2];
+                            const xc = (p2.x + p3.x) / 2;
+                            const yc = (p2.y + p3.y) / 2;
+                            ctx.quadraticCurveTo(p2.x, p2.y, xc, yc);
+                        } else {
+                            ctx.lineTo(p2.x, p2.y);
+                        }
                     }
 
                     ctx.stroke();
