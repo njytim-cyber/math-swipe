@@ -249,7 +249,7 @@ function App() {
   useEffect(() => {
     const t = CHALK_THEMES.find(th => th.id === activeThemeId);
     if (t) applyTheme(t);
-  }, [activeThemeId]);
+  }, [activeThemeId]); // themeMode dep added below after declaration
 
   // Persist cosmetics to Firebase payload
   useEffect(() => {
@@ -261,7 +261,12 @@ function App() {
 
   // ── Theme mode (dark/light) ──
   const [themeMode, setThemeMode] = useLocalState('math-swipe-theme', 'dark', uid);
-  useEffect(() => { applyMode(themeMode as 'dark' | 'light'); }, [themeMode]);
+  useEffect(() => {
+    applyMode(themeMode as 'dark' | 'light');
+    // Re-apply chalk theme colours for the new mode (dark uses .color, light uses .lightColor)
+    const t = CHALK_THEMES.find(th => th.id === activeThemeId);
+    if (t) applyTheme(t);
+  }, [themeMode, activeThemeId]);
   const toggleThemeMode = useCallback(() => {
     setThemeMode(themeMode === 'dark' ? 'light' : 'dark');
   }, [themeMode, setThemeMode]);

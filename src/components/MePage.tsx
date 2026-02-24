@@ -61,6 +61,28 @@ function getRank(xp: number) {
     return { rank, nextRank, progress };
 }
 
+/** Mastery levels — post-max-rank infinite progression:
+ *  ML1→ML2 costs 25k XP, each subsequent level 10k more. */
+const MASTERY_BASE = 25000;
+const MASTERY_SCALE = 10000;
+const MAX_RANK_XP = 20000;
+
+function getMasteryInfo(xp: number) {
+    if (xp < MAX_RANK_XP) return null;
+    let remaining = xp - MAX_RANK_XP;
+    let level = 1;
+    let levelStartXp = MAX_RANK_XP;
+    while (true) {
+        const cost = MASTERY_BASE + (level - 1) * MASTERY_SCALE;
+        if (remaining < cost) {
+            return { level, progress: remaining / cost, xpForNext: levelStartXp + cost };
+        }
+        remaining -= cost;
+        levelStartXp += cost;
+        level++;
+    }
+}
+
 export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked, activeCostume, onCostumeChange, activeTheme, onThemeChange, activeTrailId, onTrailChange, displayName, onDisplayNameChange, isAnonymous, onLinkGoogle, onSendEmailLink, ageBand, activeBadge, onBadgeChange }: Props) {
     const [showRanks, setShowRanks] = useState(false);
     const [resetConfirm, setResetConfirm] = useState<string | null>(null);
@@ -70,6 +92,12 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
     const [emailInput, setEmailInput] = useState('');
     const [emailSent, setEmailSent] = useState(false);
     const { rank, nextRank, progress } = getRank(stats.totalXP);
+    const mastery = !nextRank ? getMasteryInfo(stats.totalXP) : null;
+
+    // Today's date string to check daily freshness
+    const today = (() => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; })();
+    const dailyDoneToday = stats.lastDailyDate === today && stats.todayDailySolved > 0;
+    const dailyAcc = dailyDoneToday ? Math.round((stats.todayDailyCorrect / stats.todayDailySolved) * 100) : null;
 
     return (
         <div className="flex-1 flex flex-col items-center overflow-y-auto px-6 pt-4 pb-20">
@@ -180,19 +208,18 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                 );
             })()}
 
-            {/* Always-visible sign-in escape hatch — quiet but always accessible */}
+            {/* Always-visible sign-in escape hatch */}
             {isAnonymous && !showEmailInput && (
-                <div className="flex items-center gap-2 mb-3 px-1">
+                <div className="flex items-center gap-3 mb-4 px-1">
                     <button
                         onClick={onLinkGoogle}
-                        className="text-[10px] ui text-[rgb(var(--color-fg))]/20 hover:text-[rgb(var(--color-fg))]/50 transition-colors"
+                        className="flex items-center gap-1.5 text-xs ui font-semibold text-[rgb(var(--color-fg))]/70 hover:text-[rgb(var(--color-fg))]/90 border border-[rgb(var(--color-fg))]/20 rounded-lg px-3 py-1.5 transition-colors"
                     >
-                        Sign in with Google
+                        <span>🔗</span> Sign in with Google
                     </button>
-                    <span className="text-[rgb(var(--color-fg))]/10 text-[10px]">·</span>
                     <button
                         onClick={() => setShowEmailInput(true)}
-                        className="text-[10px] ui text-[rgb(var(--color-fg))]/20 hover:text-[rgb(var(--color-fg))]/50 transition-colors"
+                        className="text-xs ui text-[rgb(var(--color-fg))]/50 hover:text-[rgb(var(--color-fg))]/70 transition-colors underline underline-offset-2"
                     >
                         Email
                     </button>
@@ -227,9 +254,23 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                         </div>
                     </div>
                 )}
-                {!nextRank && (
-                    <div className="text-xs ui text-[rgb(var(--color-fg))]/50 mt-2">
-                        Max rank reached! {stats.totalXP.toLocaleString()} points ✨
+                {!nextRank && mastery && (
+                    <div className="mt-3 w-52 mx-auto">
+                        <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs ui font-semibold text-[var(--color-skull)]">✨ Mastery Lv. {mastery.level}</span>
+                            <span className="text-[10px] ui text-[rgb(var(--color-fg))]/40">{stats.totalXP.toLocaleString()} XP</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-[rgb(var(--color-fg))]/10 overflow-hidden">
+                            <motion.div
+                                className="h-full rounded-full bg-[var(--color-skull)]"
+                                initial={{ width: 0 }}
+                                animate={{ width: `${Math.round(mastery.progress * 100)}%` }}
+                                transition={{ duration: 0.8, ease: 'easeOut' }}
+                            />
+                        </div>
+                        <div className="text-[10px] ui text-[rgb(var(--color-fg))]/35 mt-1">
+                            → Mastery Lv. {mastery.level + 1} at {mastery.xpForNext.toLocaleString()} XP
+                        </div>
                     </div>
                 )}
             </motion.div>
@@ -256,10 +297,7 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                 </div>
                 <div className="text-center">
                     <div className="text-2xl chalk text-[var(--color-gold)]">
-                        {(() => {
-                            const d = stats.byType.daily ?? { solved: 0, correct: 0 };
-                            return d.solved > 0 ? `${Math.round((d.correct / d.solved) * 100)}%` : '?';
-                        })()}
+                        {dailyAcc !== null ? `${dailyAcc}%` : '-'}
                     </div>
                     <div className="text-xs ui text-[rgb(var(--color-fg))]/60">📅 daily</div>
                 </div>
