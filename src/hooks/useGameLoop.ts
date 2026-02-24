@@ -1,18 +1,20 @@
+/**
+ * hooks/useGameLoop.ts
+ *
+ * Engine-level game loop hook.
+ * Domain-specific logic is injected via `generateItem` and `config`.
+ * Imports scoring from the engine layer; no direct math imports.
+ */
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { generateProblem, type Problem, type QuestionType } from '../utils/mathGenerator';
-import { generateDailyChallenge, generateChallenge } from '../utils/dailyChallenge';
+import type { EngineItem, GameConfig, ChalkState, FeedbackFlash } from '../engine/domain';
+import { SWIPE_TO_INDEX, DEFAULT_GAME_CONFIG } from '../engine/domain';
+import { scoreCorrect, scorePenalty, FAST_ANSWER_MS } from '../engine/scoring';
 import { useDifficulty } from './useDifficulty';
 
-export type ChalkState = 'idle' | 'success' | 'fail' | 'streak' | 'comeback' | 'struggling';
-export type FeedbackFlash = 'none' | 'correct' | 'wrong';
+// Re-export engine types so callers that import from useGameLoop still work
+export type { ChalkState, FeedbackFlash };
 
-const MILESTONES: Record<number, string> = { 5: '🔥', 10: '⚡', 20: '👑', 50: '🏆' };
-
-const BUFFER_SIZE = 8;
-const AUTO_ADVANCE_MS = 150;
-const FAIL_PAUSE_MS = 400;
-const TIMED_MODE_MS = 10_000;
-const MAX_HISTORY = 50;
+// ── Internal state ────────────────────────────────────────────────────────────
 
 interface GameState {
     score: number;
@@ -24,14 +26,11 @@ interface GameState {
     chalkState: ChalkState;
     flash: FeedbackFlash;
     frozen: boolean;
-    milestone: string;    // emoji or '' — shown via CSS animation
-    speedBonus: boolean;  // true for ~0.8s after fast answer
-    wrongStreak: number;  // consecutive wrong answers (for comeback detection)
-    shieldBroken: boolean; // true briefly when a streak shield is consumed
+    milestone: string;
+    speedBonus: boolean;
+    wrongStreak: number;
+    shieldBroken: boolean;
 }
-
-/** Maps swipe direction to option index */
-const INDEX_MAP: Record<string, number> = { left: 0, down: 1, right: 2 };
 
 const INITIAL_STATE: GameState = {
     score: 0, streak: 0, bestStreak: 0,
@@ -41,19 +40,52 @@ const INITIAL_STATE: GameState = {
     shieldBroken: false,
 };
 
+// ── Generator function type ───────────────────────────────────────────────────
 
-export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = false, challengeId: string | null = null, timedMode = false, streakShields = 0, onConsumeShield?: () => void) {
+/**
+ * Function the domain provides to generate one item.
+ * @param difficulty  0-10 adaptive difficulty level
+ * @param categoryId  The active question type/category (e.g. 'multiply')
+ * @param hardMode    Whether hard mode is active
+ * @param rng         Optional seeded RNG for reproducible daily/challenge sets
+ */
+export type ItemGenerator = (
+    difficulty: number,
+    categoryId: string,
+    hardMode: boolean,
+    rng?: () => number,
+) => EngineItem;
+
+// ── Hook ──────────────────────────────────────────────────────────────────────
+
+export function useGameLoop(
+    generateItem: ItemGenerator,
+    categoryId: string = 'multiply',
+    hardMode = false,
+    challengeId: string | null = null,
+    timedMode = false,
+    streakShields = 0,
+    onConsumeShield?: () => void,
+    config: GameConfig = DEFAULT_GAME_CONFIG,
+    /**
+     * Finite-set generator: when provided and categoryId is in
+     * `config.finiteTypeIds`, this is called instead of `generateItem`
+     * to produce the entire fixed problem list (daily / challenge).
+     */
+    generateFiniteSet?: (categoryId: string, challengeId: string | null) => EngineItem[],
+) {
     const { level, recordAnswer } = useDifficulty();
-    const [problems, setProblems] = useState<Problem[]>([]);
+    const [items, setItems] = useState<EngineItem[]>([]);
     const [gs, setGs] = useState<GameState>(INITIAL_STATE);
+
+    const { bufferSize, speedrunCount, autoAdvanceMs, failPauseMs, milestones, speedrunTypeId, finiteTypeIds } = config;
 
     const chalkTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const startedRef = useRef(false);
-    const prevType = useRef(questionType);
+    const prevCategoryId = useRef(categoryId);
     const prevHard = useRef(hardMode);
-    const frozenRef = useRef(false); // Mirror of gs.frozen for stale-closure safety
-    const correctCountRef = useRef(0); // Synchronous correct-answer counter (avoids deferred updater issue)
-
+    const frozenRef = useRef(false);
+    const correctCountRef = useRef(0);
     const dailyRef = useRef<{ dateLabel: string } | null>(null);
     const pendingTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -67,104 +99,95 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
         return id;
     }, []);
 
-    // ── Timed mode ──
-    const [timerProgress, setTimerProgress] = useState(0); // 0 → 1
+    // ── Timed mode ────────────────────────────────────────────────────────────
+    const [timerProgress, setTimerProgress] = useState(0);
     const timerStartRef = useRef<number>(0);
     const timerRafRef = useRef<number>(0);
     const timedModeRef = useRef(timedMode);
     timedModeRef.current = timedMode;
 
-    // ── Speedrun Mode Timing ──
+    // ── Speedrun timing ───────────────────────────────────────────────────────
     const speedrunStartRef = useRef<number>(0);
     const speedrunRafRef = useRef<number>(0);
     const [speedrunElapsed, setSpeedrunElapsed] = useState(0);
     const [speedrunFinalTime, setSpeedrunFinalTime] = useState<number | null>(null);
 
-    // ── Initialize buffer ──
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    const isFinite = (id: string) => finiteTypeIds.includes(id);
+    const isSpeedrun = (id: string) => id === speedrunTypeId;
+
+    const buildInitialSet = useCallback((catId: string, hard: boolean): EngineItem[] => {
+        if (isSpeedrun(catId)) {
+            return Array.from({ length: speedrunCount }, () => generateItem(level, 'mix-all', hard));
+        }
+        if (isFinite(catId) && generateFiniteSet) {
+            return generateFiniteSet(catId, challengeId);
+        }
+        return Array.from({ length: bufferSize }, () => generateItem(level, catId, hard));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [level, bufferSize, speedrunCount, challengeId, generateItem, generateFiniteSet]);
+
+    // ── Initialize buffer ─────────────────────────────────────────────────────
     useEffect(() => {
         if (startedRef.current) return;
         startedRef.current = true;
-        if (questionType === 'daily') {
-            const { problems: dp, dateLabel } = generateDailyChallenge();
-            dailyRef.current = { dateLabel };
-            dp[0].startTime = Date.now();
-            setProblems(dp);
-        } else if (questionType === 'challenge' && challengeId) {
-            const cp = generateChallenge(challengeId);
-            cp[0].startTime = Date.now();
-            setProblems(cp);
-        } else if (questionType === 'speedrun') {
-            dailyRef.current = null;
-            correctCountRef.current = 0;
-            const sp = Array.from({ length: 10 }, () => generateProblem(level, 'mix-all' as QuestionType, hardMode));
-            sp[0].startTime = Date.now();
+        const initial = buildInitialSet(categoryId, hardMode);
+        if (initial[0]) initial[0].startTime = Date.now();
+        if (isSpeedrun(categoryId)) {
             speedrunStartRef.current = Date.now();
             setSpeedrunFinalTime(null);
-            setProblems(sp);
-        } else {
-            dailyRef.current = null;
-            const initial = Array.from({ length: BUFFER_SIZE }, () => generateProblem(level, questionType, hardMode));
-            initial[0].startTime = Date.now();
-            setProblems(initial);
+            correctCountRef.current = 0;
+        } else if (isFinite(categoryId)) {
+            dailyRef.current = { dateLabel: '' }; // populated by generateFiniteSet if needed
         }
-    }, [level, questionType, challengeId, hardMode]);
+        setItems(initial);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
-    // ── Regenerate on question type change ──
+    // ── Regenerate on category / hard mode change ─────────────────────────────
     useEffect(() => {
-        if (prevType.current === questionType && prevHard.current === hardMode) return;
-        prevType.current = questionType;
+        if (prevCategoryId.current === categoryId && prevHard.current === hardMode) return;
+        prevCategoryId.current = categoryId;
         prevHard.current = hardMode;
-        if (questionType === 'daily') {
-            const { problems: dp, dateLabel } = generateDailyChallenge();
-            dailyRef.current = { dateLabel };
-            dp[0].startTime = Date.now();
-            setProblems(dp);
-            setGs(INITIAL_STATE);
-        } else if (questionType === 'challenge' && challengeId) {
-            const cp = generateChallenge(challengeId);
-            cp[0].startTime = Date.now();
-            setProblems(cp);
-            setGs(INITIAL_STATE);
-        } else if (questionType === 'speedrun') {
-            dailyRef.current = null;
-            correctCountRef.current = 0;
-            const sp = Array.from({ length: 10 }, () => generateProblem(level, 'mix-all' as QuestionType, hardMode));
-            sp[0].startTime = Date.now();
+
+        const fresh = buildInitialSet(categoryId, hardMode);
+        if (fresh[0]) fresh[0].startTime = Date.now();
+
+        if (isSpeedrun(categoryId)) {
             speedrunStartRef.current = Date.now();
             setSpeedrunFinalTime(null);
-            setProblems(sp);
-            setGs(INITIAL_STATE);
-        } else {
-            dailyRef.current = null;
-            const fresh = Array.from({ length: BUFFER_SIZE }, () => generateProblem(level, questionType, hardMode));
-            fresh[0].startTime = Date.now();
-            setProblems(fresh);
+            correctCountRef.current = 0;
         }
-    }, [questionType, hardMode, level, challengeId]);
 
-    // ── Keep buffer full (not for daily/challenge/speedrun — fixed set) ──
+        setItems(fresh);
+        setGs(INITIAL_STATE);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [categoryId, hardMode, buildInitialSet]);
+
+    // ── Keep infinite buffer full ─────────────────────────────────────────────
     useEffect(() => {
-        if (questionType === 'daily' || questionType === 'challenge' || questionType === 'speedrun') return;
-        if (problems.length < BUFFER_SIZE) {
-            setProblems(prev => [...prev, generateProblem(level, questionType, hardMode)]);
+        if (isSpeedrun(categoryId) || isFinite(categoryId)) return;
+        if (items.length < bufferSize) {
+            setItems(prev => [...prev, generateItem(level, categoryId, hardMode)]);
         }
-    }, [problems.length, level, questionType, hardMode]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [items.length, level, categoryId, hardMode]);
 
-    // ── Advance to next problem ──
+    // ── Advance to next problem ───────────────────────────────────────────────
     const advanceProblem = useCallback(() => {
-        setProblems(prev => {
+        setItems(prev => {
             const next = prev.slice(1);
             if (next[0]) next[0].startTime = Date.now();
             return next;
         });
-        // Reset timer for next question
         if (timedModeRef.current) {
             timerStartRef.current = Date.now();
             setTimerProgress(0);
         }
     }, []);
 
-    // ── Reset chalk state after delay ──
+    // ── Reset chalk state after delay ─────────────────────────────────────────
     const scheduleChalkReset = useCallback((durationMs: number) => {
         if (chalkTimerRef.current) clearTimeout(chalkTimerRef.current);
         chalkTimerRef.current = setTimeout(() => {
@@ -172,21 +195,19 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
         }, durationMs);
     }, []);
 
-    // ── Handle answer ──
+    // ── Handle swipe ──────────────────────────────────────────────────────────
     const handleSwipe = useCallback((direction: 'left' | 'right' | 'up' | 'down') => {
-        if (frozenRef.current || problems.length === 0) return;
+        if (frozenRef.current || items.length === 0) return;
+        const current = items[0];
+        if (!current) return;
+        const tts = Date.now() - (current.startTime ?? Date.now());
 
-        const current = problems[0];
-        if (!current) return; // Extra null guard
-        const tts = Date.now() - (current.startTime || Date.now());
-
+        // Up = skip
         if (direction === 'up') {
-            // Freeze briefly on skip to prevent double-skip
             frozenRef.current = true;
             setGs(prev => ({ ...prev, streak: 0, chalkState: 'idle', frozen: true }));
-            // Speedrun: replenish a problem so pool never runs dry on skips
-            if (questionType === 'speedrun') {
-                setProblems(p => [...p, generateProblem(level, 'mix-all' as QuestionType, hardMode)]);
+            if (isSpeedrun(categoryId)) {
+                setItems(p => [...p, generateItem(level, 'mix-all', hardMode)]);
             }
             safeTimeout(() => {
                 setGs(prev => ({ ...prev, frozen: false }));
@@ -196,32 +217,28 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
             return;
         }
 
-        const selectedValue = current.options[INDEX_MAP[direction]];
+        const selectedValue = current.options[SWIPE_TO_INDEX[direction]];
         const correct = selectedValue === current.answer;
 
         if (correct) {
-            recordAnswer(tts, correct);
-            const isFast = tts < 1200;
-
-            // Increment synchronous counter OUTSIDE React state (avoids deferred updater)
+            recordAnswer(tts, true);
+            const isFast = tts < FAST_ANSWER_MS;
             correctCountRef.current += 1;
             const actualCorrectCount = correctCountRef.current;
-
-            // Compute inside functional updater to avoid stale closure
             let newStreak = 0;
             let milestoneEmoji = '';
 
             setGs(prev => {
                 newStreak = prev.streak + 1;
-                milestoneEmoji = MILESTONES[newStreak] || '';
+                milestoneEmoji = milestones[newStreak] ?? '';
                 return {
                     ...prev,
                     streak: newStreak,
                     bestStreak: Math.max(prev.bestStreak, newStreak),
                     totalCorrect: prev.totalCorrect + 1,
                     totalAnswered: prev.totalAnswered + 1,
-                    answerHistory: [...prev.answerHistory, true].slice(-MAX_HISTORY),
-                    score: prev.score + 10 + Math.floor(newStreak / 5) * 5 + (isFast ? 2 : 0),
+                    answerHistory: [...prev.answerHistory, true].slice(-50),
+                    score: prev.score + scoreCorrect(newStreak, isFast),
                     flash: 'correct',
                     chalkState: newStreak >= 10 ? 'streak' : (prev.wrongStreak >= 3 ? 'comeback' as ChalkState : 'success'),
                     milestone: milestoneEmoji,
@@ -232,58 +249,50 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
             });
             frozenRef.current = true;
             scheduleChalkReset(newStreak >= 10 ? 2000 : 800);
-
-            // Auto-clear milestone after CSS animation
             if (milestoneEmoji) safeTimeout(() => setGs(p => ({ ...p, milestone: '' })), 1300);
             if (isFast) safeTimeout(() => setGs(p => ({ ...p, speedBonus: false })), 900);
 
-            // Speedrun win condition: 10 correct answers (uses synchronous ref, not deferred state)
-            if (questionType === 'speedrun' && actualCorrectCount >= 10) {
+            // Speedrun win condition
+            if (isSpeedrun(categoryId) && actualCorrectCount >= speedrunCount) {
                 const finalTime = Date.now() - speedrunStartRef.current;
                 setSpeedrunFinalTime(finalTime);
-                setGs(prev => ({ ...prev, flash: 'none' })); // Stay frozen!
-                return; // Do not advance!
+                setGs(prev => ({ ...prev, flash: 'none' }));
+                return;
             }
 
             safeTimeout(() => {
                 setGs(prev => ({ ...prev, flash: 'none', frozen: false }));
                 frozenRef.current = false;
                 advanceProblem();
-            }, AUTO_ADVANCE_MS);
+            }, autoAdvanceMs);
         } else {
-            // Wrong answer handling — use functional updater to avoid stale closures
             setGs(prev => {
                 const isTutorial = prev.totalAnswered === 0;
-
                 if (isTutorial) {
-                    // During tutorial (first question) — shake but don't count
-                    // Do NOT call recordAnswer — tutorial mistakes shouldn't affect difficulty
                     frozenRef.current = true;
-                    scheduleChalkReset(FAIL_PAUSE_MS);
+                    scheduleChalkReset(failPauseMs);
                     safeTimeout(() => {
                         setGs(p => ({ ...p, flash: 'none', frozen: false }));
                         frozenRef.current = false;
-                    }, FAIL_PAUSE_MS);
+                    }, failPauseMs);
                     return { ...prev, flash: 'wrong' as const, chalkState: 'fail' as ChalkState, frozen: true };
                 }
 
-                // Not tutorial — record the wrong answer for difficulty tracking
                 recordAnswer(tts, false);
 
                 if (streakShields > 0 && prev.streak > 0 && onConsumeShield) {
-                    // Streak Forgiveness: consume a shield instead of resetting
                     onConsumeShield();
                     frozenRef.current = true;
-                    scheduleChalkReset(FAIL_PAUSE_MS);
+                    scheduleChalkReset(failPauseMs);
                     safeTimeout(() => {
                         setGs(p => ({ ...p, flash: 'none', frozen: false, shieldBroken: false }));
                         frozenRef.current = false;
                         advanceProblem();
-                    }, FAIL_PAUSE_MS);
+                    }, failPauseMs);
                     return {
                         ...prev,
                         totalAnswered: prev.totalAnswered + 1,
-                        answerHistory: [...prev.answerHistory, false].slice(-MAX_HISTORY),
+                        answerHistory: [...prev.answerHistory, false].slice(-50),
                         flash: 'wrong' as const,
                         chalkState: 'fail' as ChalkState,
                         frozen: true,
@@ -293,26 +302,23 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
 
                 // Normal wrong answer
                 frozenRef.current = true;
-                scheduleChalkReset(FAIL_PAUSE_MS);
-
-                // Speedrun: replenish a problem so pool never runs dry
-                if (questionType === 'speedrun') {
-                    setProblems(p => [...p, generateProblem(level, 'mix-all' as QuestionType, hardMode)]);
+                scheduleChalkReset(failPauseMs);
+                if (isSpeedrun(categoryId)) {
+                    setItems(p => [...p, generateItem(level, 'mix-all', hardMode)]);
                 }
-
                 safeTimeout(() => {
                     setGs(p => ({ ...p, flash: 'none', frozen: false }));
                     frozenRef.current = false;
                     advanceProblem();
-                }, FAIL_PAUSE_MS);
+                }, failPauseMs);
 
                 const wrongStreak = prev.wrongStreak + 1;
                 return {
                     ...prev,
                     streak: 0,
                     totalAnswered: prev.totalAnswered + 1,
-                    answerHistory: [...prev.answerHistory, false].slice(-MAX_HISTORY),
-                    score: Math.max(0, prev.score - 5),
+                    answerHistory: [...prev.answerHistory, false].slice(-50),
+                    score: scorePenalty(prev.score),
                     flash: 'wrong' as const,
                     chalkState: (wrongStreak >= 3 ? 'struggling' : 'fail') as ChalkState,
                     milestone: '',
@@ -321,11 +327,12 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
                 };
             });
         }
-    }, [problems, recordAnswer, scheduleChalkReset, advanceProblem, safeTimeout, questionType, streakShields, onConsumeShield, hardMode, level]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [items, recordAnswer, scheduleChalkReset, advanceProblem, safeTimeout, categoryId, streakShields, onConsumeShield, hardMode, level, milestones, autoAdvanceMs, failPauseMs, speedrunCount, generateItem]);
 
-    // ── Timed mode tick + auto-skip ──
+    // ── Timed mode tick + auto-skip ───────────────────────────────────────────
     useEffect(() => {
-        if (!timedMode || gs.frozen || problems.length === 0) {
+        if (!timedMode || gs.frozen || items.length === 0) {
             cancelAnimationFrame(timerRafRef.current);
             if (!timedMode) setTimerProgress(0);
             return;
@@ -335,10 +342,9 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
 
         const tick = () => {
             const elapsed = Date.now() - timerStartRef.current;
-            const p = Math.min(elapsed / TIMED_MODE_MS, 1);
+            const p = Math.min(elapsed / config.timedModeMs, 1);
             setTimerProgress(p);
             if (p >= 1) {
-                // Time's up — cancel RAF and skip
                 cancelAnimationFrame(timerRafRef.current);
                 frozenRef.current = true;
                 setGs(prev => {
@@ -347,8 +353,8 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
                         ...prev,
                         streak: 0,
                         totalAnswered: prev.totalAnswered + 1,
-                        answerHistory: [...prev.answerHistory, false].slice(-MAX_HISTORY),
-                        score: Math.max(0, prev.score - 5),
+                        answerHistory: [...prev.answerHistory, false].slice(-50),
+                        score: scorePenalty(prev.score),
                         flash: 'wrong' as const,
                         chalkState: (wrongStreak >= 3 ? 'struggling' : 'fail') as ChalkState,
                         milestone: '',
@@ -356,26 +362,23 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
                         frozen: true,
                     };
                 });
-                scheduleChalkReset(FAIL_PAUSE_MS);
+                scheduleChalkReset(failPauseMs);
                 safeTimeout(() => {
                     setGs(prev => ({ ...prev, flash: 'none', frozen: false }));
                     advanceProblem();
-                }, FAIL_PAUSE_MS);
+                }, failPauseMs);
                 return;
             }
             timerRafRef.current = requestAnimationFrame(tick);
         };
         timerRafRef.current = requestAnimationFrame(tick);
         return () => cancelAnimationFrame(timerRafRef.current);
-        // Reset when problem changes (problems[0] identity)
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [timedMode, problems[0]?.id, gs.frozen]);
+    }, [timedMode, items[0]?.id, gs.frozen]);
 
-    const dailyComplete = (questionType === 'daily' || questionType === 'challenge') && gs.totalAnswered > 0 && problems.length === 0;
-
-    // ── Speedrun live stopwatch ──
+    // ── Speedrun live stopwatch ───────────────────────────────────────────────
     useEffect(() => {
-        if (questionType !== 'speedrun' || speedrunFinalTime !== null) {
+        if (!isSpeedrun(categoryId) || speedrunFinalTime !== null) {
             cancelAnimationFrame(speedrunRafRef.current);
             return;
         }
@@ -386,9 +389,10 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
         };
         speedrunRafRef.current = requestAnimationFrame(tick);
         return () => cancelAnimationFrame(speedrunRafRef.current);
-    }, [questionType, speedrunFinalTime, problems.length]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [categoryId, speedrunFinalTime, items.length]);
 
-    // ── Cleanup all timers on unmount (#4, #11) ──
+    // ── Cleanup ───────────────────────────────────────────────────────────────
     useEffect(() => {
         return () => {
             if (chalkTimerRef.current) clearTimeout(chalkTimerRef.current);
@@ -398,14 +402,19 @@ export function useGameLoop(questionType: QuestionType = 'multiply', hardMode = 
         };
     }, []);
 
+    const dailyComplete =
+        (isFinite(categoryId)) &&
+        gs.totalAnswered > 0 &&
+        items.length === 0;
+
     return {
-        problems,
+        problems: items,  // alias kept for backward compat with ProblemView/App expectations
         ...gs,
         level,
         handleSwipe,
         timerProgress,
         dailyComplete,
-        dailyDateLabel: dailyRef.current?.dateLabel || '',
+        dailyDateLabel: dailyRef.current?.dateLabel ?? '',
         speedrunFinalTime,
         speedrunElapsed,
     };

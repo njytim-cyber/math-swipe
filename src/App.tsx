@@ -13,7 +13,7 @@ import { defaultTypeForBand, typesForBand, AGE_BANDS, BAND_LABELS } from './util
 import { useAutoSummary, usePersonalBest } from './hooks/useSessionUI';
 import { OfflineBanner } from './components/OfflineBanner';
 import { ReloadPrompt } from './components/ReloadPrompt';
-/** Retry a dynamic import once by reloading the page (handles stale deploy cache on Cloudflare Pages) */
+/** Retry a dynamic import once on chunk-load failure (Cloudflare Pages cache busting) */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function lazyRetry<T extends Record<string, any>>(factory: () => Promise<T>): Promise<T> {
   return factory().catch(() => {
@@ -22,17 +22,19 @@ function lazyRetry<T extends Record<string, any>>(factory: () => Promise<T>): Pr
       sessionStorage.setItem(key, '1');
       window.location.reload();
     }
-    return factory(); // fallback — will throw if still broken
+    return factory();
   });
 }
 
 const LeaguePage = lazy(() => lazyRetry(() => import('./components/LeaguePage')).then(m => ({ default: m.LeaguePage })));
 const MePage = lazy(() => lazyRetry(() => import('./components/MePage')).then(m => ({ default: m.MePage })));
 const TricksPage = lazy(() => lazyRetry(() => import('./components/TricksPage')).then(m => ({ default: m.TricksPage })));
+
 import { useGameLoop } from './hooks/useGameLoop';
 import { useStats } from './hooks/useStats';
 import type { QuestionType } from './utils/questionTypes';
 import { EVERY_ACHIEVEMENT, loadUnlocked, saveUnlocked, checkAchievements, restoreUnlockedFromCloud } from './utils/achievements';
+import { EVERY_MATH_ACHIEVEMENT } from './domains/math/mathAchievements';
 import { SessionSummary } from './components/SessionSummary';
 import { WeeklyRecap } from './components/WeeklyRecap';
 import { CHALK_THEMES, applyTheme, type ChalkTheme } from './utils/chalkThemes';
@@ -41,9 +43,37 @@ import { useLocalState } from './hooks/useLocalState';
 import { useFirebaseAuth } from './hooks/useFirebaseAuth';
 import { collection, query, where, onSnapshot, doc, updateDoc, orderBy, limit } from 'firebase/firestore';
 import { db } from './utils/firebase';
+import { generateProblem } from './utils/mathGenerator';
+import { generateDailyChallenge, generateChallenge } from './utils/dailyChallenge';
+import type { EngineItem } from './engine/domain';
+import { STORAGE_KEYS, FIRESTORE } from './config';
 
 type Tab = 'game' | 'league' | 'me' | 'magic';
 const TAB_ORDER: Tab[] = ['game', 'league', 'magic', 'me'];
+
+/**
+ * Math domain item generator — adapts generateProblem to the EngineItem interface.
+ * Passed into useGameLoop so the engine never directly imports math.
+ */
+function generateMathItem(
+  difficulty: number,
+  categoryId: string,
+  hardMode: boolean,
+  rng?: () => number,
+): EngineItem {
+  return generateProblem(difficulty, categoryId as QuestionType, hardMode, rng) as EngineItem;
+}
+
+/**
+ * Math finite-set generator for daily / challenge modes.
+ */
+function generateMathFiniteSet(categoryId: string, challengeId: string | null): EngineItem[] {
+  if (categoryId === 'challenge' && challengeId) {
+    return generateChallenge(challengeId) as EngineItem[];
+  }
+  const { problems } = generateDailyChallenge();
+  return problems as EngineItem[];
+}
 
 function LoadingFallback() {
   return (
@@ -103,7 +133,17 @@ function App() {
     speedrunFinalTime,
     speedrunElapsed,
     shieldBroken,
-  } = useGameLoop(questionType, hardMode, challengeId, timedMode, stats.streakShields, consumeShield);
+  } = useGameLoop(
+    generateMathItem,
+    questionType,
+    hardMode,
+    challengeId,
+    timedMode,
+    stats.streakShields,
+    consumeShield,
+    undefined, // use DEFAULT_GAME_CONFIG
+    generateMathFiniteSet,
+  );
 
   // ── Shield consumed toast ──
   const [shieldToast, setShieldToast] = useState(false);
@@ -152,7 +192,7 @@ function App() {
   useEffect(() => {
     if (!uid) return;
     const q = query(
-      collection(db, 'pings'),
+      collection(db, FIRESTORE.PINGS),
       where('targetUid', '==', uid),
       where('read', '==', false),
       orderBy('createdAt', 'desc'),
@@ -200,7 +240,7 @@ function App() {
   // Check achievements whenever navigating away from game (i.e. stats recorded)
   useEffect(() => {
     const snap = { ...stats, bestStreak: Math.max(stats.bestStreak, bestStreak) };
-    const fresh = checkAchievements(snap, unlockedRef.current);
+    const fresh = checkAchievements(EVERY_MATH_ACHIEVEMENT, snap, unlockedRef.current);
     if (fresh.length > 0) {
       const next = new Set(unlockedRef.current);
       fresh.forEach(id => next.add(id));
@@ -240,12 +280,11 @@ function App() {
     }
   }, [activeTab, handleTabChange, isMagicLessonActive]);
 
-  // ── Costumes & Trails ──
-  const [activeCostume, handleCostumeChange] = useLocalState('math-swipe-costume', '', uid);
-  const [activeTrailId, handleTrailChange] = useLocalState('math-swipe-trail', '', uid);
+  const [activeCostume, handleCostumeChange] = useLocalState(STORAGE_KEYS.costume, '', uid);
+  const [activeTrailId, handleTrailChange] = useLocalState(STORAGE_KEYS.trail, '', uid);
 
   // ── Chalk themes ──
-  const [activeThemeId, setActiveThemeId] = useLocalState('math-swipe-chalk-theme', 'classic', uid);
+  const [activeThemeId, setActiveThemeId] = useLocalState(STORAGE_KEYS.chalkTheme, 'classic', uid);
   useEffect(() => {
     const t = CHALK_THEMES.find(th => th.id === activeThemeId);
     if (t) applyTheme(t);
@@ -260,7 +299,7 @@ function App() {
   const handleThemeChange = useCallback((t: ChalkTheme) => setActiveThemeId(t.id), [setActiveThemeId]);
 
   // ── Theme mode (dark/light) ──
-  const [themeMode, setThemeMode] = useLocalState('math-swipe-theme', 'dark', uid);
+  const [themeMode, setThemeMode] = useLocalState(STORAGE_KEYS.theme, 'dark', uid);
   useEffect(() => {
     applyMode(themeMode as 'dark' | 'light');
     // Re-apply chalk theme colours for the new mode (dark uses .color, light uses .lightColor)
@@ -271,7 +310,7 @@ function App() {
     setThemeMode(themeMode === 'dark' ? 'light' : 'dark');
   }, [themeMode, setThemeMode]);
   // ── Age Band ──
-  const [ageBand, setAgeBand] = useLocalState('math-swipe-age-band', '35' as AgeBand, uid) as [AgeBand, (v: AgeBand) => void];
+  const [ageBand, setAgeBand] = useLocalState(STORAGE_KEYS.ageBand, '35' as AgeBand, uid) as [AgeBand, (v: AgeBand) => void];
 
   // ── Practice focus: find lowest-accuracy topic ──
   const levelUpSuggestion = useMemo(() => {

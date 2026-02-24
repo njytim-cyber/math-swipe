@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../utils/firebase';
-import type { QuestionType } from '../utils/mathGenerator';
+import { STORAGE_KEYS, FIRESTORE } from '../config';
+import { QUESTION_TYPES } from '../domains/math/mathCategories';
 
 interface TypeStat {
     solved: number;
@@ -20,7 +21,7 @@ export interface Stats {
     dayStreak: number;
     streakShields: number;
     lastPlayedDate: string; // YYYY-MM-DD
-    byType: Record<QuestionType, TypeStat>;
+    byType: Record<string, TypeStat>;
     // Hard mode tracking
     hardModeSolved: number;
     hardModeCorrect: number;
@@ -51,9 +52,22 @@ export interface Stats {
     speedrunHardMode: boolean; // true if best speedrun was on hard mode
 }
 
-const STORAGE_KEY = 'math-swipe-stats';
+const STORAGE_KEY = STORAGE_KEYS.stats;
 
 const EMPTY_TYPE: TypeStat = { solved: 0, correct: 0 };
+
+/** Build byType from the authoritative QUESTION_TYPES list — no per-key hardcoding */
+function buildEmptyByType(): Record<string, TypeStat> {
+    const out: Record<string, TypeStat> = {};
+    for (const qt of QUESTION_TYPES) {
+        out[qt.id] = { ...EMPTY_TYPE };
+    }
+    // Add meta types not in the picker list
+    for (const id of ['speedrun', 'challenge', 'ghost']) {
+        out[id] = { ...EMPTY_TYPE };
+    }
+    return out;
+}
 
 const EMPTY_STATS: Stats = {
     lastDailyDate: '',
@@ -67,36 +81,7 @@ const EMPTY_STATS: Stats = {
     dayStreak: 0,
     streakShields: 0,
     lastPlayedDate: '',
-    byType: {
-        add: { ...EMPTY_TYPE },
-        subtract: { ...EMPTY_TYPE },
-        multiply: { ...EMPTY_TYPE },
-        divide: { ...EMPTY_TYPE },
-        square: { ...EMPTY_TYPE },
-        sqrt: { ...EMPTY_TYPE },
-        fraction: { ...EMPTY_TYPE },
-        decimal: { ...EMPTY_TYPE },
-        percent: { ...EMPTY_TYPE },
-        linear: { ...EMPTY_TYPE },
-        add1: { ...EMPTY_TYPE },
-        sub1: { ...EMPTY_TYPE },
-        bonds: { ...EMPTY_TYPE },
-        doubles: { ...EMPTY_TYPE },
-        compare: { ...EMPTY_TYPE },
-        skip: { ...EMPTY_TYPE },
-        round: { ...EMPTY_TYPE },
-        orderops: { ...EMPTY_TYPE },
-        exponent: { ...EMPTY_TYPE },
-        negatives: { ...EMPTY_TYPE },
-        gcflcm: { ...EMPTY_TYPE },
-        ratio: { ...EMPTY_TYPE },
-        'mix-basic': { ...EMPTY_TYPE },
-        'mix-all': { ...EMPTY_TYPE },
-        daily: { ...EMPTY_TYPE },
-        challenge: { ...EMPTY_TYPE },
-        speedrun: { ...EMPTY_TYPE },
-        ghost: { ...EMPTY_TYPE },
-    },
+    byType: buildEmptyByType(),
     hardModeSolved: 0,
     hardModeCorrect: 0,
     hardModeBestStreak: 0,
@@ -141,7 +126,7 @@ function saveStatsLocal(s: Stats) {
 async function saveStatsCloud(uid: string, s: Stats) {
     try {
         const accuracy = s.totalSolved > 0 ? Math.round((s.totalCorrect / s.totalSolved) * 100) : 0;
-        await setDoc(doc(db, 'users', uid), {
+        await setDoc(doc(db, FIRESTORE.USERS, uid), {
             // Top-level leaderboard-queryable fields
             totalXP: s.totalXP,
             bestStreak: Math.max(s.bestStreak || 0, s.hardModeBestStreak || 0, s.timedModeBestStreak || 0, s.ultimateBestStreak || 0),
@@ -166,7 +151,7 @@ async function saveStatsCloud(uid: string, s: Stats) {
 /** Load from Firestore (async fallback) */
 async function loadStatsCloud(uid: string): Promise<Stats | null> {
     try {
-        const snap = await getDoc(doc(db, 'users', uid));
+        const snap = await getDoc(doc(db, FIRESTORE.USERS, uid));
         if (snap.exists() && snap.data().stats) {
             const cloud = snap.data().stats;
             return {
@@ -185,7 +170,7 @@ async function loadStatsCloud(uid: string): Promise<Stats | null> {
 function mergeStats(local: Stats, cloud: Stats): Stats {
     // Merge byType per-key (take max of each)
     const mergedByType = { ...EMPTY_STATS.byType };
-    for (const key of Object.keys(mergedByType) as QuestionType[]) {
+    for (const key of Object.keys(mergedByType) as string[]) {
         const l = local.byType[key] || EMPTY_TYPE;
         const c = cloud.byType[key] || EMPTY_TYPE;
         mergedByType[key] = {
@@ -283,7 +268,7 @@ export function useStats(uid: string | null) {
 
     const recordSession = useCallback((
         score: number, correct: number, answered: number,
-        bestStreak: number, questionType: QuestionType, hardMode = false, timedMode = false
+        bestStreak: number, questionType: string, hardMode = false, timedMode = false
     ) => {
         setStats(prev => {
             const prevType = prev.byType[questionType] || { ...EMPTY_TYPE };

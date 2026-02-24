@@ -1,8 +1,9 @@
 import { memo, useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, type TargetAndTransition } from 'framer-motion';
-import type { ChalkState } from '../hooks/useGameLoop';
+import type { ChalkState } from '../engine/domain';
 import type { QuestionType } from '../utils/questionTypes';
-import { pickChalkMessage } from '../utils/chalkMessages';
+import { pickChalkMessage, type ChalkContext, type ChalkMessageOverrides } from '../utils/chalkMessages';
+import { MATH_MESSAGE_OVERRIDES } from '../domains/math/mathMessages';
 
 const ANIMS: Record<ChalkState, TargetAndTransition> = {
     idle: { y: [0, -6, 0], rotate: [0, 2, -2, 0], transition: { repeat: Infinity, duration: 2.5, ease: 'easeInOut' as const } },
@@ -96,7 +97,12 @@ const FACES: Record<ChalkState, React.ReactNode> = {
 };
 import { COSTUMES } from '../utils/costumes';
 
-export const MrChalk = memo(function MrChalk({ state, costume, streak = 0, totalAnswered = 0, questionType = 'multiply', hardMode = false, timedMode = false, pingMessage = null }: {
+export const MrChalk = memo(function MrChalk({
+    state, costume, streak = 0, totalAnswered = 0,
+    questionType = 'multiply', hardMode = false, timedMode = false,
+    pingMessage = null,
+    messageOverrides,
+}: {
     state: ChalkState;
     costume?: string;
     streak?: number;
@@ -105,13 +111,20 @@ export const MrChalk = memo(function MrChalk({ state, costume, streak = 0, total
     hardMode?: boolean;
     timedMode?: boolean;
     pingMessage?: string | null;
+    /**
+     * Domain-specific message overrides.
+     * Defaults to math overrides. Pass `undefined` for a completely generic game.
+     */
+    messageOverrides?: ChalkMessageOverrides;
 }) {
     const [message, setMessage] = useState('');
     const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-    const ctxRef = useRef({ state, streak, totalAnswered, questionType, hardMode, timedMode });
+    const ctxRef = useRef<{ state: ChalkState; streak: number; totalAnswered: number; categoryId: string; hardMode: boolean; timedMode: boolean }>(
+        { state, streak, totalAnswered, categoryId: questionType, hardMode, timedMode }
+    );
     useEffect(() => {
-        ctxRef.current = { state, streak, totalAnswered, questionType, hardMode, timedMode };
+        ctxRef.current = { state, streak, totalAnswered, categoryId: questionType, hardMode, timedMode };
     });
 
     // Adjust state during render when deps change (React-recommended pattern)
@@ -120,8 +133,8 @@ export const MrChalk = memo(function MrChalk({ state, costume, streak = 0, total
     const [prevDepsKey, setPrevDepsKey] = useState('');
     if (depsKey !== prevDepsKey) {
         setPrevDepsKey(depsKey);
-        // We always calculate the raw message, even if hidden by ping, so it's ready when ping clears
-        setMessage(pickChalkMessage({ state, streak, totalAnswered, questionType, hardMode, timedMode }));
+        const ctx: ChalkContext = { state, streak, totalAnswered, categoryId: questionType, hardMode, timedMode };
+        setMessage(pickChalkMessage(ctx, messageOverrides ?? MATH_MESSAGE_OVERRIDES));
     }
 
     // Auto-clear message after timeout (effect only for async timer)
@@ -132,12 +145,12 @@ export const MrChalk = memo(function MrChalk({ state, costume, streak = 0, total
         return () => { if (timerRef.current) clearTimeout(timerRef.current); };
     }, [message, state, pingMessage]);
 
-    // Periodic idle messages (async callback reads ref — allowed)
     useEffect(() => {
         if (state !== 'idle') return;
-        const interval = setInterval(() => setMessage(pickChalkMessage({ ...ctxRef.current, state: 'idle' })), 5000);
+        const ctx: ChalkContext = { state, streak, totalAnswered, categoryId: questionType, hardMode, timedMode };
+        const interval = setInterval(() => setMessage(pickChalkMessage({ ...ctx, state: 'idle' }, messageOverrides ?? MATH_MESSAGE_OVERRIDES)), 5000);
         return () => clearInterval(interval);
-    }, [state]);
+    }, [state, questionType, streak, totalAnswered, hardMode, timedMode, messageOverrides]);
 
     const displayState = pingMessage ? 'comeback' : state;
     const currentMessage = pingMessage || message;

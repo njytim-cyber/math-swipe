@@ -1,12 +1,20 @@
+/**
+ * utils/dailyChallenge.ts
+ *
+ * Seeded daily and challenge generators.
+ * Math-specific constants (DAILY_COUNT, DAILY_TYPES) imported from math domain.
+ * The functions themselves are domain-agnostic in signature.
+ */
 import { createSeededRng, dateSeed, stringSeed } from './seededRng';
-import { generateProblem, type Problem, type QuestionType } from './mathGenerator';
+import { generateProblem, type Problem } from './mathGenerator';
+import { DAILY_COUNT, DAILY_TYPES } from '../domains/math/mathDailyConfig';
 
-const DAILY_COUNT = 10;
-const DAILY_TYPES: QuestionType[] = ['add', 'subtract', 'multiply', 'divide', 'square', 'sqrt'];
+/** Forward-compat alias so callers can use EngineItem in the future */
+export type { Problem };
 
 /**
- * Generate today's daily challenge — same 10 problems for everyone.
- * Uses a seeded RNG keyed to the date so every player gets the same set.
+ * Generate today's daily challenge — same N problems for everyone.
+ * Uses a date-seeded RNG so every player gets the same set.
  */
 export function generateDailyChallenge(): { problems: Problem[]; dateLabel: string } {
     const today = new Date();
@@ -16,10 +24,9 @@ export function generateDailyChallenge(): { problems: Problem[]; dateLabel: stri
     const problems: Problem[] = [];
     for (let i = 0; i < DAILY_COUNT; i++) {
         const type = DAILY_TYPES[Math.floor(rng() * DAILY_TYPES.length)];
-        const difficulty = 2 + Math.floor(i / 3); // ramp from 2 to 5
+        const difficulty = 2 + Math.floor(i / 3);
         problems.push(generateProblem(difficulty, type, false, rng));
     }
-    // Assign sequential IDs for stability
     problems.forEach((p, i) => { p.id = `daily-${seed}-${i}`; });
     return {
         problems,
@@ -29,7 +36,7 @@ export function generateDailyChallenge(): { problems: Problem[]; dateLabel: stri
 
 /**
  * Generate a challenge from a seed string (e.g., from a URL param).
- * Same seed → same 10 problems, so two players can compete.
+ * Same seed → same problems for both players.
  */
 export function generateChallenge(challengeId: string): Problem[] {
     const seed = stringSeed(challengeId);
