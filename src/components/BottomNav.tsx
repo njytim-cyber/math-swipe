@@ -75,13 +75,10 @@ export const BottomNav = memo(function BottomNav({ active, onChange }: Props) {
                         <span className="text-[10px] ui tracking-wide">
                             {tab.label}
                         </span>
-                        {isActive && (
-                            <motion.div
-                                layoutId="nav-dot"
-                                className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-[var(--color-gold)]"
-                                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                            />
-                        )}
+                        <div
+                            className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-[var(--color-gold)] transition-transform duration-200"
+                            style={{ transform: isActive ? 'scale(1)' : 'scale(0)' }}
+                        />
                     </motion.button>
                 );
             })}
