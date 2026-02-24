@@ -435,6 +435,8 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                         const isAvailable = rankOk && hardOk && timedOk && ultimateOk;
                         const isActive = activeTheme === t.id;
                         const modeIcon = t.ultimateOnly ? '💀⏱️' : t.hardModeOnly ? '💀' : t.timedModeOnly ? '⏱️' : '';
+                        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+                        const swatchColor = isLight ? t.lightColor : t.color;
                         return (
                             <button
                                 key={t.id}
@@ -444,7 +446,7 @@ export const MePage = memo(function MePage({ stats, accuracy, onReset, unlocked,
                                     isAvailable ? 'border-[rgb(var(--color-fg))]/20 hover:border-[rgb(var(--color-fg))]/40' :
                                         'border-[rgb(var(--color-fg))]/8 opacity-40 cursor-not-allowed'
                                     }`}
-                                style={{ backgroundColor: t.color }}
+                                style={{ backgroundColor: swatchColor }}
                             >
                                 {modeIcon && !isAvailable && (
                                     <span className="absolute -top-1 -right-1 text-[8px]">{modeIcon}</span>
