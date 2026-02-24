@@ -2,6 +2,7 @@ import { memo, useEffect, useRef } from 'react';
 import { motion, useMotionValue, useTransform, useMotionTemplate, animate, type MotionValue } from 'framer-motion';
 import type { PanInfo } from 'framer-motion';
 import type { Problem } from '../utils/mathGenerator';
+import type { EngineItem } from '../engine/domain';
 import { MathExpr } from './MathExpr';
 
 /** Arrow-key → swipe direction map for desktop play */
@@ -12,7 +13,8 @@ const KEY_MAP: Record<string, 'left' | 'right' | 'up' | 'down'> = {
     ArrowUp: 'up',
 };
 interface Props {
-    problem: Problem;
+    /** Accepts both the math-specific Problem and the generic EngineItem */
+    problem: Problem | EngineItem;
     frozen: boolean;
     highlightCorrect?: boolean;
     showHints?: boolean;
@@ -100,6 +102,10 @@ const AnswerOption = memo(function AnswerOption({
 });
 
 export const ProblemView = memo(function ProblemView({ problem, frozen, highlightCorrect, showHints = true, onSwipe }: Props) {
+    // At runtime this component always receives a math Problem (which has expression, latex, visual, etc.).
+    // The prop type accepts EngineItem so callers with EngineItem[] don't need a cast.
+    const p = problem as Problem;
+
     const x = useMotionValue(0);
     const y = useMotionValue(0);
 
@@ -155,17 +161,17 @@ export const ProblemView = memo(function ProblemView({ problem, frozen, highligh
             onPanEnd={handlePanEnd}
         >
             {/* Number bond visual */}
-            {problem.visual === 'bond' && problem.bondTotal != null && problem.bondPart != null && (
+            {p.visual === 'bond' && p.bondTotal != null && p.bondPart != null && (
                 <svg viewBox="0 0 160 120" className="w-44 h-28 mb-4" style={{ color: 'var(--color-chalk)' }}>
                     {/* Lines connecting circles */}
                     <line x1="80" y1="32" x2="40" y2="84" stroke="currentColor" strokeWidth="2" opacity="0.5" />
                     <line x1="80" y1="32" x2="120" y2="84" stroke="currentColor" strokeWidth="2" opacity="0.5" />
                     {/* Top circle — total */}
                     <circle cx="80" cy="24" r="22" stroke="currentColor" strokeWidth="2" fill="none" />
-                    <text x="80" y="31" textAnchor="middle" fill="currentColor" fontSize="20" fontFamily="inherit" className="chalk">{problem.bondTotal}</text>
+                    <text x="80" y="31" textAnchor="middle" fill="currentColor" fontSize="20" fontFamily="inherit" className="chalk">{p.bondTotal}</text>
                     {/* Bottom-left circle — known part */}
                     <circle cx="40" cy="94" r="22" stroke="currentColor" strokeWidth="2" fill="none" />
-                    <text x="40" y="101" textAnchor="middle" fill="currentColor" fontSize="20" fontFamily="inherit" className="chalk">{problem.bondPart}</text>
+                    <text x="40" y="101" textAnchor="middle" fill="currentColor" fontSize="20" fontFamily="inherit" className="chalk">{p.bondPart}</text>
                     {/* Bottom-right circle — unknown (?) */}
                     <circle cx="120" cy="94" r="22" stroke="var(--color-gold)" strokeWidth="2.5" fill="none" strokeDasharray="6 3" />
                     <text x="120" y="101" textAnchor="middle" fill="var(--color-gold)" fontSize="22" fontFamily="inherit" className="chalk">?</text>
@@ -173,28 +179,28 @@ export const ProblemView = memo(function ProblemView({ problem, frozen, highligh
             )}
             {/* Problem expression */}
             <motion.div className="text-center mb-12" animate={pulseAnim}>
-                <div className={`landscape-question chalk leading-tight tracking-wider text-[var(--color-chalk)] max-w-full px-2 ${problem.expression.length > 15 ? 'text-2xl' : problem.expression.length > 10 ? 'text-4xl' : 'text-6xl'}`}>
-                    {problem.latex
-                        ? <MathExpr latex={problem.latex} />
-                        : problem.expression
+                <div className={`landscape-question chalk leading-tight tracking-wider text-[var(--color-chalk)] max-w-full px-2 ${p.expression.length > 15 ? 'text-2xl' : p.expression.length > 10 ? 'text-4xl' : 'text-6xl'}`}>
+                    {p.latex
+                        ? <MathExpr latex={p.latex} />
+                        : p.expression
                     }
                 </div>
             </motion.div>
 
             {/* Answer options */}
             <div className="flex items-center justify-center gap-3 w-full max-w-[380px]">
-                {problem.options.map((opt, i) => (
+                {p.options.map((opt, i) => (
                     <AnswerOption
                         key={`${opt}-${i}`}
-                        value={opt}
-                        label={problem.optionLabels?.[i]}
+                        value={opt as number}
+                        label={p.optionLabels?.[i]}
                         dir={DIRS[i]}
                         dirLabel={DIR_LABELS[i]}
                         glow={glows[i]}
                         frozen={frozen}
                         onSwipe={onSwipe}
-                        highlighted={highlightCorrect && i === problem.correctIndex}
-                        correctFlash={frozen && i === problem.correctIndex}
+                        highlighted={highlightCorrect && i === p.correctIndex}
+                        correctFlash={frozen && i === p.correctIndex}
                         showHint={showHints}
                     />
                 ))}
