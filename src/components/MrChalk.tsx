@@ -10,6 +10,7 @@ const ANIMS: Record<ChalkState, TargetAndTransition> = {
     fail: { x: [-6, 6, -6, 6, 0], transition: { duration: 0.4 } },
     streak: { y: [0, -8, 0], scale: [1, 1.1, 1], rotate: [0, -3, 3, 0], transition: { repeat: Infinity, duration: 0.7, ease: 'easeInOut' as const } },
     comeback: { scale: [1, 1.2, 1], y: [0, -10, 0], transition: { duration: 0.5 } },
+    struggling: { x: [-8, 8, -6, 6, -3, 3, 0], y: [0, 3, 0], transition: { duration: 0.55 } },
 };
 
 // Static SVG parts extracted to avoid re-creating on every render
@@ -77,6 +78,19 @@ const FACES: Record<ChalkState, React.ReactNode> = {
             <circle cx="60" cy="34" r="2.5" fill="currentColor" opacity="0.8" />
             <path d="M 38 48 Q 50 58 62 48" stroke="currentColor" strokeWidth="2.5" fill="none" />
             <text x="72" y="30" fontSize="18">💪</text>
+        </>
+    ),
+    struggling: (
+        <>
+            {/* X eyes */}
+            <line x1="36" y1="30" x2="44" y2="38" stroke="currentColor" strokeWidth="2" opacity="0.9" />
+            <line x1="44" y1="30" x2="36" y2="38" stroke="currentColor" strokeWidth="2" opacity="0.9" />
+            <line x1="56" y1="30" x2="64" y2="38" stroke="currentColor" strokeWidth="2" opacity="0.9" />
+            <line x1="64" y1="30" x2="56" y2="38" stroke="currentColor" strokeWidth="2" opacity="0.9" />
+            {/* Flat-line mouth */}
+            <line x1="40" y1="50" x2="60" y2="50" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+            {/* Sweat drop */}
+            <ellipse cx="72" cy="32" rx="2" ry="3.5" fill="currentColor" opacity="0.4" />
         </>
     ),
 };

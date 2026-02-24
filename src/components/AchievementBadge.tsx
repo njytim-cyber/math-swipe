@@ -74,7 +74,7 @@ const Sharpshooter = ({ size = 48, unlocked }: BadgeProps) => (
 
 /** Calendar — Dedicated (7-day streak) */
 const Dedicated = ({ size = 48, unlocked }: BadgeProps) => (
-    <svg viewBox="0 0 48 48" width={size} height={size} style={{ color: unlocked ? 'var(--color-streak-fire)' : 'rgba(255,255,255,0.12)' }}>
+    <svg viewBox="0 0 48 48" width={size} height={size} style={{ color: unlocked ? 'var(--color-streak-fire)' : 'var(--color-locked)' }}>
         <rect x="8" y="12" width="32" height="28" rx="3" {...S} strokeWidth="2.5" />
         <line x1="8" y1="20" x2="40" y2="20" {...S} strokeWidth="2" />
         <line x1="16" y1="8" x2="16" y2="16" {...S} strokeWidth="2.5" />
